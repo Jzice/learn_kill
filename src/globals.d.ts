@@ -37,6 +37,11 @@ declare global {
     selectRole: (r: 'lord' | 'loyal' | 'rebel' | 'spy' | 'random') => void;
     selectFaction: (k: string) => void;
     selectChar: (id: string) => void;
+    // 个性化资料
+    selectAvatar: (v: string) => void;
+    selectGender: (v: 'male' | 'female' | 'hidden') => void;
+    selectMoodIcon: (v: string) => void;
+    setPlayerCount: (n: number) => void;
     // 游戏内交互
     clickHandCard: (cardId: number) => void;
     clickTargetSeat: (idx: number) => void;

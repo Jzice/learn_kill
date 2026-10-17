@@ -1,20 +1,33 @@
 /* ==================== 大厅 UI / 选角 / 题库管理 / 房间成员 ==================== */
-import type { Character, FactionId, PublicProfile, Role } from '../core/types';
+import type { Character, FactionId, Gender, PublicProfile, Role } from '../core/types';
 import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../data/characters';
-import { sortedGrades } from '../data/grades';
 import {
-  BUILTIN_QUESTION_BANK,
   EXTERNAL_STATS,
   QUESTION_BANK,
   loadBankFromUrl,
   mergeBankData,
   parseBankText,
   resetExternalStats,
+  sortedGrades,
+  builtinCount,
+  isGradeLoaded,
 } from '../data/questionBank';
-import { levelOf, PROFILE, refreshProfileUI, saveProfile, showAchievements } from '../profile/profile';
+import {
+  AVATAR_OPTIONS,
+  DEFAULT_AVATAR,
+  GENDER_OPTIONS,
+  MOOD_ICON_OPTIONS,
+  genderIcon,
+  levelOf,
+  PROFILE,
+  refreshProfileUI,
+  saveProfile,
+  setters,
+  showAchievements,
+} from '../profile/profile';
 import { startSingle } from '../game/setup';
 
 /* ---- 大厅选择状态（原版全局变量，仅本模块写入，其他模块只读） ---- */
@@ -37,7 +50,8 @@ export function renderGradePicker(): void {
   if (!grades.includes(SELECTED_GRADE)) SELECTED_GRADE = grades[0];
   grid.innerHTML = grades
     .map((g) => {
-      const n = (QUESTION_BANK[g] || []).length;
+      // 题数来自年级清单（内置）+ 外部导入，无需加载题目本身
+      const n = builtinCount(g) + (EXTERNAL_STATS[g] || 0);
       const cn = charPoolForGrade(g).length;
       return `<button class="opt-btn ${g === SELECTED_GRADE ? 'active' : ''}" data-grade="${g}">${g}<small>${n}题 · ${cn}角色</small></button>`;
     })
@@ -203,16 +217,7 @@ export function bindLobbyEvents(): void {
     renderFactionPicker();
     renderCharPicker();
   });
-  document.getElementById('playerCountPicker')!.addEventListener('click', (e) => {
-    const b = (e.target as HTMLElement).closest('.opt-btn') as HTMLElement | null;
-    if (!b) return;
-    Sound.play('click');
-    document.querySelectorAll('#playerCountPicker .opt-btn').forEach((x) => x.classList.remove('active'));
-    b.classList.add('active');
-    SELECTED_COUNT = Number(b.dataset.count);
-    updateAIHint();
-    renderRolePicker();
-  });
+  // 玩家总数改为滑块（见 bindCountSlider）
   document.getElementById('modePicker')!.addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest('.opt-btn') as HTMLElement | null;
     if (!b) return;
@@ -243,9 +248,14 @@ function memberListHtml(members: RoomStateLike['members'], currentCount: number,
     const pf = m.profile;
     const lv = pf ? levelOf(pf.score || 0).n : '未同步';
     const safeName = escapeHtml(m.name || '玩家');
+    // 个性化：头像 / 性别 / 心情（未同步档案时用默认）
+    const av = pf?.avatar || DEFAULT_AVATAR;
+    const gd = genderIcon(pf?.gender ?? 'hidden');
+    const mood = pf?.mood ? `<span class="rm-mood">${pf.moodIcon || '🙂'} ${escapeHtml(pf.mood)}</span>` : '';
     h += `<div class="rm-item ${isHost ? 'host' : ''}" onclick="viewMemberProfile('${safeName}',${m.profile ? JSON.stringify(m.profile).replace(/"/g, '&quot;') : 'null'})">
-      <span class="rm-avatar">${icon}</span>
-      <span class="rm-name">${safeName}</span>
+      <span class="rm-avatar">${av}</span>
+      <span class="rm-name">${safeName} <span class="rm-gender">${gd}</span>${mood}</span>
+      <span class="rm-hosticon">${icon}</span>
       <span class="rm-lv">${lv}</span>
       <span class="rm-tag ${tc}">${tag}</span>
     </div>`;
@@ -313,14 +323,14 @@ export function updateBankInfo(): void {
   const parts: string[] = [];
   grades.forEach((g) => {
     const ext = EXTERNAL_STATS[g] || 0;
-    const total = (QUESTION_BANK[g] || []).length;
-    const builtin = Math.max(0, total - ext);
+    const builtin = builtinCount(g);
     tb += builtin;
     te += ext;
-    parts.push(`${g}:${builtin}${ext ? '+' + ext : ''}`);
+    parts.push(`${g}:${builtin}${ext ? '+' + ext : ''}${isGradeLoaded(g) ? '' : '·'}`);
   });
   bi.innerHTML = `年级：<b>${grades.length}</b> 个 ｜ 内置 <b>${tb}</b> 题 ｜ 外部 <b style="color:#8fd0ff">${te}</b> 题<br>
-    <span style="font-size:10px;line-height:1.6">${parts.join('　')}</span>`;
+    <span style="font-size:10px;line-height:1.6">${parts.join('　')}</span>
+    <span style="font-size:10px;color:var(--muted)">（按年级懒加载，开局时按需载入选中的年级；带 · 表示尚未加载）</span>`;
 }
 
 export function loadBankFromUrlInput(): void {
@@ -357,17 +367,117 @@ export function importQuestionBank(event: Event): void {
 export function clearExternalBank(): void {
   if (!confirm('确认清空所有外部题库（URL / 本地导入）？')) return;
   for (const g of Object.keys(QUESTION_BANK)) {
-    const builtin = BUILTIN_QUESTION_BANK[g] || [];
-    if (!builtin.length) {
+    const n = builtinCount(g);
+    if (n && isGradeLoaded(g)) {
+      // 已加载年级：内置题始终排在数组前 n 位，其后为外部导入题
+      QUESTION_BANK[g] = QUESTION_BANK[g].slice(0, n);
+    } else {
+      // 未加载（全为外部题）或纯外部年级：整级移除，下次用时再懒加载
       delete QUESTION_BANK[g];
-      continue;
     }
-    const set = new Set(builtin.map((q) => q.q));
-    QUESTION_BANK[g] = QUESTION_BANK[g].filter((q) => set.has(q.q));
   }
   resetExternalStats();
   updateBankInfo();
   renderGradePicker();
+}
+
+/* ==================== 个性化资料（昵称 / 头像 / 性别 / 心情） ==================== */
+export function renderProfileEditor(): void {
+  const box = document.getElementById('profileEditor');
+  if (!box) return;
+  const avatars = AVATAR_OPTIONS.map(
+    (a) =>
+      `<div class="pick-item ${a === PROFILE.avatar ? 'selected' : ''}" onclick="selectAvatar('${a}')">${a}</div>`,
+  ).join('');
+  const genders = GENDER_OPTIONS.map(
+    (g) =>
+      `<div class="pick-item pick-wide ${g.value === PROFILE.gender ? 'selected' : ''}" onclick="selectGender('${g.value}')">${g.icon} ${g.label}</div>`,
+  ).join('');
+  const icons = MOOD_ICON_OPTIONS.map(
+    (i) =>
+      `<div class="pick-item ${i === PROFILE.moodIcon ? 'selected' : ''}" onclick="selectMoodIcon('${i}')">${i}</div>`,
+  ).join('');
+  box.innerHTML = `
+    <div class="pe-row">
+      <label class="pe-label">昵称</label>
+      <input type="text" id="profileNameInput" class="pe-input" maxlength="12" placeholder="给自己起个名字" value="${escapeHtml(PROFILE.name || '')}">
+    </div>
+    <div class="pe-row"><label class="pe-label">头像</label><div class="pick-grid" id="avatarGrid">${avatars}</div></div>
+    <div class="pe-row"><label class="pe-label">性别</label><div class="pick-grid pick-grid-3">${genders}</div></div>
+    <div class="pe-row">
+      <label class="pe-label">心情</label>
+      <input type="text" id="moodInput" class="pe-input" maxlength="24" placeholder="一句话心情（联机可见）" value="${escapeHtml(PROFILE.mood || '')}">
+    </div>
+    <div class="pe-row"><label class="pe-label">心情图标</label><div class="pick-grid" id="moodIconGrid">${icons}</div></div>
+  `;
+  const nameEl = document.getElementById('profileNameInput') as HTMLInputElement | null;
+  nameEl?.addEventListener('input', () => {
+    const v = (nameEl.value || '').trim().slice(0, 12);
+    if (v) {
+      setters.setName(v);
+      syncNameInputs(false);
+      refreshProfileUI();
+    }
+  });
+  const moodEl = document.getElementById('moodInput') as HTMLInputElement | null;
+  moodEl?.addEventListener('input', () => {
+    setters.setMood(moodEl.value || '');
+    refreshProfileUI();
+  });
+}
+
+export function selectAvatar(v: string): void {
+  Sound.play('click');
+  setters.setAvatar(v);
+  renderProfileEditor();
+  refreshProfileUI();
+}
+
+export function selectGender(v: Gender): void {
+  Sound.play('click');
+  setters.setGender(v);
+  renderProfileEditor();
+  refreshProfileUI();
+}
+
+export function selectMoodIcon(v: string): void {
+  Sound.play('click');
+  setters.setMoodIcon(v);
+  renderProfileEditor();
+  refreshProfileUI();
+}
+
+/** 同步昵称到联机配置/加入房间的输入框（skipSelf 用于编辑自身输入框时不打断输入） */
+export function syncNameInputs(skipSelf = true): void {
+  if (!skipSelf) {
+    /* noop：自身输入框无需同步 */
+  }
+  ['nicknameInput', 'joinNick'].forEach((id) => {
+    const el = document.getElementById(id) as HTMLInputElement | null;
+    if (el) el.value = PROFILE.name || '玩家';
+  });
+}
+
+/* ==================== 玩家总数滑块 ==================== */
+export function setPlayerCount(n: number): void {
+  const v = Math.max(2, Math.min(8, Math.round(n)));
+  SELECTED_COUNT = v;
+  const slider = document.getElementById('countSlider') as HTMLInputElement | null;
+  if (slider) slider.value = String(v);
+  const label = document.getElementById('countValue');
+  if (label) label.textContent = v + ' 人';
+  updateAIHint();
+  renderRolePicker();
+  Sound.play('click');
+}
+
+export function bindCountSlider(): void {
+  const slider = document.getElementById('countSlider') as HTMLInputElement | null;
+  if (!slider) return;
+  slider.value = String(SELECTED_COUNT);
+  slider.addEventListener('input', () => {
+    setPlayerCount(Number(slider.value));
+  });
 }
 
 /* ==================== 昵称持久化 ==================== */
@@ -381,6 +491,9 @@ export function bindNicknamePersistence(): void {
       if (v) {
         PROFILE.name = v;
         saveProfile();
+        const pe = document.getElementById('profileNameInput') as HTMLInputElement | null;
+        if (pe) pe.value = v;
+        refreshProfileUI();
       }
     });
   });

@@ -1,8 +1,10 @@
 /* ==================== 开局装配 / 启动 ==================== */
-import type { Character, Player, Role } from '../core/types';
+import type { Character, Player, PlayerIdentity, Role } from '../core/types';
 import { G, quizStats } from './state';
 import { FACTIONS } from '../data/factions';
-import { ROLES, ROLE_CONFIG, charPoolForGrade } from '../data/characters';import { buildDeck, shuffle } from '../data/cards';
+import { ROLES, ROLE_CONFIG, charPoolForGrade } from '../data/characters';
+import { buildDeck, shuffle } from '../data/cards';
+import { loadGrade } from '../data/questionBank';
 import { drawCards } from './rules';
 import { addChat, resetChatMessages } from './chat';
 import { addLog, resetPlayLog } from './log';
@@ -20,7 +22,13 @@ import {
   pickRandomCharIfNotChosen,
 } from '../ui/lobby';
 import { NET, NET_PLAYER_NAMES } from '../net/network';
-import { PROFILE, refreshProfileUI, saveProfile } from '../profile/profile';
+import {
+  identityFromProfile,
+  localIdentity,
+  PROFILE,
+  refreshProfileUI,
+  saveProfile,
+} from '../profile/profile';
 import { Sound } from '../core/sound';
 
 function setupPlayers(playerCount: number, localChar: Character, localName: string): void {
@@ -51,7 +59,15 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   resetChatMessages();
   clearRoleMarks();
 
-  const newPlayer = (id: number, name: string, char: Character, role: Role, isAI: boolean, peerId: string | null): Player => {
+  const newPlayer = (
+    id: number,
+    name: string,
+    char: Character,
+    role: Role,
+    isAI: boolean,
+    peerId: string | null,
+    identity: PlayerIdentity | null = null,
+  ): Player => {
     let skills = [...char.skills];
     if (role === 'lord') {
       const ls = FACTIONS[char.faction].lordSkill;
@@ -61,6 +77,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       id,
       name,
       avatar: char.avatar,
+      identity,
       subject: char.subject,
       charId: char.id,
       faction: char.faction,
@@ -84,18 +101,26 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     };
   };
 
-  G.players.push(newPlayer(0, localName, localChar, roles[0], false, NET.isHost ? NET.myPeerId : null));
+  G.players.push(
+    newPlayer(0, localName, localChar, roles[0], false, NET.isHost ? NET.myPeerId : null, localIdentity()),
+  );
   const remoteIds = NET.isHost ? Object.keys(NET.playerConns) : [];
   for (let i = 1; i < playerCount; i++) {
     let name: string,
       char: Character,
       isAI: boolean,
-      peerId: string | null;
+      peerId: string | null,
+      identity: PlayerIdentity | null = null;
     if (i - 1 < remoteIds.length) {
       const conn = NET.playerConns[remoteIds[i - 1]];
       const rawName = conn?.metadata?.name;
-      name = (typeof rawName === 'string' && rawName) || '玩家' + i;
       peerId = remoteIds[i - 1];
+      // 远程玩家的个性化身份：优先用其同步来的档案
+      const member = NET.roomMembers.find((m) => m.peerId === peerId);
+      identity =
+        identityFromProfile(member?.profile ?? null) ??
+        (typeof rawName === 'string' && rawName ? { ...localIdentity(), name: rawName } : null);
+      name = identity?.name || (typeof rawName === 'string' && rawName) || '玩家' + i;
       char = aiChars[(i - 1) % Math.max(1, aiChars.length)];
       isAI = false;
     } else {
@@ -104,7 +129,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       isAI = true;
       peerId = null;
     }
-    G.players.push(newPlayer(i, name, char, roles[i], isAI, peerId));
+    G.players.push(newPlayer(i, name, char, roles[i], isAI, peerId, identity));
   }
   G.players.forEach((p) => drawCards(p, 4));
   G.current = G.players.findIndex((p) => p.role === 'lord');
@@ -122,6 +147,7 @@ export async function startSingle(): Promise<void> {
   Sound.init();
   pickRandomCharIfNotChosen();
   ensureCharValid();
+  await loadGrade(SELECTED_GRADE); // 按需载入选定年级题库
   const localChar = SELECTED_CHAR!;
   const nickname = readNickname('你');
   if (nickname) {
@@ -148,6 +174,7 @@ export async function hostStartGame(): Promise<void> {
   Sound.init();
   pickRandomCharIfNotChosen();
   ensureCharValid();
+  await loadGrade(SELECTED_GRADE); // 按需载入选定年级题库
   const localChar = SELECTED_CHAR!;
   const nick = readNickname('房主');
   if (nick) {

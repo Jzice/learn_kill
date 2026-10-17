@@ -86,12 +86,46 @@ await page.goto(url, { waitUntil: 'networkidle' });
 // 1. 大厅
 const lobbyOk = await page.isVisible('#screenLobby.active #profileCard .profile-card');
 check('大厅渲染（档案卡）', lobbyOk);
+
+// 1.1 个性化资料面板（头像 / 性别 / 心情）
+const pickItems = await page.locator('#profileEditor .pick-item').count();
+check('个性化资料面板（头像+性别+心情图标）', pickItems >= 36, `${pickItems} 个可选项`);
+await page.fill('#profileNameInput', '小明同学');
+await page.fill('#moodInput', '今天也要元气满满');
+await page.locator('#profileEditor .pick-item').nth(1).click(); // 选一个头像
+await page.locator('#profileEditor .pick-grid-3 .pick-item').first().click(); // 选性别：男生
+await page.locator('#moodIconGrid .pick-item').nth(2).click(); // 选心情图标
+const cardText = await page.textContent('#profileCard');
+check(
+  '档案卡反映个性化设置',
+  !!cardText && cardText.includes('小明同学') && cardText.includes('今天也要元气满满'),
+  (cardText || '').replace(/\s+/g, ' ').slice(0, 60),
+);
+const moodSaved = await page.evaluate(() =>
+  JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}').mood,
+);
+check('个性化资料已持久化到 localStorage', moodSaved === '今天也要元气满满', String(moodSaved));
+
+// 1.2 玩家总数滑块
+const sliderOk = await page.locator('#countSlider').count();
+check('人数滑块存在', sliderOk === 1);
+await page.fill('#countSlider', '6');
+await page.waitForTimeout(200);
+const countLabel = await page.textContent('#countValue');
+const aiHint = await page.textContent('#aiCountHint');
+check('滑块设置人数', (countLabel || '').includes('6'), `${countLabel} / ${aiHint}`);
+const roleCards = await page.locator('#rolePicker .role-card').count();
+check('滑块联动身份可选范围', roleCards >= 4, `${roleCards} 个身份卡`);
+await page.fill('#countSlider', '4'); // 复位为 4 人局以便后续断言
+await page.waitForTimeout(200);
 const gradeBtns = await page.locator('#gradePicker .opt-btn').count();
 check('年级选择器', gradeBtns === 12, `${gradeBtns} 个年级`);
 const charCards = await page.locator('#charGrid .char-card').count();
 check('角色卡渲染', charCards > 0, `${charCards} 名角色`);
 const bankInfo = await page.textContent('#bankInfo');
 check('题库信息', !!bankInfo && bankInfo.includes('内置'), bankInfo?.slice(0, 40));
+
+await page.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-lobby.png'), fullPage: true });
 
 // 2. 开始单机对局
 await page.click('#startBtn');
@@ -107,6 +141,14 @@ await page.click('#rulesModal .rules-close');
 
 const seats = await page.locator('#seatRing .p-card').count();
 check('座位渲染（4人局）', seats === 4, `${seats} 个座位`);
+
+// 座位卡展示个性化信息（自定义头像 + 心情）
+const selfCard = await page.locator('#seatRing .p-card.is-self').first().innerHTML();
+check(
+  '座位卡展示个性化信息',
+  selfCard.includes('今天也要元气满满') && !!selfCard.match(/class="pmood"/),
+  selfCard.includes('今天也要元气满满') ? '含心情文案' : '缺少心情文案',
+);
 
 // 4. 若弹出答题则答第一项
 let quizAnswered = false;

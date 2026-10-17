@@ -17,6 +17,7 @@ import { sendChat } from './game/chat';
 import { closeDock, openDock, sendChatFromMobile } from './ui/dock';
 import { closeRules, openRules, switchRulesTab } from './ui/modals';
 import {
+  bindCountSlider,
   bindLobbyEvents,
   bindNicknamePersistence,
   clearExternalBank,
@@ -26,10 +27,15 @@ import {
   renderCharPicker,
   renderFactionPicker,
   renderGradePicker,
+  renderProfileEditor,
   renderRolePicker,
+  selectAvatar,
   selectChar,
   selectFaction,
+  selectGender,
+  selectMoodIcon,
   selectRole,
+  setPlayerCount,
   updateAIHint,
   updateBankInfo,
   updateLobbyMode,
@@ -67,6 +73,10 @@ window.handleLocalChoice = handleLocalChoice;
 window.loadBankFromUrlInput = loadBankFromUrlInput;
 window.importQuestionBank = importQuestionBank;
 window.clearExternalBank = clearExternalBank;
+window.selectAvatar = selectAvatar;
+window.selectGender = selectGender;
+window.selectMoodIcon = selectMoodIcon;
+window.setPlayerCount = setPlayerCount;
 window.selectRole = selectRole;
 window.selectFaction = (k: string) => selectFaction(k as FactionId);
 window.selectChar = selectChar;
@@ -74,7 +84,9 @@ window.selectChar = selectChar;
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
   bindLobbyEvents();
+  bindCountSlider();
   refreshProfileUI();
+  renderProfileEditor();
   bindNicknamePersistence();
   ensureCharValid();
   renderGradePicker();

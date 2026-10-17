@@ -1,5 +1,12 @@
 /* ==================== 个人档案 / 成就 / 结算 ==================== */
-import type { Achievement, Level, Profile, PublicProfile } from '../core/types';
+import type {
+  Achievement,
+  Gender,
+  Level,
+  PlayerIdentity,
+  Profile,
+  PublicProfile,
+} from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { SUBJECT_ICON } from '../data/factions';
 import { G, quizStats } from '../game/state';
@@ -7,6 +14,37 @@ import { addLog } from '../game/log';
 import { NET } from '../net/network';
 
 const PROFILE_KEY = 'xuetangsha_profile_v1';
+
+/* ==================== 个性化选项 ==================== */
+export const DEFAULT_AVATAR = '🧑‍🎓';
+export const DEFAULT_MOOD_ICON = '🙂';
+
+/** 可选头像（emoji） */
+export const AVATAR_OPTIONS: string[] = [
+  '🧑‍🎓','👦','👧','🧒','👨‍🏫','👩‍🏫','🧑‍🏫','👨‍🎓','👩‍🎓','🧑‍🔬','👨‍🔬','👩‍🔬',
+  '🧑‍🎨','👨‍🎤','🧑‍💻','🦸','🦹','🧙','🧝','🤴','👸','🥷','🕵️','🧑‍🚀',
+];
+
+/** 可选心情图标（emoji） */
+export const MOOD_ICON_OPTIONS: string[] = [
+  '🙂','😀','😎','🤔','😤','🥳','😴','🤯','🥰','😭','🤡','👻',
+  '💪','🔥','🌟','🍀','🎯','📚','✏️','🎧','☕','🌙','⚡','🏆',
+];
+
+/** 性别选项：值 / 显示名 / 图标 */
+export const GENDER_OPTIONS: { value: Gender; label: string; icon: string }[] = [
+  { value: 'male', label: '男生', icon: '👦' },
+  { value: 'female', label: '女生', icon: '👧' },
+  { value: 'hidden', label: '保密', icon: '🕶️' },
+];
+
+export function genderIcon(g: Gender): string {
+  return GENDER_OPTIONS.find((x) => x.value === g)?.icon ?? '🕶️';
+}
+
+export function genderLabel(g: Gender): string {
+  return GENDER_OPTIONS.find((x) => x.value === g)?.label ?? '保密';
+}
 
 const LEVELS: Level[] = [
   { n: '蒙童', min: 0 },
@@ -50,6 +88,10 @@ function defaultProfile(): Profile {
     maxCombo: 0,
     achievements: {},
     subjects: {},
+    avatar: DEFAULT_AVATAR,
+    gender: 'hidden',
+    mood: '',
+    moodIcon: DEFAULT_MOOD_ICON,
   };
 }
 
@@ -61,6 +103,11 @@ function loadProfile(): Profile {
       return Object.assign(defaultProfile(), p, {
         achievements: p.achievements || {},
         subjects: p.subjects || {},
+        // 兼容旧档案：补齐个性化字段
+        avatar: p.avatar || DEFAULT_AVATAR,
+        gender: p.gender ?? 'hidden',
+        mood: typeof p.mood === 'string' ? p.mood : '',
+        moodIcon: p.moodIcon || DEFAULT_MOOD_ICON,
       });
     }
   } catch (e) {
@@ -97,6 +144,10 @@ export function nextLevelOf(score: number): Level | null {
 export function publicProfile(): PublicProfile {
   return {
     name: PROFILE.name,
+    avatar: PROFILE.avatar || DEFAULT_AVATAR,
+    gender: PROFILE.gender ?? 'hidden',
+    mood: PROFILE.mood || '',
+    moodIcon: PROFILE.moodIcon || DEFAULT_MOOD_ICON,
     score: PROFILE.score,
     games: PROFILE.games,
     wins: PROFILE.wins,
@@ -106,6 +157,57 @@ export function publicProfile(): PublicProfile {
     bestStreak: PROFILE.bestStreak || 0,
   };
 }
+
+/** 本人的个性化身份（用于写入 Player.identity） */
+export function localIdentity(): PlayerIdentity {
+  return {
+    name: PROFILE.name || '玩家',
+    avatar: PROFILE.avatar || DEFAULT_AVATAR,
+    gender: PROFILE.gender ?? 'hidden',
+    mood: PROFILE.mood || '',
+    moodIcon: PROFILE.moodIcon || DEFAULT_MOOD_ICON,
+  };
+}
+
+/** 由联机同步来的档案还原个性化身份 */
+export function identityFromProfile(p: PublicProfile | null): PlayerIdentity | null {
+  if (!p) return null;
+  return {
+    name: p.name || '玩家',
+    avatar: p.avatar || DEFAULT_AVATAR,
+    gender: p.gender ?? 'hidden',
+    mood: p.mood || '',
+    moodIcon: p.moodIcon || DEFAULT_MOOD_ICON,
+  };
+}
+
+/* ==================== 个性化资料编辑 ==================== */
+function setName(v: string): void {
+  PROFILE.name = v.slice(0, 12);
+  saveProfile();
+}
+
+function setAvatar(v: string): void {
+  PROFILE.avatar = v;
+  saveProfile();
+}
+
+function setGender(v: Gender): void {
+  PROFILE.gender = v;
+  saveProfile();
+}
+
+function setMood(v: string): void {
+  PROFILE.mood = v.slice(0, 24);
+  saveProfile();
+}
+
+function setMoodIcon(v: string): void {
+  PROFILE.moodIcon = v;
+  saveProfile();
+}
+
+export const setters = { setName, setAvatar, setGender, setMood, setMoodIcon };
 
 export function achCount(p: Profile | PublicProfile): number {
   return Object.keys((p && p.achievements) || {}).length;
@@ -123,12 +225,14 @@ export function refreshProfileUI(): void {
     barPct = Math.max(2, Math.min(100, Math.round(((PROFILE.score - base) / span) * 100)));
   }
   const wr = PROFILE.games ? Math.round((PROFILE.wins / PROFILE.games) * 100) : 0;
+  const idtip = PROFILE.mood ? ` ${PROFILE.moodIcon} ${escapeHtml(PROFILE.mood)}` : '';
   el.innerHTML = `<div class="profile-card">
-    <div class="profile-avatar">${lv.n.slice(0, 1)}</div>
+    <div class="profile-avatar">${PROFILE.avatar || DEFAULT_AVATAR}</div>
     <div class="profile-main">
-      <div class="profile-name">${escapeHtml(PROFILE.name || '玩家')}</div>
+      <div class="profile-name">${escapeHtml(PROFILE.name || '玩家')} <span class="profile-gender">${genderIcon(PROFILE.gender ?? 'hidden')}</span></div>
       <div class="profile-level">${lv.n} · 积分 ${PROFILE.score}${nx ? ` / ${nx.min}` : ''}</div>
       <div class="profile-bar"><i style="width:${barPct}%"></i></div>
+      ${idtip ? `<div class="profile-mood">${idtip}</div>` : ''}
       <div class="profile-stats">对局 ${PROFILE.games} ｜ 胜场 ${PROFILE.wins}（${wr}%）｜ 最高连胜 ${PROFILE.bestStreak} ｜ 答对 ${PROFILE.correctQuiz} 题 ｜ 成就 ${achCount(PROFILE)}/${ACHIEVEMENTS.length}</div>
     </div>
     <button class="btn btn-sm" onclick="showAchievements(PROFILE,'我的成就')">🏅 查看成就</button>
@@ -138,6 +242,10 @@ export function refreshProfileUI(): void {
 export function showAchievements(p: Profile | PublicProfile, title: string): void {
   document.getElementById('profileModalTitle')!.textContent = title || '成就';
   const lv = levelOf(p.score || 0);
+  const avatar = (p as PublicProfile).avatar || DEFAULT_AVATAR;
+  const gender = (p as PublicProfile).gender ?? 'hidden';
+  const mood = (p as PublicProfile).mood || '';
+  const moodIcon = (p as PublicProfile).moodIcon || DEFAULT_MOOD_ICON;
   const grid = ACHIEVEMENTS.map((a) => {
     const un = !!(p.achievements && p.achievements[a.id]);
     return `<div class="ach-item ${un ? 'unlocked' : ''}"><div class="ach-icon">${a.icon}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
@@ -149,7 +257,7 @@ export function showAchievements(p: Profile | PublicProfile, title: string): voi
     .join('');
   document.getElementById('profileModalBody')!.innerHTML = `
     <div class="rule-section" style="padding:10px;background:rgba(0,0,0,.25);border-radius:8px;border-left:3px solid var(--gold);margin-bottom:10px">
-      <div style="font-size:15px;color:var(--gold);font-weight:700">${escapeHtml(p.name || '玩家')}</div>
+      <div style="font-size:15px;color:var(--gold);font-weight:700">${avatar} ${escapeHtml(p.name || '玩家')} <span style="font-size:12px">${genderIcon(gender)}</span>${mood ? `<span style="font-size:12px;color:var(--muted)"> ${moodIcon} ${escapeHtml(mood)}</span>` : ''}</div>
       <div style="font-size:11.5px;color:#8fd0ff;margin-top:3px">等级：${lv.n} ｜ 积分：${p.score || 0} ｜ 对局：${p.games || 0} ｜ 胜场：${p.wins || 0} ｜ 答对：${p.correctQuiz || 0} 题</div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.9">${subHtml}</div>
     </div>

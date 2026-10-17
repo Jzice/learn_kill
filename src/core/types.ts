@@ -28,6 +28,17 @@ export type LogAction =
 export type ChatKind = 'ai' | 'self' | 'sys';
 export type NetMode = 'single' | 'host' | 'join';
 export type EquipSlot = 'weapon' | 'armor' | 'horsePlus' | 'horseMinus';
+/** 玩家自选性别（仅用于个性化展示，不影响玩法） */
+export type Gender = 'male' | 'female' | 'hidden';
+
+/** 玩家个性化身份信息（昵称/头像/性别/心情），联机时同步给其他玩家 */
+export interface PlayerIdentity {
+  name: string;
+  avatar: string;
+  gender: Gender;
+  mood: string;
+  moodIcon: string;
+}
 
 export interface Skill {
   id: string;
@@ -106,7 +117,10 @@ export interface PlayerFlags {
 export interface Player {
   id: number;
   name: string;
+  /** 角色头像（AI 用；真人若设置了自定义头像则优先展示自定义） */
   avatar: string;
+  /** 个性化身份（真人玩家有值，AI 为 null） */
+  identity: PlayerIdentity | null;
   subject: string;
   charId: string;
   faction: FactionId;
@@ -196,10 +210,14 @@ export interface Profile {
   maxCombo: number;
   achievements: Record<string, number>;
   subjects: Record<string, number>;
+  /** 个性化：头像 / 性别 / 心情 / 心情图标 */
+  avatar: string;
+  gender: Gender;
+  mood: string;
+  moodIcon: string;
 }
 
-export interface PublicProfile {
-  name: string;
+export interface PublicProfile extends PlayerIdentity {
   score: number;
   games: number;
   wins: number;

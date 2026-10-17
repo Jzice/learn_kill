@@ -3,8 +3,7 @@ import type { Player, Question } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS, SUBJECT_ICON } from '../data/factions';
-import { QUESTION_BANK } from '../data/questionBank';
-import { sortedGrades } from '../data/grades';
+import { QUESTION_BANK, loadGrade, sortedGrades } from '../data/questionBank';
 import { G, quizStats } from './state';
 import { addPlayLog } from './log';
 import { drawCards } from './rules';
@@ -14,18 +13,20 @@ import { aiQuiz } from './ai';
 
 let quizResolve: ((v: boolean) => void) | null = null;
 
-function currentBank(): Question[] {
+/** 取当前年级题库（若尚未加载则动态加载），无题时回退到首个有题的年级 */
+async function currentBank(): Promise<Question[]> {
+  await loadGrade(G.grade);
   const b = QUESTION_BANK[G.grade];
   if (b && b.length) return b;
-  const gs = sortedGrades();
-  for (const g of gs) {
+  for (const g of sortedGrades()) {
+    await loadGrade(g);
     if (QUESTION_BANK[g] && QUESTION_BANK[g].length) return QUESTION_BANK[g];
   }
   return [];
 }
 
-export function pickQ(p?: Player): Question {
-  const bank = currentBank();
+export async function pickQ(p?: Player): Promise<Question> {
+  const bank = await currentBank();
   if (!bank.length)
     return { s: '综合', kp: '综合', q: '（题库为空，请先导入题库）', o: ['继续', '跳过'], a: 0 };
   if (p) {
@@ -99,21 +100,18 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
   });
 }
 
-export function askQuiz(player: Player, isSkill = false): Promise<boolean> {
-  const q = pickQ(player);
+export async function askQuiz(player: Player, isSkill = false): Promise<boolean> {
+  const q = await pickQ(player);
   return displayQuiz(q, player, isSkill);
 }
 
 let quizSeq = 0;
 
-function askQuizRemote(player: Player, isSkill: boolean): Promise<boolean> {
+async function askQuizRemote(player: Player, isSkill: boolean): Promise<boolean> {
+  const conn = NET.playerConns[player.peerId!];
+  if (!conn) return aiQuiz(0.6);
+  const q = await pickQ(player);
   return new Promise((resolve) => {
-    const conn = NET.playerConns[player.peerId!];
-    if (!conn) {
-      resolve(aiQuiz(0.6));
-      return;
-    }
-    const q = pickQ(player);
     const quizId = ++quizSeq;
     const entry: PendingQuiz = { resolve, player, q, quizId, timer: null };
     entry.timer = setTimeout(() => {

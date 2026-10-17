@@ -3,6 +3,8 @@ import type { Player } from '../core/types';
 import { G } from '../game/state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_ICON, EQUIP_SHORT } from '../data/characters';
+import { genderIcon } from '../profile/profile';
+import { escapeHtml } from '../core/dom';
 import { displayOrder, handLimit } from '../game/rules';
 import { isCardClickable, cardClickHint } from './hand';
 import { ROLE_MARKS } from '../game/marks';
@@ -54,6 +56,14 @@ function buildPlayerCard(p: Player, i: number): string {
   const judgeTags = p.judge.map((j) => `<span class="judge-tag">${JUDGE_ICON[j.judgeType || ''] || '❓'}${j.name}</span>`).join('');
   const isSelf = i === G.myPlayerIdx;
   const aiTag = p.isAI ? '<span style="font-size:8px;color:#8a8070;">[AI]</span>' : '';
+  // 个性化：真人玩家优先展示其自定义头像 / 性别 / 心情
+  const idt = p.identity;
+  const shownAvatar = idt?.avatar || p.avatar;
+  const genderIconHtml = idt ? `<span class="p-gender">${genderIcon(idt.gender)}</span>` : '';
+  const moodHtml =
+    idt && idt.mood
+      ? `<div class="pmood" title="${escapeHtml(idt.mood)}">${idt.moodIcon} ${escapeHtml(idt.mood)}</div>`
+      : '';
   let badges = '';
   if (!p.alive && p.roleRevealed) badges += `<span class="badge badge-reveal">☠ ${ROLES[p.role].name}</span>`;
   if ((p.shield || 0) > 0) badges += `<span class="badge badge-shield">🛡️${p.shield}</span>`;
@@ -65,7 +75,7 @@ function buildPlayerCard(p: Player, i: number): string {
     <div class="faction-icon" style="border-color:${fColor};color:${fColor};">${faction.icon}</div>
     ${markBtn}
     ${markHtml}
-    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${p.avatar}</div><div class="pname-block"><div class="pname">${p.name} ${aiTag}</div><div class="prole" style="color:${roleColor}">${p.roleRevealed ? '【' + ROLES[p.role].name + '】' : '身份未知'} · <span style="color:${fColor};">${faction.name}</span></div></div></div>
+    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${p.name} ${genderIconHtml}${aiTag}</div><div class="prole" style="color:${roleColor}">${p.roleRevealed ? '【' + ROLES[p.role].name + '】' : '身份未知'} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
     <div class="pknow">🔮${p.knowledge}</div>
     <div class="php-bar">${hpGems}</div>
     <div class="pequip-slots">${equipSlots}</div>

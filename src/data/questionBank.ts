@@ -1,30 +1,37 @@
-/* ==================== 题库（运行态） ==================== */
-import type { Question, QuestionBank } from '../core/types';
-import { BUILTIN_QUESTION_BANK } from './questionBankData';
+/* ==================== 题库导入 / 合并 / URL 加载 ====================
+ * 年级题目的按需加载见 data/bankLoader.ts（内置题库按年级拆分后动态 import）。
+ * 本模块负责外部题库（本地文件 / URL）的解析与合并，以及运行态题库的写入。
+ */
+import type { Question } from '../core/types';
+import {
+  EXTERNAL_STATS,
+  QUESTION_BANK,
+  builtinCount,
+  ensureGrade,
+  isGradeLoaded,
+  loadGrade,
+  prefetchGrades,
+  resetExternalStats,
+  sortedGrades,
+} from './bankLoader';
 import { SELECTED_GRADE, updateBankInfo, renderGradePicker } from '../ui/lobby';
 
-export { BUILTIN_QUESTION_BANK };
+export {
+  QUESTION_BANK,
+  EXTERNAL_STATS,
+  ensureGrade,
+  resetExternalStats,
+  loadGrade,
+  prefetchGrades,
+  sortedGrades,
+  builtinCount,
+  isGradeLoaded,
+};
 
 /** 外部题库 URL 配置（留空即不加载） */
 export const EXTERNAL_BANK_URLS: string[] = [
   // 'https://example.com/xuetang-sha-bank.json',
 ];
-
-/** 运行态题库：内置题库的深拷贝，外部导入写入此处 */
-export const QUESTION_BANK: QuestionBank = JSON.parse(JSON.stringify(BUILTIN_QUESTION_BANK));
-
-/** 各年级外部导入题数统计 */
-export const EXTERNAL_STATS: Record<string, number> = { total: 0 };
-
-export function resetExternalStats(): void {
-  for (const k of Object.keys(EXTERNAL_STATS)) delete EXTERNAL_STATS[k];
-  EXTERNAL_STATS.total = 0;
-}
-
-export function ensureGrade(grade: string): Question[] {
-  if (!QUESTION_BANK[grade]) QUESTION_BANK[grade] = [];
-  return QUESTION_BANK[grade];
-}
 
 export function addQuestionsToBank(
   qs: unknown,

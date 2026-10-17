@@ -1,6 +1,4 @@
 /* ==================== 年级顺序 ==================== */
-import { QUESTION_BANK } from './questionBank';
-
 export const GRADE_ORDER: string[] = [
   '初一上',
   '初一下',
@@ -19,11 +17,4 @@ export const GRADE_ORDER: string[] = [
 export function gradeSortKey(g: string): number {
   const i = GRADE_ORDER.indexOf(g);
   return i < 0 ? 999 : i;
-}
-
-export function sortedGrades(): string[] {
-  return Object.keys(QUESTION_BANK).sort((a, b) => {
-    const d = gradeSortKey(a) - gradeSortKey(b);
-    return d !== 0 ? d : a.localeCompare(b, 'zh');
-  });
 }

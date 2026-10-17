@@ -20,6 +20,10 @@
     <div id="profileCard"></div>
   </div>
   <div class="panel">
+    <h3>◈ 个性化资料 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（昵称 / 头像 / 性别 / 心情，联机时其他玩家可见）</span></h3>
+    <div id="profileEditor"></div>
+  </div>
+  <div class="panel">
     <h3>◈ 游戏模式 ◈</h3>
     <div class="opt-row" id="modePicker">
       <button class="opt-btn active" data-mode="single">单机对局<small>你 + AI</small></button>
@@ -33,15 +37,12 @@
       <div class="opt-row" id="gradePicker"></div>
     </div>
     <div class="panel">
-      <h3>◈ 玩家总数 ◈</h3>
-      <div class="opt-row" id="playerCountPicker">
-        <button class="opt-btn" data-count="2">2人</button>
-        <button class="opt-btn" data-count="3">3人</button>
-        <button class="opt-btn active" data-count="4">4人</button>
-        <button class="opt-btn" data-count="5">5人</button>
-        <button class="opt-btn" data-count="6">6人</button>
-        <button class="opt-btn" data-count="7">7人</button>
-        <button class="opt-btn" data-count="8">8人</button>
+      <h3>◈ 玩家总数 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（拖动滑块选择 2–8 人）</span></h3>
+      <div class="slider-row">
+        <span class="slider-end">2</span>
+        <input type="range" id="countSlider" min="2" max="8" step="1" value="4">
+        <span class="slider-end">8</span>
+        <span class="slider-value" id="countValue">4 人</span>
       </div>
       <div id="aiCountHint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;"></div>
     </div>

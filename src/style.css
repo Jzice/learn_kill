@@ -58,6 +58,13 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .room-member-list .rm-item .rm-lv{font-size:9px;color:#8fd0ff;border:1px solid rgba(68,170,255,.4);border-radius:3px;padding:0 4px;background:rgba(68,170,255,.08)}
 .room-member-list .rm-item .rm-tag{font-size:9px;background:rgba(245,197,66,.15);border:1px solid rgba(245,197,66,.4);color:var(--gold);border-radius:3px;padding:0 4px}
 .room-member-list .rm-item .rm-tag.guest{background:rgba(68,170,255,.1);border-color:rgba(68,170,255,.4);color:#8fd0ff}
+.room-member-list .rm-item .rm-gender{font-size:10px;color:var(--muted)}
+.room-member-list .rm-item .rm-mood{display:block;font-size:9.5px;color:#f0d9a0;line-height:1.3}
+.room-member-list .rm-item .rm-hosticon{font-size:11px}
+
+/* 座位卡上的个性化信息 */
+.p-gender{font-size:9px;color:var(--muted);margin-left:1px}
+.pmood{font-size:8px;color:#f0d9a0;line-height:1.2;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78px}
 
 /* 档案 */
 .profile-card{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -66,6 +73,30 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .profile-name{font-size:15px;color:var(--gold);font-weight:700;letter-spacing:1px}
 .profile-level{font-size:11px;color:#8fd0ff;margin-top:2px}
 .profile-stats{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.6}
+.profile-gender{font-size:12px;color:var(--muted)}
+.profile-mood{font-size:11px;color:#f0d9a0;margin-top:3px}
+
+/* 个性化资料编辑 */
+.pe-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.pe-label{font-size:11px;color:var(--gold);flex:0 0 56px;padding-top:5px;letter-spacing:1px}
+.pe-input{flex:1;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;font-family:inherit}
+.pe-input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 8px rgba(245,197,66,.35)}
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:4px;flex:1}
+.pick-grid-3{grid-template-columns:repeat(3,minmax(60px,1fr))}
+.pick-item{background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid #3a2a1a;border-radius:6px;height:32px;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;transition:all .15s}
+.pick-item:hover{border-color:var(--gold-dim);transform:translateY(-1px)}
+.pick-item.selected{border-color:var(--gold);box-shadow:0 0 10px rgba(245,197,66,.45);background:linear-gradient(160deg,#3a2610,#1a1006)}
+.pick-item.pick-wide{font-size:12px;gap:3px}
+
+/* 玩家总数滑块 */
+.slider-row{display:flex;align-items:center;gap:8px;padding:2px 2px}
+.slider-end{font-size:11px;color:var(--muted);flex-shrink:0}
+.slider-value{font-size:13px;color:var(--gold);font-weight:700;flex:0 0 44px;text-align:right}
+#countSlider{flex:1;-webkit-appearance:none;appearance:none;height:22px;background:transparent;cursor:pointer}
+#countSlider::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#5a3a10,#2a1a10);border:1px solid #3a2a1a}
+#countSlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffe08a,#c99a2e);border:2px solid var(--gold);margin-top:-7px;box-shadow:0 0 10px rgba(245,197,66,.6)}
+#countSlider::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#5a3a10,#2a1a10);border:1px solid #3a2a1a}
+#countSlider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#f5c542;border:2px solid var(--gold);box-shadow:0 0 10px rgba(245,197,66,.6)}
 .profile-bar{height:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden;margin-top:6px;border:1px solid #3a2a1a}
 .profile-bar>i{display:block;height:100%;background:linear-gradient(90deg,#8a6d3b,#f5c542);transition:width .4s}
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
