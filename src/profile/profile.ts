@@ -214,8 +214,6 @@ export function achCount(p: Profile | PublicProfile): number {
 }
 
 export function refreshProfileUI(): void {
-  const el = document.getElementById('profileCard');
-  if (!el) return;
   const lv = levelOf(PROFILE.score),
     nx = nextLevelOf(PROFILE.score);
   let barPct = 100;
@@ -225,7 +223,28 @@ export function refreshProfileUI(): void {
     barPct = Math.max(2, Math.min(100, Math.round(((PROFILE.score - base) / span) * 100)));
   }
   const wr = PROFILE.games ? Math.round((PROFILE.wins / PROFILE.games) * 100) : 0;
-  const idtip = PROFILE.mood ? ` ${PROFILE.moodIcon} ${escapeHtml(PROFILE.mood)}` : '';
+  const avatar = PROFILE.avatar || DEFAULT_AVATAR;
+  const mood = PROFILE.mood || '';
+  const moodIcon = PROFILE.moodIcon || DEFAULT_MOOD_ICON;
+  const idtip = mood ? ` ${moodIcon} ${escapeHtml(mood)}` : '';
+
+  // 主界面名片：只展示设置后的信息
+  const nc = document.getElementById('nameCard');
+  if (nc) {
+    nc.innerHTML = `<div class="name-card">
+      <div class="nc-avatar">${avatar}</div>
+      <div class="nc-main">
+        <div class="nc-name">${escapeHtml(PROFILE.name || '玩家')}<span class="nc-gender">${genderIcon(PROFILE.gender ?? 'hidden')}</span></div>
+        <div class="nc-level">${lv.n} · 积分 ${PROFILE.score}${nx ? ` / ${nx.min}` : ''}</div>
+        ${mood ? `<div class="nc-mood">${moodIcon} ${escapeHtml(mood)}</div>` : ''}
+        <div class="nc-stats">对局 ${PROFILE.games} ｜ 胜率 ${wr}% ｜ 成就 ${achCount(PROFILE)}/${ACHIEVEMENTS.length}</div>
+      </div>
+    </div>`;
+  }
+
+  // 兼容：若页面仍存在旧档案卡容器则一并渲染
+  const el = document.getElementById('profileCard');
+  if (!el) return;
   el.innerHTML = `<div class="profile-card">
     <div class="profile-avatar">${PROFILE.avatar || DEFAULT_AVATAR}</div>
     <div class="profile-main">

@@ -78,11 +78,16 @@ await guest.goto(url, { waitUntil: 'networkidle' });
 
 // 双方先设置个性化资料（昵称 / 头像 / 性别 / 心情）
 async function setupProfile(page, name, mood) {
+  // 个性化资料已移入二级菜单
+  await page.locator('.menu-entry', { hasText: '个性化资料' }).click();
+  await page.waitForSelector('#personaModal.show', { timeout: 3000 });
   await page.fill('#profileNameInput', name);
   await page.fill('#moodInput', mood);
   await page.locator('#profileEditor .pick-item').nth(2).click(); // 头像
   await page.locator('#profileEditor .pick-grid-3 .pick-item').nth(1).click(); // 性别：女生
   await page.locator('#moodIconGrid .pick-item').nth(4).click(); // 心情图标
+  await page.click('#personaModal .menu-footer button');
+  await page.waitForTimeout(200);
 }
 await setupProfile(host, '房主甲', '房主心情：稳住');
 await setupProfile(guest, '客人乙', '客人心情：冲呀');

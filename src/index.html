@@ -13,23 +13,45 @@
 <h1>学堂杀</h1>
 <div class="subtitle">九 科 争 鸣 · 学 科 阵 营</div>
 
-<!-- 大厅 -->
+<!-- 主界面：名片摘要 + 游戏模式 -->
 <div id="screenLobby" class="screen active">
   <div class="panel">
-    <h3>◈ 我的档案 ◈</h3>
-    <div id="profileCard"></div>
+    <h3>◈ 我的名片 ◈</h3>
+    <div id="nameCard"></div>
+    <div class="menu-entries">
+      <button class="menu-entry" onclick="openProfileMenu()">
+        <span class="me-icon">📇</span>
+        <span class="me-text">我的档案<small>积分 · 段位 · 成就</small></span>
+        <span class="me-arrow">›</span>
+      </button>
+      <button class="menu-entry" onclick="openPersonaMenu()">
+        <span class="me-icon">🎨</span>
+        <span class="me-text">个性化资料<small>头像 · 性别 · 心情</small></span>
+        <span class="me-arrow">›</span>
+      </button>
+      <button class="menu-entry" onclick="openBankMenu()">
+        <span class="me-icon">📚</span>
+        <span class="me-text">题库管理<small id="bankEntryHint">—</small></span>
+        <span class="me-arrow">›</span>
+      </button>
+    </div>
   </div>
   <div class="panel">
-    <h3>◈ 个性化资料 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（昵称 / 头像 / 性别 / 心情，联机时其他玩家可见）</span></h3>
-    <div id="profileEditor"></div>
-  </div>
-  <div class="panel">
-    <h3>◈ 游戏模式 ◈</h3>
+    <h3>◈ 选择游戏模式 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（选择后进入对局设置）</span></h3>
     <div class="opt-row" id="modePicker">
       <button class="opt-btn active" data-mode="single">单机对局<small>你 + AI</small></button>
       <button class="opt-btn" data-mode="host">创建房间<small>联机房主</small></button>
       <button class="opt-btn" data-mode="join">加入房间<small>联机玩家</small></button>
     </div>
+    <div class="setup-summary" id="setupSummary"></div>
+  </div>
+</div>
+
+<!-- 子界面：对局设置（选定模式后进入） -->
+<div id="screenSetup" class="screen">
+  <div class="setup-top">
+    <button class="btn btn-sm" onclick="backToLobby()">‹ 返回主界面</button>
+    <span class="setup-title" id="setupTitle">对局设置</span>
   </div>
   <div id="hostConfig">
     <div class="panel">
@@ -56,19 +78,6 @@
       <div id="roomInfo" style="margin-top:8px;font-size:12px;color:var(--gold);"></div>
       <div id="hostMemberList" class="room-member-list" style="display:none"></div>
       <button class="btn btn-accent" style="width:100%;margin-top:8px;display:none" onclick="hostStartGame()" id="hostStartBtn">▶ 开始游戏（AI 补齐空位）</button>
-    </div>
-    <div class="panel">
-      <h3>◈ 题库管理 ◈</h3>
-      <div class="bank-info" id="bankInfo">加载中…</div>
-      <div class="input-row" style="margin-bottom:6px">
-        <input type="text" id="bankUrlInput" placeholder="外部题库 URL（.json 或 .js）">
-      </div>
-      <div class="opt-row" style="margin-bottom:0;flex-wrap:wrap">
-        <button class="btn" style="flex:1" onclick="loadBankFromUrlInput()">🌐 从 URL 加载</button>
-        <button class="btn btn-accent" style="flex:1" onclick="document.getElementById('fileInput').click()">📂 导入本地题库</button>
-        <button class="btn" style="flex:0 0 auto" onclick="clearExternalBank()">🗑️ 清空外部</button>
-      </div>
-      <input type="file" id="fileInput" class="file-input" accept=".json,.js" onchange="importQuestionBank(event)">
     </div>
     <div class="panel">
       <h3>◈ 选择你的身份 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（不选则随机）</span></h3>
@@ -209,11 +218,43 @@
   </div>
 </div>
 
-<!-- 档案 / 成就弹窗 -->
+<!-- 档案 / 成就弹窗（二级菜单） -->
 <div id="profileModal" class="rules-modal">
   <div class="rules-box" style="max-width:540px">
     <div class="rules-header"><span id="profileModalTitle">我的档案</span><button onclick="closeProfileModal()" class="rules-close">✕</button></div>
     <div class="rules-content" id="profileModalBody"></div>
+  </div>
+</div>
+
+<!-- 个性化资料（二级菜单） -->
+<div id="personaModal" class="rules-modal">
+  <div class="rules-box" style="max-width:560px">
+    <div class="rules-header"><span>🎨 个性化资料</span><button onclick="closePersonaMenu()" class="rules-close">✕</button></div>
+    <div class="rules-content">
+      <div style="font-size:10.5px;color:var(--muted);margin-bottom:8px">设置后的信息会展示在主界面名片上，联机时其他玩家也能看到。</div>
+      <div id="profileEditor"></div>
+    </div>
+    <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closePersonaMenu()">完成</button></div>
+  </div>
+</div>
+
+<!-- 题库管理（二级菜单） -->
+<div id="bankModal" class="rules-modal">
+  <div class="rules-box" style="max-width:560px">
+    <div class="rules-header"><span>📚 题库管理</span><button onclick="closeBankMenu()" class="rules-close">✕</button></div>
+    <div class="rules-content">
+      <div class="bank-info" id="bankInfo">加载中…</div>
+      <div class="input-row" style="margin-bottom:6px">
+        <input type="text" id="bankUrlInput" placeholder="外部题库 URL（.json 或 .js）">
+      </div>
+      <div class="opt-row" style="margin-bottom:0;flex-wrap:wrap">
+        <button class="btn" style="flex:1" onclick="loadBankFromUrlInput()">🌐 从 URL 加载</button>
+        <button class="btn btn-accent" style="flex:1" onclick="document.getElementById('fileInput').click()">📂 导入本地题库</button>
+        <button class="btn" style="flex:0 0 auto" onclick="clearExternalBank()">🗑️ 清空外部</button>
+      </div>
+      <input type="file" id="fileInput" class="file-input" accept=".json,.js" onchange="importQuestionBank(event)">
+    </div>
+    <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closeBankMenu()">完成</button></div>
   </div>
 </div>
 

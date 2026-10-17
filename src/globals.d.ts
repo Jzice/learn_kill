@@ -42,6 +42,14 @@ declare global {
     selectGender: (v: 'male' | 'female' | 'hidden') => void;
     selectMoodIcon: (v: string) => void;
     setPlayerCount: (n: number) => void;
+    // 二级菜单 / 对局设置子界面
+    openProfileMenu: () => void;
+    openPersonaMenu: () => void;
+    closePersonaMenu: () => void;
+    openBankMenu: () => void;
+    closeBankMenu: () => void;
+    backToLobby: () => void;
+    enterSetup: (mode: 'single' | 'host' | 'join') => void;
     // 游戏内交互
     clickHandCard: (cardId: number) => void;
     clickTargetSeat: (idx: number) => void;

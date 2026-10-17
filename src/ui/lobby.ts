@@ -146,11 +146,87 @@ export function selectChar(id: string): void {
   renderCharPicker();
 }
 
+/* ==================== 二级菜单 / 子界面导航 ==================== */
+const MODE_TITLE: Record<'single' | 'host' | 'join', string> = {
+  single: '单机对局设置',
+  host: '联机房主设置',
+  join: '加入房间',
+};
+
+/** 进入对局设置子界面（选定模式后） */
+export function enterSetup(mode: 'single' | 'host' | 'join'): void {
+  SELECTED_MODE = mode;
+  updateLobbyMode();
+  renderSetupSummary();
+  document.getElementById('screenLobby')!.classList.remove('active');
+  document.getElementById('screenSetup')!.classList.add('active');
+  Sound.play('click');
+}
+
+/** 返回主界面 */
+export function backToLobby(): void {
+  Sound.play('click');
+  document.getElementById('screenSetup')!.classList.remove('active');
+  document.getElementById('screenLobby')!.classList.add('active');
+  renderSetupSummary();
+}
+
+/** 主界面配置摘要：只显示设置后的结果 */
+export function renderSetupSummary(): void {
+  const box = document.getElementById('setupSummary');
+  if (!box) return;
+  const faction = FACTIONS[SELECTED_FACTION];
+  const roleName = SELECTED_ROLE === 'random' ? '随机' : ROLES[SELECTED_ROLE].name;
+  const charName = SELECTED_CHAR ? `${SELECTED_CHAR.avatar} ${SELECTED_CHAR.name}` : '未选择';
+  const modeName =
+    SELECTED_MODE === 'single' ? '单机对局' : SELECTED_MODE === 'host' ? '创建房间' : '加入房间';
+  box.innerHTML = `
+    <div class="sum-row"><span class="sum-k">模式</span><b>${modeName}</b></div>
+    <div class="sum-row"><span class="sum-k">年级</span><b>${SELECTED_GRADE}</b></div>
+    <div class="sum-row"><span class="sum-k">人数</span><b>${SELECTED_COUNT} 人</b>（含 ${SELECTED_COUNT - 1} 名 AI）</div>
+    <div class="sum-row"><span class="sum-k">身份</span><b>${roleName}</b></div>
+    <div class="sum-row"><span class="sum-k">阵营</span><b style="color:${faction.color}">${faction.icon} ${faction.name}</b></div>
+    <div class="sum-row"><span class="sum-k">角色</span><b>${charName}</b></div>
+    <div class="sum-tip">选择上方任一模式即进入设置界面修改</div>`;
+}
+
+/** 我的档案（复用成就弹窗） */
+export function openProfileMenu(): void {
+  Sound.play('click');
+  showAchievements(PROFILE, '我的档案');
+}
+
+/** 个性化资料二级菜单 */
+export function openPersonaMenu(): void {
+  Sound.play('click');
+  renderProfileEditor();
+  document.getElementById('personaModal')!.classList.add('show');
+}
+
+export function closePersonaMenu(): void {
+  document.getElementById('personaModal')!.classList.remove('show');
+  refreshProfileUI();
+  renderSetupSummary();
+}
+
+/** 题库管理二级菜单 */
+export function openBankMenu(): void {
+  Sound.play('click');
+  updateBankInfo();
+  document.getElementById('bankModal')!.classList.add('show');
+}
+
+export function closeBankMenu(): void {
+  document.getElementById('bankModal')!.classList.remove('show');
+}
+
 export function updateLobbyMode(): void {
   const hc = document.getElementById('hostConfig')!;
   const jc = document.getElementById('joinConfig')!;
   const sb = document.getElementById('startBtn') as HTMLButtonElement | null;
   const rc = document.getElementById('roomConfig');
+  const title = document.getElementById('setupTitle');
+  if (title) title.textContent = MODE_TITLE[SELECTED_MODE];
   if (SELECTED_MODE === 'single') {
     hc.style.display = 'block';
     jc.style.display = 'none';
@@ -221,11 +297,11 @@ export function bindLobbyEvents(): void {
   document.getElementById('modePicker')!.addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest('.opt-btn') as HTMLElement | null;
     if (!b) return;
-    Sound.play('click');
     document.querySelectorAll('#modePicker .opt-btn').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
-    SELECTED_MODE = (b.dataset.mode as 'single' | 'host' | 'join') || 'single';
-    updateLobbyMode();
+    const mode = (b.dataset.mode as 'single' | 'host' | 'join') || 'single';
+    // 选定模式后进入对局设置子界面
+    enterSetup(mode);
   });
 }
 
@@ -331,6 +407,8 @@ export function updateBankInfo(): void {
   bi.innerHTML = `年级：<b>${grades.length}</b> 个 ｜ 内置 <b>${tb}</b> 题 ｜ 外部 <b style="color:#8fd0ff">${te}</b> 题<br>
     <span style="font-size:10px;line-height:1.6">${parts.join('　')}</span>
     <span style="font-size:10px;color:var(--muted)">（按年级懒加载，开局时按需载入选中的年级；带 · 表示尚未加载）</span>`;
+  const hint = document.getElementById('bankEntryHint');
+  if (hint) hint.textContent = `${grades.length} 年级 · 内置 ${tb} 题${te ? ` · 外部 ${te} 题` : ''}`;
 }
 
 export function loadBankFromUrlInput(): void {

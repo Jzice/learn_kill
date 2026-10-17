@@ -83,21 +83,30 @@ page.on('dialog', (d) => d.accept().catch(() => {}));
 
 await page.goto(url, { waitUntil: 'networkidle' });
 
-// 1. 大厅
-const lobbyOk = await page.isVisible('#screenLobby.active #profileCard .profile-card');
-check('大厅渲染（档案卡）', lobbyOk);
+// 1. 主界面：名片 + 模式选择 + 配置摘要
+const nameCardOk = await page.isVisible('#screenLobby.active #nameCard .name-card');
+check('主界面名片渲染', nameCardOk);
+const menuEntries = await page.locator('#screenLobby .menu-entry').count();
+check('二级菜单入口（档案/个性化/题库）', menuEntries === 3, `${menuEntries} 个`);
+const summaryText = await page.textContent('#setupSummary');
+check('主界面配置摘要', !!summaryText && summaryText.includes('年级'), (summaryText || '').replace(/\s+/g, ' ').slice(0, 50));
 
-// 1.1 个性化资料面板（头像 / 性别 / 心情）
+// 1.1 个性化资料（二级菜单内编辑）
+await page.locator('.menu-entry', { hasText: '个性化资料' }).click();
+await page.waitForSelector('#personaModal.show', { timeout: 3000 });
+check('个性化资料二级菜单打开', true);
 const pickItems = await page.locator('#profileEditor .pick-item').count();
 check('个性化资料面板（头像+性别+心情图标）', pickItems >= 36, `${pickItems} 个可选项`);
 await page.fill('#profileNameInput', '小明同学');
 await page.fill('#moodInput', '今天也要元气满满');
-await page.locator('#profileEditor .pick-item').nth(1).click(); // 选一个头像
-await page.locator('#profileEditor .pick-grid-3 .pick-item').first().click(); // 选性别：男生
-await page.locator('#moodIconGrid .pick-item').nth(2).click(); // 选心情图标
-const cardText = await page.textContent('#profileCard');
+await page.locator('#profileEditor .pick-item').nth(1).click(); // 头像
+await page.locator('#profileEditor .pick-grid-3 .pick-item').first().click(); // 性别：男生
+await page.locator('#moodIconGrid .pick-item').nth(2).click(); // 心情图标
+await page.click('#personaModal .menu-footer button');
+await page.waitForTimeout(200);
+const cardText = await page.textContent('#nameCard');
 check(
-  '档案卡反映个性化设置',
+  '名片反映个性化设置（主界面只显示结果）',
   !!cardText && cardText.includes('小明同学') && cardText.includes('今天也要元气满满'),
   (cardText || '').replace(/\s+/g, ' ').slice(0, 60),
 );
@@ -106,7 +115,33 @@ const moodSaved = await page.evaluate(() =>
 );
 check('个性化资料已持久化到 localStorage', moodSaved === '今天也要元气满满', String(moodSaved));
 
-// 1.2 玩家总数滑块
+// 1.2 题库管理（二级菜单）
+await page.locator('.menu-entry', { hasText: '题库管理' }).click();
+await page.waitForSelector('#bankModal.show', { timeout: 3000 });
+const bankInfo = await page.textContent('#bankInfo');
+check('题库管理二级菜单（题库信息）', !!bankInfo && bankInfo.includes('内置'), bankInfo?.slice(0, 40));
+await page.click('#bankModal .menu-footer button');
+
+// 1.3 我的档案（二级菜单）
+await page.locator('.menu-entry', { hasText: '我的档案' }).click();
+await page.waitForSelector('#profileModal.show', { timeout: 3000 });
+check('我的档案二级菜单打开', true);
+await page.click('#profileModal .rules-close');
+
+await page.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-lobby.png'), fullPage: true });
+
+// 1.4 选择模式 → 进入对局设置子界面
+await page.click('#modePicker .opt-btn[data-mode="single"]');
+await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
+check('选择模式后进入设置子界面', await page.isVisible('#screenSetup.active'));
+const gradeBtns = await page.locator('#gradePicker .opt-btn').count();
+check('年级选择器（子界面）', gradeBtns === 12, `${gradeBtns} 个年级`);
+const charCards = await page.locator('#charGrid .char-card').count();
+check('角色卡渲染（子界面）', charCards > 0, `${charCards} 名角色`);
+const factions = await page.locator('#factionPicker .faction-card').count();
+check('阵营选择（子界面）', factions === 9, `${factions} 个阵营`);
+
+// 1.5 玩家总数滑块（子界面）
 const sliderOk = await page.locator('#countSlider').count();
 check('人数滑块存在', sliderOk === 1);
 await page.fill('#countSlider', '6');
@@ -118,14 +153,14 @@ const roleCards = await page.locator('#rolePicker .role-card').count();
 check('滑块联动身份可选范围', roleCards >= 4, `${roleCards} 个身份卡`);
 await page.fill('#countSlider', '4'); // 复位为 4 人局以便后续断言
 await page.waitForTimeout(200);
-const gradeBtns = await page.locator('#gradePicker .opt-btn').count();
-check('年级选择器', gradeBtns === 12, `${gradeBtns} 个年级`);
-const charCards = await page.locator('#charGrid .char-card').count();
-check('角色卡渲染', charCards > 0, `${charCards} 名角色`);
-const bankInfo = await page.textContent('#bankInfo');
-check('题库信息', !!bankInfo && bankInfo.includes('内置'), bankInfo?.slice(0, 40));
 
-await page.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-lobby.png'), fullPage: true });
+// 1.6 返回主界面 → 摘要更新
+await page.click('#screenSetup .setup-top button');
+await page.waitForSelector('#screenLobby.active', { timeout: 3000 });
+const summary2 = await page.textContent('#setupSummary');
+check('返回主界面且摘要同步', !!summary2 && summary2.includes('4 人'), (summary2 || '').replace(/\s+/g, ' ').slice(0, 40));
+await page.click('#modePicker .opt-btn[data-mode="single"]');
+await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 
 // 2. 开始单机对局
 await page.click('#startBtn');

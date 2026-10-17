@@ -17,10 +17,17 @@ import { sendChat } from './game/chat';
 import { closeDock, openDock, sendChatFromMobile } from './ui/dock';
 import { closeRules, openRules, switchRulesTab } from './ui/modals';
 import {
+  backToLobby,
   bindCountSlider,
   bindLobbyEvents,
   bindNicknamePersistence,
   clearExternalBank,
+  closeBankMenu,
+  closePersonaMenu,
+  enterSetup,
+  openBankMenu,
+  openPersonaMenu,
+  openProfileMenu,
   ensureCharValid,
   importQuestionBank,
   loadBankFromUrlInput,
@@ -29,6 +36,7 @@ import {
   renderGradePicker,
   renderProfileEditor,
   renderRolePicker,
+  renderSetupSummary,
   selectAvatar,
   selectChar,
   selectFaction,
@@ -78,6 +86,14 @@ window.selectGender = selectGender;
 window.selectMoodIcon = selectMoodIcon;
 window.setPlayerCount = setPlayerCount;
 window.selectRole = selectRole;
+// 二级菜单与子界面导航
+window.openProfileMenu = openProfileMenu;
+window.openPersonaMenu = openPersonaMenu;
+window.closePersonaMenu = closePersonaMenu;
+window.openBankMenu = openBankMenu;
+window.closeBankMenu = closeBankMenu;
+window.backToLobby = backToLobby;
+window.enterSetup = enterSetup;
 window.selectFaction = (k: string) => selectFaction(k as FactionId);
 window.selectChar = selectChar;
 
@@ -96,6 +112,7 @@ function init(): void {
   updateAIHint();
   updateLobbyMode();
   updateBankInfo();
+  renderSetupSummary();
 
   if (EXTERNAL_BANK_URLS.length) {
     Promise.all(EXTERNAL_BANK_URLS.map((u) => loadBankFromUrl(u, true))).then(() => {
