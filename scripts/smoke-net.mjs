@@ -78,8 +78,9 @@ await guest.goto(url, { waitUntil: 'networkidle' });
 
 // 双方先设置个性化资料（昵称 / 头像 / 性别 / 心情）
 async function setupProfile(page, name, mood) {
-  // 个性化资料已移入二级菜单
-  await page.locator('.menu-entry', { hasText: '个性化资料' }).click();
+  await page.click('#topBar button[title="设置"]');
+  await page.waitForSelector('#settingsDrawer.show', { timeout: 3000 });
+  await page.locator('#settingsDrawer .drawer-item', { hasText: '个性化资料' }).click();
   await page.waitForSelector('#personaModal.show', { timeout: 3000 });
   await page.fill('#profileNameInput', name);
   await page.fill('#moodInput', mood);
@@ -88,6 +89,8 @@ async function setupProfile(page, name, mood) {
   await page.locator('#moodIconGrid .pick-item').nth(4).click(); // 心情图标
   await page.click('#personaModal .menu-footer button');
   await page.waitForTimeout(200);
+  await page.click('#settingsDrawer .drawer-head button'); // 关闭设置抽屉
+  await page.waitForTimeout(150);
 }
 await setupProfile(host, '房主甲', '房主心情：稳住');
 await setupProfile(guest, '客人乙', '客人心情：冲呀');
@@ -101,7 +104,7 @@ check(
 );
 
 // 房主：切到创建房间模式
-await host.click('#modePicker .opt-btn[data-mode="host"]');
+await host.click('#modePicker .mode-card[data-mode="host"]');
 await host.fill('#nicknameInput', '房主甲');
 await host.click('#createRoomBtn');
 await host.waitForFunction(
@@ -114,7 +117,13 @@ check('房主创建房间', !!roomCode, '房间号 ' + roomCode);
 
 // 房主等待 peer 连接（ PeerJS open 事件后 roomInfo 才显示，说明信令服务连通）
 // 客人：加入房间
-await guest.click('#modePicker .opt-btn[data-mode="join"]');
+await guest.click('#modePicker .mode-card[data-mode="join"]');
+const jf = await guest.locator('#joinFactionPicker .faction-card').count();
+check('加入档阵营选择器渲染', jf === 9, `${jf} 个`);
+await guest.locator('#joinFactionPicker .faction-card').nth(1).click();
+await guest.waitForTimeout(150);
+const jc = await guest.locator('#joinCharGrid .char-card').count();
+check('加入档角色选择器渲染', jc > 0, `${jc} 名`);
 await guest.fill('#joinNick', '客人乙');
 await guest.fill('#joinCode', roomCode);
 await guest.click('#joinRoomBtn');

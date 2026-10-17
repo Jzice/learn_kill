@@ -234,11 +234,18 @@ export interface PublicProfile extends PlayerIdentity {
   bestStreak: number;
 }
 
+export interface PlayerPref {
+  faction: FactionId;
+  charId: string | null;
+}
+
 export interface RoomMember {
   peerId: string;
   name: string;
   isHost: boolean;
   profile: PublicProfile | null;
+  /** 加入方在设置界面自选的阵营 / 角色偏好（房主开局时优先采纳） */
+  pref?: PlayerPref;
 }
 
 export interface QuizStats {

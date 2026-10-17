@@ -121,7 +121,14 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
         identityFromProfile(member?.profile ?? null) ??
         (typeof rawName === 'string' && rawName ? { ...localIdentity(), name: rawName } : null);
       name = identity?.name || (typeof rawName === 'string' && rawName) || '玩家' + i;
-      char = aiChars[(i - 1) % Math.max(1, aiChars.length)];
+      // 远程玩家：优先采用其在设置界面自选的阵营 / 角色偏好
+      const fallback = aiChars[(i - 1) % Math.max(1, aiChars.length)];
+      const byFaction = member?.pref?.faction
+        ? aiChars.find((c) => c.faction === member.pref!.faction) ?? fallback
+        : fallback;
+      char =
+        (member?.pref?.charId && pool.find((c) => c.id === member.pref!.charId)) ||
+        byFaction;
       isAI = false;
     } else {
       name = 'AI·' + (aiChars.length ? aiChars[(i - 1) % aiChars.length].name : '同学');
@@ -159,6 +166,7 @@ export async function startSingle(): Promise<void> {
   NET.isHost = false;
   setupPlayers(SELECTED_COUNT, localChar, nickname);
   document.getElementById('screenLobby')!.classList.remove('active');
+  document.getElementById('screenSetup')!.classList.remove('active');
   document.getElementById('screenGame')!.classList.add('active');
   clearPlayZone();
   document.getElementById('chatPanel')!.style.display = 'none';
@@ -202,6 +210,7 @@ export async function hostStartGame(): Promise<void> {
     });
   });
   document.getElementById('screenLobby')!.classList.remove('active');
+  document.getElementById('screenSetup')!.classList.remove('active');
   document.getElementById('screenGame')!.classList.add('active');
   clearPlayZone();
   document.getElementById('chatPanel')!.style.display = 'flex';

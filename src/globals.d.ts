@@ -48,6 +48,11 @@ declare global {
     closePersonaMenu: () => void;
     openBankMenu: () => void;
     closeBankMenu: () => void;
+    openSettings: () => void;
+    closeSettings: () => void;
+    openBankBrowser: () => void;
+    closeBankBrowser: () => void;
+    setNetMode: (net: 'host' | 'join') => void;
     backToLobby: () => void;
     enterSetup: (mode: 'single' | 'host' | 'join') => void;
     // 游戏内交互

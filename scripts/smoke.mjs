@@ -83,16 +83,26 @@ page.on('dialog', (d) => d.accept().catch(() => {}));
 
 await page.goto(url, { waitUntil: 'networkidle' });
 
-// 1. 主界面：名片 + 模式选择 + 配置摘要
-const nameCardOk = await page.isVisible('#screenLobby.active #nameCard .name-card');
-check('主界面名片渲染', nameCardOk);
-const menuEntries = await page.locator('#screenLobby .menu-entry').count();
-check('二级菜单入口（档案/个性化/题库）', menuEntries === 3, `${menuEntries} 个`);
+// 1. 主界面：固定顶栏 + 个人成就 + 模式选择 + 配置摘要
+check('固定顶栏可见', await page.isVisible('#topBar'));
+const tbName0 = (await page.textContent('#tbName')) || '';
+check('顶栏显示昵称', tbName0.trim().length > 0, tbName0);
+const achCount = await page.locator('#achGrid .ach-item').count();
+check('个人成就网格渲染', achCount > 0, `${achCount} 项`);
+const modeCount = await page.locator('#modePicker .mode-card').count();
+check('模式选择（单机/创建/加入）', modeCount === 3, `${modeCount} 张`);
 const summaryText = await page.textContent('#setupSummary');
 check('主界面配置摘要', !!summaryText && summaryText.includes('年级'), (summaryText || '').replace(/\s+/g, ' ').slice(0, 50));
 
-// 1.1 个性化资料（二级菜单内编辑）
-await page.locator('.menu-entry', { hasText: '个性化资料' }).click();
+// 1.0 设置抽屉（替代原名片菜单入口）
+await page.click('#topBar button[title="设置"]');
+await page.waitForSelector('#settingsDrawer.show', { timeout: 3000 });
+check('设置抽屉打开', true);
+const drawerItems = await page.locator('#settingsDrawer .drawer-item').count();
+check('设置抽屉入口（档案/个性化/题库）', drawerItems === 3, `${drawerItems} 个`);
+
+// 1.1 个性化资料（抽屉入口 → 二级菜单）
+await page.locator('#settingsDrawer .drawer-item', { hasText: '个性化资料' }).click();
 await page.waitForSelector('#personaModal.show', { timeout: 3000 });
 check('个性化资料二级菜单打开', true);
 const pickItems = await page.locator('#profileEditor .pick-item').count();
@@ -104,36 +114,36 @@ await page.locator('#profileEditor .pick-grid-3 .pick-item').first().click(); //
 await page.locator('#moodIconGrid .pick-item').nth(2).click(); // 心情图标
 await page.click('#personaModal .menu-footer button');
 await page.waitForTimeout(200);
-const cardText = await page.textContent('#nameCard');
-check(
-  '名片反映个性化设置（主界面只显示结果）',
-  !!cardText && cardText.includes('小明同学') && cardText.includes('今天也要元气满满'),
-  (cardText || '').replace(/\s+/g, ' ').slice(0, 60),
-);
+const tbName1 = (await page.textContent('#tbName')) || '';
+check('顶栏昵称反映个性化设置', tbName1.includes('小明同学'), tbName1);
 const moodSaved = await page.evaluate(() =>
   JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}').mood,
 );
 check('个性化资料已持久化到 localStorage', moodSaved === '今天也要元气满满', String(moodSaved));
 
-// 1.2 题库管理（二级菜单）
-await page.locator('.menu-entry', { hasText: '题库管理' }).click();
+// 1.2 题库管理（设置抽屉入口）
+await page.locator('#settingsDrawer .drawer-item', { hasText: '题库管理' }).click();
 await page.waitForSelector('#bankModal.show', { timeout: 3000 });
 const bankInfo = await page.textContent('#bankInfo');
 check('题库管理二级菜单（题库信息）', !!bankInfo && bankInfo.includes('内置'), bankInfo?.slice(0, 40));
 await page.click('#bankModal .menu-footer button');
 
-// 1.3 我的档案（二级菜单）
-await page.locator('.menu-entry', { hasText: '我的档案' }).click();
+// 1.3 我的档案（设置抽屉入口）
+await page.locator('#settingsDrawer .drawer-item', { hasText: '我的档案' }).click();
 await page.waitForSelector('#profileModal.show', { timeout: 3000 });
 check('我的档案二级菜单打开', true);
 await page.click('#profileModal .rules-close');
+await page.click('#settingsDrawer .drawer-head button'); // 关闭抽屉
+await page.waitForTimeout(150);
 
 await page.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-lobby.png'), fullPage: true });
 
 // 1.4 选择模式 → 进入对局设置子界面
-await page.click('#modePicker .opt-btn[data-mode="single"]');
+await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 check('选择模式后进入设置子界面', await page.isVisible('#screenSetup.active'));
+const npStyle = await page.getAttribute('#netModePanel', 'style');
+check('单机模式隐藏联机二选一', !npStyle || npStyle.includes('none'), npStyle || '');
 const gradeBtns = await page.locator('#gradePicker .opt-btn').count();
 check('年级选择器（子界面）', gradeBtns === 12, `${gradeBtns} 个年级`);
 const charCards = await page.locator('#charGrid .char-card').count();
@@ -159,7 +169,7 @@ await page.click('#screenSetup .setup-top button');
 await page.waitForSelector('#screenLobby.active', { timeout: 3000 });
 const summary2 = await page.textContent('#setupSummary');
 check('返回主界面且摘要同步', !!summary2 && summary2.includes('4 人'), (summary2 || '').replace(/\s+/g, ' ').slice(0, 40));
-await page.click('#modePicker .opt-btn[data-mode="single"]');
+await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 
 // 2. 开始单机对局
@@ -217,6 +227,24 @@ check('AI 自动推进', logItems2 >= logItems, `${logItems} → ${logItems2} �
 
 await page.screenshot({ path: shot, fullPage: false });
 console.log('screenshot:', shot);
+
+// 8.5 题库浏览（游戏顶栏入口）
+await page.click('#screenGame button:has-text("题库")');
+await page.waitForSelector('#screenBank.active', { timeout: 3000 });
+check('题库浏览界面打开（顶栏入口）', await page.isVisible('#screenBank.active'));
+const bankGrades = await page.locator('#bankGradePicker .opt-btn').count();
+check('题库浏览：年级切换渲染', bankGrades === 12, `${bankGrades} 个年级`);
+await page.waitForFunction(() => (document.getElementById('bankBody')?.textContent || '').length > 20, { timeout: 8000 });
+const bankQ = await page.locator('#bankBody .bank-item').count();
+check('题库浏览：题目渲染', bankQ > 0, `${bankQ} 题`);
+await page.fill('#bankSearch', '下列');
+await page.waitForTimeout(300);
+await page.fill('#bankSearch', '');
+await page.waitForTimeout(300);
+const bankQ3 = await page.locator('#bankBody .bank-item').count();
+check('题库浏览：搜索可还原', bankQ3 > 0, `${bankQ3} 题`);
+await page.click('#screenBank .setup-top button'); // 返回主界面
+await page.waitForSelector('#screenGame.active', { timeout: 3000 });
 
 // 9. 控制台错误
 check('控制台零错误', errors.length === 0, errors.slice(0, 3).join(' ; '));

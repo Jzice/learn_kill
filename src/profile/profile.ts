@@ -244,8 +244,8 @@ export function refreshProfileUI(): void {
 
   // 兼容：若页面仍存在旧档案卡容器则一并渲染
   const el = document.getElementById('profileCard');
-  if (!el) return;
-  el.innerHTML = `<div class="profile-card">
+  if (el) {
+    el.innerHTML = `<div class="profile-card">
     <div class="profile-avatar">${PROFILE.avatar || DEFAULT_AVATAR}</div>
     <div class="profile-main">
       <div class="profile-name">${escapeHtml(PROFILE.name || '玩家')} <span class="profile-gender">${genderIcon(PROFILE.gender ?? 'hidden')}</span></div>
@@ -256,6 +256,13 @@ export function refreshProfileUI(): void {
     </div>
     <button class="btn btn-sm" onclick="showAchievements(PROFILE,'我的成就')">🏅 查看成就</button>
   </div>`;
+  }
+  // 通知顶栏 / 成就网格刷新（lobby.ts 监听，避免循环依赖）
+  try {
+    window.dispatchEvent(new CustomEvent('profile-updated'));
+  } catch (e) {
+    /* ignore */
+  }
 }
 
 export function showAchievements(p: Profile | PublicProfile, title: string): void {

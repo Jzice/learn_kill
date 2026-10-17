@@ -204,6 +204,12 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
       }
     }
     NET.broadcastRoomState();
+  } else if (data.type === 'guest_pref') {
+    const m = NET.roomMembers.find((x) => x.peerId === conn.peer);
+    if (m) {
+      m.pref = data.pref;
+      NET.broadcastRoomState();
+    }
   } else if (data.type === 'choose_response') {
     if (G.pendingPlayer != null && G.pendingResolve) {
       const r = G.pendingResolve;
@@ -250,6 +256,7 @@ export function onClientData(data: NetMessage): void {
     G.settled = false;
     G.myKills = 0;
     document.getElementById('screenLobby')!.classList.remove('active');
+    document.getElementById('screenSetup')!.classList.remove('active');
     document.getElementById('screenGame')!.classList.add('active');
     clearPlayZone();
     render();

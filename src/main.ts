@@ -31,24 +31,30 @@ import {
   ensureCharValid,
   importQuestionBank,
   loadBankFromUrlInput,
+  openSettings,
+  closeSettings,
+  renderAchievements,
   renderCharPicker,
   renderFactionPicker,
   renderGradePicker,
   renderProfileEditor,
   renderRolePicker,
   renderSetupSummary,
+  renderTopBar,
   selectAvatar,
   selectChar,
   selectFaction,
   selectGender,
   selectMoodIcon,
   selectRole,
+  setNetMode,
   setPlayerCount,
   updateAIHint,
   updateBankInfo,
   updateLobbyMode,
   viewMemberProfile,
 } from './ui/lobby';
+import { bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
 import { closeRoom, createRoom, joinRoom, leaveRoom } from './net/rooms';
 import { EXTERNAL_BANK_URLS, loadBankFromUrl } from './data/questionBank';
 
@@ -92,10 +98,15 @@ window.openPersonaMenu = openPersonaMenu;
 window.closePersonaMenu = closePersonaMenu;
 window.openBankMenu = openBankMenu;
 window.closeBankMenu = closeBankMenu;
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
 window.backToLobby = backToLobby;
 window.enterSetup = enterSetup;
+window.setNetMode = setNetMode;
 window.selectFaction = (k: string) => selectFaction(k as FactionId);
 window.selectChar = selectChar;
+window.openBankBrowser = openBankBrowser;
+window.closeBankBrowser = closeBankBrowser;
 
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
@@ -116,6 +127,10 @@ function init(): void {
   updateLobbyMode();
   updateBankInfo();
   renderSetupSummary();
+  // 固定顶栏 / 个人成就 / 题库浏览
+  renderTopBar();
+  renderAchievements();
+  bindBankBrowser();
 
   if (EXTERNAL_BANK_URLS.length) {
     Promise.all(EXTERNAL_BANK_URLS.map((u) => loadBankFromUrl(u, true))).then(() => {

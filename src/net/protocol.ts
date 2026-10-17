@@ -8,6 +8,7 @@ import type {
   LogEntry,
   PendingType,
   Player,
+  PlayerPref,
   PublicProfile,
   Question,
   RoomMember,
@@ -25,6 +26,7 @@ export interface RoomStateMsg {
 export type NetMessage =
   // ---- 客户端 → 房主 ----
   | { type: 'hello_profile'; profile: PublicProfile }
+  | { type: 'guest_pref'; pref: PlayerPref }
   | { type: 'choose_response'; value: string | number }
   | { type: 'quiz_response'; correct: boolean; quizId: number }
   | { type: 'leave_room'; name?: string }

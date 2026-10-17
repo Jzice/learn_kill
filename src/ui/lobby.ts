@@ -4,6 +4,7 @@ import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../data/characters';
+import { NET } from '../net/network';
 import {
   EXTERNAL_STATS,
   QUESTION_BANK,
@@ -24,6 +25,7 @@ import {
   levelOf,
   PROFILE,
   refreshProfileUI,
+  ACHIEVEMENTS,
   saveProfile,
   setters,
   showAchievements,
@@ -111,6 +113,7 @@ export function selectFaction(k: FactionId): void {
   if (!SELECTED_CHAR || SELECTED_CHAR.faction !== k) SELECTED_CHAR = pool[0];
   renderFactionPicker();
   renderCharPicker();
+  pushGuestPref();
 }
 
 export function renderCharPicker(): void {
@@ -144,6 +147,52 @@ export function selectChar(id: string): void {
   USER_CHOSEN = true;
   SELECTED_CHAR = CHARACTERS.find((c) => c.id === id) || null;
   renderCharPicker();
+  pushGuestPref();
+}
+
+/* ==================== 加入档：阵营 / 角色选择（同步给房主） ==================== */
+/** 渲染加入方专用选择器（使用全量角色池，不限定年级） */
+export function renderJoinPickers(): void {
+  const fp = document.getElementById('joinFactionPicker');
+  if (fp) {
+    fp.innerHTML = Object.entries(FACTIONS)
+      .map(
+        ([k, f]) =>
+          `<div class="faction-card ${k === SELECTED_FACTION ? 'selected' : ''}" style="border-color:${f.color};color:${f.color};${k === SELECTED_FACTION ? 'box-shadow:0 0 16px ' + f.color : ''}" onclick="selectFaction('${k}')">
+          <div class="f-icon">${f.icon}</div>
+          <div class="f-name" style="color:${f.color};">${f.name}</div>
+          <div class="f-desc">主公技：${f.lordSkill.name}</div></div>`,
+      )
+      .join('');
+  }
+  const cg = document.getElementById('joinCharGrid');
+  if (cg) {
+    const pool = CHARACTERS.filter((c) => c.faction === SELECTED_FACTION);
+    if (!SELECTED_CHAR || SELECTED_CHAR.faction !== SELECTED_FACTION) SELECTED_CHAR = pool[0] ?? null;
+    cg.innerHTML = pool
+      .map((c) => {
+        const f = FACTIONS[c.faction];
+        const sel = SELECTED_CHAR && SELECTED_CHAR.id === c.id;
+        return `<div class="char-card ${sel ? 'selected' : ''}" style="border-color:${f.color};color:${f.color};${sel ? 'box-shadow:0 0 16px ' + f.color : ''}" onclick="selectChar('${c.id}')">
+          <div class="faction-badge" style="color:${f.color};">${f.icon}</div>
+          <div class="ctop"><span class="cavatar">${c.avatar}</span><div><div class="cname" style="color:${f.color};">${c.name}</div><div class="ctitle">${c.title}</div></div></div>
+          <div class="csubject" style="color:${f.color};">${f.name} · 体力${c.hp}</div>
+          <div class="cskill">${c.skills.map((s) => `<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
+          <div class="cgrade">${c.grade}</div></div>`;
+      })
+      .join('');
+  }
+}
+
+/** 加入方选择阵营 / 角色后，把偏好同步给房主 */
+export function pushGuestPref(): void {
+  if (SELECTED_MODE !== 'join') return;
+  if (NET.isHost) return; // 仅客户端发送
+  NET.sendToHost({
+    type: 'guest_pref',
+    pref: { faction: SELECTED_FACTION, charId: SELECTED_CHAR ? SELECTED_CHAR.id : null },
+  });
+  renderJoinPickers();
 }
 
 /* ==================== 二级菜单 / 子界面导航 ==================== */
@@ -220,13 +269,53 @@ export function closeBankMenu(): void {
   document.getElementById('bankModal')!.classList.remove('show');
 }
 
+/* ==================== 固定顶栏 / 个人成就 / 设置抽屉 ==================== */
+export function renderTopBar(): void {
+  const lv = levelOf(PROFILE.score);
+  const wr = PROFILE.games ? Math.round(((PROFILE.wins || 0) / PROFILE.games) * 100) : 0;
+  const av = document.getElementById('tbAvatar');
+  const nm = document.getElementById('tbName');
+  const st = document.getElementById('tbStatus');
+  if (av) av.textContent = PROFILE.avatar || DEFAULT_AVATAR;
+  if (nm) nm.textContent = PROFILE.name || '玩家';
+  if (st) st.textContent = `${lv.n} · ${PROFILE.score} 分 · 胜率 ${wr}%`;
+}
+
+export function renderAchievements(): void {
+  const grid = document.getElementById('achGrid');
+  const sum = document.getElementById('achSummary');
+  if (!grid) return;
+  const got = ACHIEVEMENTS.filter((a) => (PROFILE.achievements || {})[a.id]);
+  if (sum) sum.textContent = `已解锁 ${got.length}/${ACHIEVEMENTS.length}`;
+  grid.innerHTML = ACHIEVEMENTS.map((a) => {
+    const has = !!(PROFILE.achievements || {})[a.id];
+    return `<div class="ach-item ${has ? '' : 'locked'}" title="${escapeHtml(a.desc || '')}">
+      <div class="ai">${a.icon}</div>
+      <div class="an">${escapeHtml(a.name)}</div>
+      <div class="ap">${has ? '已解锁' : escapeHtml(a.desc || '')}</div></div>`;
+  }).join('');
+}
+
+export function openSettings(): void {
+  Sound.play('click');
+  renderTopBar();
+  document.getElementById('settingsDrawer')!.classList.add('show');
+}
+
+export function closeSettings(): void {
+  document.getElementById('settingsDrawer')!.classList.remove('show');
+}
+
 export function updateLobbyMode(): void {
   const hc = document.getElementById('hostConfig')!;
   const jc = document.getElementById('joinConfig')!;
+  const np = document.getElementById('netModePanel')!;
   const sb = document.getElementById('startBtn') as HTMLButtonElement | null;
   const rc = document.getElementById('roomConfig');
   const title = document.getElementById('setupTitle');
   if (title) title.textContent = MODE_TITLE[SELECTED_MODE];
+  // 联机方式二选一只在联机模式显示
+  np.style.display = SELECTED_MODE === 'single' ? 'none' : 'block';
   if (SELECTED_MODE === 'single') {
     hc.style.display = 'block';
     jc.style.display = 'none';
@@ -244,8 +333,20 @@ export function updateLobbyMode(): void {
   } else {
     hc.style.display = 'none';
     jc.style.display = 'block';
+    if (rc) rc.style.display = 'none';
     if (sb) sb.style.display = 'none';
+    renderJoinPickers();
   }
+}
+
+/** 联机建立 / 加入 二选一 */
+export function setNetMode(net: 'host' | 'join'): void {
+  Sound.play('click');
+  document.querySelectorAll('#netModePicker .opt-btn').forEach((x) => x.classList.remove('active'));
+  const btn = document.querySelector(`#netModePicker .opt-btn[data-net="${net}"]`) as HTMLElement | null;
+  if (btn) btn.classList.add('active');
+  // 切换联机方式：把模式切到 host / join
+  enterSetup(net === 'host' ? 'host' : 'join');
 }
 
 export function updateAIHint(): void {
@@ -295,13 +396,18 @@ export function bindLobbyEvents(): void {
   });
   // 玩家总数改为滑块（见 bindCountSlider）
   document.getElementById('modePicker')!.addEventListener('click', (e) => {
-    const b = (e.target as HTMLElement).closest('.opt-btn') as HTMLElement | null;
+    const b = (e.target as HTMLElement).closest('.mode-card') as HTMLElement | null;
     if (!b) return;
-    document.querySelectorAll('#modePicker .opt-btn').forEach((x) => x.classList.remove('active'));
+    document.querySelectorAll('#modePicker .mode-card').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
     const mode = (b.dataset.mode as 'single' | 'host' | 'join') || 'single';
     // 选定模式后进入对局设置子界面
     enterSetup(mode);
+  });
+  // 档案变更时同步刷新顶栏 / 成就网格
+  window.addEventListener('profile-updated', () => {
+    renderTopBar();
+    renderAchievements();
   });
 }
 
