@@ -26,7 +26,7 @@ export type NetMessage =
   // ---- 客户端 → 房主 ----
   | { type: 'hello_profile'; profile: PublicProfile }
   | { type: 'choose_response'; value: string | number }
-  | { type: 'quiz_response'; correct: boolean }
+  | { type: 'quiz_response'; correct: boolean; quizId: number }
   | { type: 'leave_room'; name?: string }
   // ---- 房主 → 客户端 ----
   | { type: 'chat'; name: string; text: string }
@@ -58,7 +58,7 @@ export type NetMessage =
       myPlayerIdx: number;
       choiceType: PendingType;
     }
-  | { type: 'ask_quiz_request'; question: Question; isSkill: boolean }
+  | { type: 'ask_quiz_request'; question: Question; isSkill: boolean; quizId: number }
   | { type: 'host_closed' };
 
 /** 客户端加入时房主保存的成员信息（含 peerId，不广播） */

@@ -13,7 +13,12 @@ declare class PeerJS {
   on(event: 'connection', handler: (conn: PeerJS.DataConnection) => void): void;
   connect(
     dest: string,
-    options?: { metadata?: Record<string, unknown> },
+    options?: {
+      metadata?: Record<string, unknown>;
+      /** 有序可靠信道（默认 false 为无序，本游戏协议必须为 true） */
+      reliable?: boolean;
+      [k: string]: unknown;
+    },
   ): PeerJS.DataConnection;
   destroy(): void;
 }
@@ -21,6 +26,7 @@ declare class PeerJS {
 declare namespace PeerJS {
   interface DataConnection {
     peer: string;
+    readonly open: boolean;
     metadata?: Record<string, unknown>;
     on(event: 'open', handler: () => void): void;
     on(event: 'data', handler: (data: unknown) => void): void;

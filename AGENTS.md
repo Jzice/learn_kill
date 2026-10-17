@@ -1,4 +1,6 @@
-# CODEBUDDY.md This file provides guidance to CodeBuddy when working with code in this repository.
+# AGENTS
+
+This file provides guidance to agents when working with code in this repository.
 
 ## Repository Overview
 

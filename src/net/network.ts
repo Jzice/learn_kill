@@ -14,6 +14,16 @@ import { maybeSettle, publicProfile } from '../profile/profile';
 
 export const NET_PLAYER_NAMES: Record<string, string> = {};
 
+export interface PendingQuiz {
+  resolve: (v: boolean) => void;
+  player: Player;
+  q: Question;
+  /** 本题的编号（用于丢弃迟到的旧回复） */
+  quizId: number;
+  /** 20 秒超时定时器（解析时需清除） */
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
 export const NET = {
   peer: null as PeerJS | null,
   conns: [] as PeerJS.DataConnection[],
@@ -23,7 +33,7 @@ export const NET = {
   roomCode: null as string | null,
   myPeerId: null as string | null,
   playerConns: {} as Record<string, PeerJS.DataConnection>,
-  pendingQuiz: null as { resolve: (v: boolean) => void; player: Player; q: Question } | null,
+  pendingQuiz: null as PendingQuiz | null,
   roomMembers: [] as RoomMember[],
 
   addRoomMember(peerId: string, name: string, isHost: boolean, profile: PublicProfile | null): void {
@@ -80,11 +90,28 @@ export const NET = {
           addChat('系统', `📤 ${leavingName} 断开了连接。`, 'sys');
           this.broadcast({ type: 'chat', name: '系统', text: `📤 ${leavingName} 断开了连接。` });
           this.broadcastRoomState();
-          const p = G.players.find((pl) => pl.peerId === conn.peer);
+          const idx = G.players.findIndex((pl) => pl.peerId === conn.peer);
+          const p = idx >= 0 ? G.players[idx] : null;
           if (p && p.alive) {
             addLog(`${p.name} 断线，转为AI`);
             p.isAI = true;
             p.peerId = null;
+            // 若房主正在等待该玩家的选择，用默认项（通常是放弃/承受/结束）结算，防止游戏挂起
+            if (G.pendingPlayer === idx && G.pendingResolve && G.pendingOptions && G.pendingOptions.length) {
+              const r = G.pendingResolve;
+              const fallback = G.pendingOptions[G.pendingOptions.length - 1].value;
+              G.pendingResolve = null;
+              G.pendingOptions = null;
+              G.pendingPlayer = null;
+              r(fallback);
+            }
+            // 若房主正在等待该玩家的答题，立即按答错结算
+            if (NET.pendingQuiz && NET.pendingQuiz.player === p) {
+              if (NET.pendingQuiz.timer) clearTimeout(NET.pendingQuiz.timer);
+              const r = NET.pendingQuiz.resolve;
+              NET.pendingQuiz = null;
+              r(false);
+            }
             render();
           }
         });
@@ -100,7 +127,12 @@ export const NET = {
       this.peer = new PeerCtor({ debug: 1 });
       this.peer.on('open', (id) => {
         this.myPeerId = id;
-        const conn = this.peer!.connect('xts-' + code, { metadata: { name: myName } });
+        const conn = this.peer!.connect('xts-' + code, {
+          metadata: { name: myName },
+          // 有序可靠信道：choose_request / state_sync 必须按发送顺序交付，
+          // 否则旧的状态快照可能后置到达，清空客人端的选择提示造成双端卡死
+          reliable: true,
+        });
         this.myConn = conn;
         this.conns = [conn];
         conn.on('open', () => {
@@ -181,10 +213,12 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
       r(data.value);
     }
   } else if (data.type === 'quiz_response') {
-    if (NET.pendingQuiz) {
-      const r = NET.pendingQuiz.resolve;
+    const pq = NET.pendingQuiz;
+    // 仅接受与当前挂起答题编号一致的回复，迟到的旧回复直接丢弃
+    if (pq && pq.quizId === data.quizId) {
+      if (pq.timer) clearTimeout(pq.timer);
       NET.pendingQuiz = null;
-      r(data.correct);
+      pq.resolve(data.correct);
     }
   } else if (data.type === 'chat') {
     addChat(data.name, data.text, 'ai');
@@ -240,7 +274,7 @@ export function onClientData(data: NetMessage): void {
     G.pendingType = data.choiceType || 'list';
     render();
   } else if (data.type === 'ask_quiz_request') {
-    onAskQuizRequest(data.question, data.isSkill);
+    onAskQuizRequest(data.question, data.isSkill, data.quizId);
   } else if (data.type === 'chat') {
     addChat(data.name, data.text, 'ai');
   } else if (data.type === 'play_log') {

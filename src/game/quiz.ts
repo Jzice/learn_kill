@@ -9,7 +9,7 @@ import { G, quizStats } from './state';
 import { addPlayLog } from './log';
 import { drawCards } from './rules';
 import { PROFILE, saveProfile } from '../profile/profile';
-import { NET, isLocalPlayer } from '../net/network';
+import { NET, isLocalPlayer, type PendingQuiz } from '../net/network';
 import { aiQuiz } from './ai';
 
 let quizResolve: ((v: boolean) => void) | null = null;
@@ -104,6 +104,8 @@ export function askQuiz(player: Player, isSkill = false): Promise<boolean> {
   return displayQuiz(q, player, isSkill);
 }
 
+let quizSeq = 0;
+
 function askQuizRemote(player: Player, isSkill: boolean): Promise<boolean> {
   return new Promise((resolve) => {
     const conn = NET.playerConns[player.peerId!];
@@ -112,22 +114,25 @@ function askQuizRemote(player: Player, isSkill: boolean): Promise<boolean> {
       return;
     }
     const q = pickQ(player);
-    NET.pendingQuiz = { resolve, player, q };
-    conn.send({ type: 'ask_quiz_request', question: q, isSkill });
-    setTimeout(() => {
-      if (NET.pendingQuiz && NET.pendingQuiz.player === player) {
+    const quizId = ++quizSeq;
+    const entry: PendingQuiz = { resolve, player, q, quizId, timer: null };
+    entry.timer = setTimeout(() => {
+      // 仅清理仍属于本题的挂起项；已被响应或已被新题替换则不动
+      if (NET.pendingQuiz === entry) {
         NET.pendingQuiz = null;
         resolve(false);
       }
     }, 20000);
+    NET.pendingQuiz = entry;
+    conn.send({ type: 'ask_quiz_request', question: q, isSkill, quizId });
   });
 }
 
 /** 客户端收到房主转发的答题请求 */
-export async function onAskQuizRequest(question: Question, isSkill: boolean): Promise<void> {
+export async function onAskQuizRequest(question: Question, isSkill: boolean, quizId: number): Promise<void> {
   const player = G.players[G.myPlayerIdx];
   const correct = await displayQuiz(question, player, isSkill);
-  NET.sendToHost({ type: 'quiz_response', correct });
+  NET.sendToHost({ type: 'quiz_response', correct, quizId });
 }
 
 export async function askQuizForPlayer(player: Player, isSkill = false): Promise<boolean> {

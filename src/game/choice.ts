@@ -23,12 +23,25 @@ export function waitChoice(
     if (isLocalPlayer(playerIdx)) {
       render();
     } else if (NET.isHost) {
-      NET.sendToPlayer(p.peerId!, {
-        type: 'choose_request',
-        options,
-        myPlayerIdx: G.players.indexOf(p),
-        choiceType: type,
-      });
+      const send = (): void => {
+        NET.sendToPlayer(p.peerId!, {
+          type: 'choose_request',
+          options,
+          myPlayerIdx: G.players.indexOf(p),
+          choiceType: type,
+        });
+      };
+      send();
+      // 心跳重发：远程玩家若因消息丢失看不到选择界面，房主仍在等待时会周期性补发，
+      // 选择被响应后（pendingResolve 被清空）自动停止。纯幂等重发，不改变协议。
+      let tries = 0;
+      const timer = setInterval(() => {
+        if (G.pendingResolve !== resolve || ++tries > 15) {
+          clearInterval(timer);
+          return;
+        }
+        send();
+      }, 4000);
       render();
       syncStateToClients();
     } else render();
