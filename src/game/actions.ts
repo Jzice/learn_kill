@@ -1,7 +1,7 @@
 /* ==================== 出牌 ==================== */
 import type { Card, Player } from '../core/types';
 import { G } from './state';
-import { FX, floatTextFx } from '../core/fx';
+import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { addLog, addPlayLog } from './log';
@@ -49,6 +49,7 @@ export async function useTao(idx: number): Promise<void> {
   p.hp++;
   addPlayLog(p.name, 'heal', '桃', p.name);
   showPlayCard({ name: '桃', suit: '♥', num: '?', type: 'basic' }, p.name, FACTIONS[p.faction].color);
+  Sound.play('tao');
   FX.healGlow(idx);
   floatTextFx(idx, '+1', '#27ae60');
   render();
@@ -59,6 +60,7 @@ export async function useJiu(idx: number): Promise<void> {
   p.flags.extraDamage = (p.flags.extraDamage || 0) + 1;
   addPlayLog(p.name, 'use', '酒', '');
   showPlayCard({ name: '酒', suit: '♠', num: '?', type: 'basic' }, p.name, FACTIONS[p.faction].color);
+  Sound.play('jiu');
   FX.skillWave(idx);
 }
 
@@ -71,9 +73,37 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
     drawCards(a, 1);
   }
   render();
+  // 锦囊释放特效与音效：按子类区分
+  Sound.play(
+    card.sub === 'nanman' || card.sub === 'wanjian'
+      ? 'trick_aoe'
+      : card.sub === 'taoyuan'
+        ? 'trick_heal'
+        : card.sub === 'lebu' || card.sub === 'shandian'
+          ? 'trick_delay'
+          : card.sub === 'guohe' || card.sub === 'shunshou'
+            ? 'trick_steal'
+            : card.sub === 'juedou'
+              ? 'duel'
+              : 'trick',
+  );
+  await trickCast(
+    attackerIdx,
+    card.name,
+    card.sub,
+    card.sub === 'nanman' || card.sub === 'wanjian'
+      ? '#e74c3c'
+      : card.sub === 'taoyuan'
+        ? '#27ae60'
+        : card.sub === 'lebu' || card.sub === 'shandian'
+          ? '#f5c542'
+          : '#b57fff',
+  );
+
   switch (card.sub) {
     case 'wuzhong': {
       drawCards(a, 2);
+      drawFx(attackerIdx, 2);
       addLog(`${a.name} 摸2张牌`);
       break;
     }
@@ -107,10 +137,16 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
       break;
     }
     case 'nanman': {
+      const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
+        if (hasSkill(G.players[i], 'fenshu')) continue;
+        targets.push(i);
+      }
+      await aoeFx(attackerIdx, targets, '#e74c3c');
+      for (const i of targets) {
         const t = G.players[i];
-        if (hasSkill(t, 'fenshu')) continue;
+        if (!t.alive) continue;
         const sha = t.hand.find((c) => c.sub === 'sha');
         if (sha) {
           discardCard(t, sha);
@@ -120,10 +156,16 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
       break;
     }
     case 'wanjian': {
+      const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
+        if (hasSkill(G.players[i], 'fenshu')) continue;
+        targets.push(i);
+      }
+      await aoeFx(attackerIdx, targets, '#f39c12');
+      for (const i of targets) {
         const t = G.players[i];
-        if (hasSkill(t, 'fenshu')) continue;
+        if (!t.alive) continue;
         const shan = t.hand.find((c) => c.sub === 'shan');
         if (shan) {
           discardCard(t, shan);

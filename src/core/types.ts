@@ -69,10 +69,17 @@ export interface Character {
 }
 
 export interface Question {
+  /** 科目 */
   s: string;
+  /** 所属单元（如"有理数""秦汉时期"） */
+  u?: string;
+  /** 知识点 */
   kp: string;
+  /** 题干 */
   q: string;
+  /** 选项（4 项） */
   o: string[];
+  /** 正确选项下标 0-3 */
   a: number;
 }
 

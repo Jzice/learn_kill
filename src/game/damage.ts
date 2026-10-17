@@ -1,7 +1,8 @@
 /* ==================== 伤害 & 濒死 ==================== */
 import { G } from './state';
-import { FX, floatTextFx } from '../core/fx';
+import { FX, floatTextFx, resultBanner } from '../core/fx';
 import { Sound } from '../core/sound';
+import { localPlayerWin } from '../profile/profile';
 import { ROLES } from '../data/characters';
 import { addLog, addPlayLog } from './log';
 import { hasSkill, discardCard, drawCards, sameFaction } from './rules';
@@ -87,6 +88,7 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         p.alive = false;
         revealDeadRole(p);
         if (srcIdx === G.myPlayerIdx) G.myKills++;
+        Sound.play('death');
         await FX.death(idx);
         break;
       }
@@ -103,6 +105,7 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         p.alive = false;
         revealDeadRole(p);
         if (srcIdx === G.myPlayerIdx) G.myKills++;
+        Sound.play('death');
         await FX.death(idx);
         break;
       }
@@ -162,24 +165,23 @@ export function checkWin(): void {
   const lord = G.players.find((p) => p.role === 'lord');
   const rebelsAlive = alive.some((p) => p.role === 'rebel');
   const spiesAlive = alive.some((p) => p.role === 'spy');
-  if (!lord?.alive) {
-    if (!rebelsAlive && spiesAlive && alive.length === 1 && alive[0].role === 'spy') {
-      G.gameOver = true;
-      G.winnerText = '内奸获胜';
-    } else {
-      G.gameOver = true;
-      G.winnerText = '反贼获胜';
+  let bannerShown = false;
+  const finish = (text: string): void => {
+    G.gameOver = true;
+    G.winnerText = text;
+    addLog('⚑ ' + text, 'hl');
+    if (!bannerShown) {
+      bannerShown = true;
+      const win = localPlayerWin();
+      Sound.play(win ? 'win' : 'lose');
+      void resultBanner(text, win);
     }
-    addLog('⚑ ' + G.winnerText, 'hl');
-    Sound.play('win');
     maybeSettle();
+  };
+  if (!lord?.alive) {
+    if (!rebelsAlive && spiesAlive && alive.length === 1 && alive[0].role === 'spy') finish('内奸获胜');
+    else finish('反贼获胜');
     return;
   }
-  if (!rebelsAlive && !spiesAlive) {
-    G.gameOver = true;
-    G.winnerText = '主公与忠臣获胜';
-    addLog('⚑ ' + G.winnerText, 'hl');
-    Sound.play('win');
-    maybeSettle();
-  }
+  if (!rebelsAlive && !spiesAlive) finish('主公与忠臣获胜');
 }

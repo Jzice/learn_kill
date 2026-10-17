@@ -6,7 +6,7 @@ import './style.css';
 
 import type { FactionId } from './core/types';
 import { togglePanel } from './core/dom';
-import { toggleSound } from './core/sound';
+import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
 
 import { exitGame, hostStartGame, startSingle } from './game/setup';
 import { clickHandCard, clickTargetSeat } from './ui/hand';
@@ -99,6 +99,9 @@ window.selectChar = selectChar;
 
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
+  loadSoundPref();
+  updateSoundButtons();
+  refreshSoundSwitch();
   bindLobbyEvents();
   bindCountSlider();
   refreshProfileUI();

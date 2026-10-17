@@ -2,6 +2,7 @@
 import type { Player, Question } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { Sound } from '../core/sound';
+import { comboFx } from '../core/fx';
 import { FACTIONS, SUBJECT_ICON } from '../data/factions';
 import { QUESTION_BANK, loadGrade, sortedGrades } from '../data/questionBank';
 import { G, quizStats } from './state';
@@ -194,6 +195,11 @@ export function grantLearningReward(player: Player, isSkillQuiz: boolean, questi
   } else if (player.combo >= 7) {
     player.knowledge += 2;
     rewards.push('🔥连击' + player.combo + '学识+2');
+  }
+  if (player.combo === 3 || player.combo === 5 || player.combo >= 7) {
+    Sound.play('combo');
+    const pi = G.players.indexOf(player);
+    if (pi >= 0) comboFx(pi, player.combo);
   }
   if (sub && player.subjectMastery[sub] === 5) {
     player.flags.extraDamage = (player.flags.extraDamage || 0) + 1;

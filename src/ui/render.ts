@@ -209,7 +209,8 @@ export function render(): void {
           cardCls = 'clickable ' + cardClickHint(c);
           onclick = `onclick="clickHandCard(${c.id})"`;
         } else if (G.handClickable) cardCls = 'disabled';
-        return `<div class="card ${color} ${cardCls}" ${onclick}><span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${c.type === 'basic' ? '基本' : c.type === 'trick' ? '锦囊' : '装备'}</span></div>`;
+        const typeCls = c.type === 'trick' ? ' trick-tag' : c.type === 'equip' ? ' equip-tag' : '';
+        return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}><span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${c.type === 'basic' ? '基本' : c.type === 'trick' ? '锦囊' : '装备'}</span></div>`;
       })
       .join('') || '<div style="color:var(--muted);font-size:12px;padding:20px">无手牌</div>';
 

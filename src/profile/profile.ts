@@ -291,7 +291,7 @@ export function closeProfileModal(): void {
 }
 
 /* ==================== 游戏结算 ==================== */
-function localPlayerWin(): boolean {
+export function localPlayerWin(): boolean {
   if (!G.gameOver) return false;
   const me = G.players[G.myPlayerIdx];
   if (!me) return false;

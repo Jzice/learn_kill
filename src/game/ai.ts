@@ -2,6 +2,8 @@
 import type { Player } from '../core/types';
 import { G } from './state';
 import { sleep } from '../core/dom';
+import { Sound } from '../core/sound';
+import { equipFx } from '../core/fx';
 import { FACTIONS } from '../data/factions';
 import { addChat } from './chat';
 import { addLog, addPlayLog } from './log';
@@ -54,6 +56,8 @@ export async function aiPlayPhase(idx: number): Promise<void> {
         p.equip.horseMinus = c;
       }
       addLog(`${p.name} 装备【${c.name}】`);
+      Sound.play('equip');
+      void equipFx(idx, c.name);
       equipChanged = true;
       await sleep(300);
     }

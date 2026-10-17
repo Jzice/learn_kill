@@ -6,6 +6,8 @@ import { FACTIONS } from '../data/factions';
 import { C } from '../data/cards';
 import { addLog, addPlayLog } from './log';
 import { hasSkill, drawCards, discardCard, distBetween, inRange, handLimit } from './rules';
+import { Sound } from '../core/sound';
+import { equipFx } from '../core/fx';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { waitChoice } from './choice';
@@ -24,6 +26,7 @@ export async function runTurn(idx: number): Promise<void> {
   p.flags.noSha = false;
   G.current = idx;
   addLog(`—— ${p.name}（${FACTIONS[p.faction].name}）的回合 ——`, 'hl');
+  Sound.play('turn');
   if (p.isAI) aiSpeak(p, 'idle');
   render();
   await judgePhase(p);
@@ -202,6 +205,8 @@ export async function playPhase(idx: number): Promise<void> {
         p.equip.horseMinus = card;
       }
       addLog(`${p.name} 装备【${card.name}】`);
+      Sound.play('equip');
+      void equipFx(idx, card.name);
       render();
       if (NET.isHost) scheduleSync();
     }

@@ -3,6 +3,7 @@ import type { Card, Player } from '../core/types';
 import { G } from './state';
 import { shuffle } from '../data/cards';
 import { Sound } from '../core/sound';
+import { discardFx, drawFx } from '../core/fx';
 
 export function hasSkill(p: Player, id: string): boolean {
   return !!p.skills && p.skills.some((s) => s.id === id);
@@ -42,14 +43,23 @@ export function drawCards(p: Player, n: number): void {
     const c = G.deck.pop();
     if (c) p.hand.push(c);
   }
-  if (n > 0) Sound.play('draw');
+  if (n > 0) {
+    Sound.play('draw');
+    const idx = G.players.indexOf(p);
+    if (idx === G.myPlayerIdx || G.players.length === 0) drawFx(idx < 0 ? 0 : idx, n);
+  }
 }
 
 export function discardCard(p: Player, card: Card, toDiscard = true): void {
   const i = p.hand.findIndex((c) => c.id === card.id);
   if (i >= 0) {
     p.hand.splice(i, 1);
-    if (toDiscard) G.discard.push(card);
+    if (toDiscard) {
+      G.discard.push(card);
+      const idx = G.players.indexOf(p);
+      if (idx === G.myPlayerIdx) discardFx(idx);
+      Sound.play('discard');
+    }
   }
 }
 
