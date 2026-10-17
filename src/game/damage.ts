@@ -1,0 +1,185 @@
+/* ==================== 伤害 & 濒死 ==================== */
+import { G } from './state';
+import { FX, floatTextFx } from '../core/fx';
+import { Sound } from '../core/sound';
+import { ROLES } from '../data/characters';
+import { addLog, addPlayLog } from './log';
+import { hasSkill, discardCard, drawCards, sameFaction } from './rules';
+import { render } from '../ui/render';
+import { waitChoice } from './choice';
+import { maybeSettle } from '../profile/profile';
+import { NET, scheduleSync } from '../net/network';
+
+export async function dealDamage(srcIdx: number, tgtIdx: number, amount: number, type = 'normal'): Promise<void> {
+  const tgt = G.players[tgtIdx];
+  if (!tgt || !tgt.alive) return;
+  let dmg = amount;
+  while (dmg > 0 && (tgt.shield || 0) > 0) {
+    tgt.shield--;
+    dmg--;
+    addLog(`${tgt.name} 消耗1护盾抵挡1点`, 'heal');
+    floatTextFx(tgtIdx, '护盾', '#4af');
+  }
+  while (dmg > 0 && tgt.knowledge >= 2) {
+    tgt.knowledge -= 2;
+    dmg--;
+    addLog(`${tgt.name} 消耗2学识抵挡1点`, 'heal');
+  }
+  if (dmg > 0) {
+    await FX.slash(tgtIdx);
+    floatTextFx(tgtIdx, '-' + dmg, '#ff3b30');
+    Sound.play('hit');
+    tgt.hp -= dmg;
+    addPlayLog('', 'damage', dmg, tgt.name, 'dmg');
+    render();
+    if (tgt.alive) {
+      if (hasSkill(tgt, 'hengmei') || hasSkill(tgt, 'moxuyou') || hasSkill(tgt, 'shizhe')) {
+        drawCards(tgt, 1);
+        addLog(`${tgt.name} 受伤摸一张牌`, 'hl');
+      }
+      if (hasSkill(tgt, 'hamuleite') && srcIdx >= 0) {
+        const src = G.players[srcIdx];
+        if (src.hand.length > 0) {
+          const c = src.hand[Math.floor(Math.random() * src.hand.length)];
+          discardCard(src, c);
+          addLog(`【哈姆雷特】${src.name} 弃一张牌`, 'dmg');
+        }
+      }
+    }
+    if (tgt.hp <= 0) await dyingPhase(tgtIdx, srcIdx);
+  }
+  render();
+  checkWin();
+}
+
+export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
+  const p = G.players[idx];
+  if (!p.alive) return;
+  while (p.hp <= 0) {
+    if (p.isAI) {
+      const tao = p.hand.find((c) => c.sub === 'tao');
+      if (tao) {
+        discardCard(p, tao);
+        p.hp++;
+        addLog(`${p.name} 使用【桃】自救`, 'heal');
+        FX.healGlow(idx);
+        continue;
+      }
+      let saved = false;
+      const sorted = [...G.players]
+        .map((q, i) => ({ q, i }))
+        .filter((x) => x.i !== idx && x.q.alive && x.q.isAI);
+      sorted.sort((a, b) => (sameFaction(b.q, p) ? 1 : 0) - (sameFaction(a.q, p) ? 1 : 0));
+      for (const { q, i } of sorted) {
+        if (shouldSave(q, p)) {
+          const t2 = q.hand.find((c) => c.sub === 'tao');
+          if (t2) {
+            discardCard(q, t2);
+            p.hp++;
+            addLog(`${q.name} 使用【桃】救 ${p.name}`, 'heal');
+            FX.healGlow(idx);
+            saved = true;
+            break;
+          }
+        }
+      }
+      if (!saved) {
+        p.alive = false;
+        revealDeadRole(p);
+        if (srcIdx === G.myPlayerIdx) G.myKills++;
+        await FX.death(idx);
+        break;
+      }
+    } else {
+      const opts: { label: string; value: string }[] = [];
+      p.hand
+        .filter((c) => c.sub === 'tao' || c.sub === 'jiu')
+        .forEach((c) => opts.push({ label: `【${c.name}】`, value: 'card_' + c.id }));
+      if (p.knowledge >= 1) opts.push({ label: '消耗1学识自救', value: 'know' });
+      if ((p.shield || 0) >= 1) opts.push({ label: '消耗1护盾自救', value: 'shield' });
+      opts.push({ label: '放弃', value: 'giveup' });
+      const ch = await waitChoice(idx, opts, 'rescue');
+      if (ch === 'giveup') {
+        p.alive = false;
+        revealDeadRole(p);
+        if (srcIdx === G.myPlayerIdx) G.myKills++;
+        await FX.death(idx);
+        break;
+      }
+      if (ch === 'know') {
+        p.knowledge--;
+        p.hp++;
+        addLog(`${p.name} 消耗学识自救`, 'heal');
+        FX.healGlow(idx);
+        continue;
+      }
+      if (ch === 'shield') {
+        p.shield--;
+        p.hp++;
+        addLog(`${p.name} 消耗护盾自救`, 'heal');
+        FX.healGlow(idx);
+        continue;
+      }
+      if (String(ch).startsWith('card_')) {
+        const id = Number(String(ch).slice(5));
+        const c = p.hand.find((x) => x.id === id);
+        if (c) {
+          discardCard(p, c);
+          p.hp++;
+          addLog(`${p.name} 使用【${c.name}】自救`, 'heal');
+          FX.healGlow(idx);
+          continue;
+        }
+      }
+    }
+  }
+  render();
+}
+
+export function shouldSave(healer: { role: string }, target: { role: string }): boolean {
+  const h = healer.role,
+    t = target.role;
+  if (h === 'lord' || h === 'loyal') return t === 'lord' || t === 'loyal';
+  if (h === 'rebel') return t === 'rebel';
+  return false;
+}
+
+export function revealDeadRole(p: (typeof G)['players'][number]): void {
+  if (!p || p.alive) return;
+  const wasRevealed = p.roleRevealed;
+  p.roleRevealed = true;
+  if (wasRevealed) {
+    addLog(`☠ ${p.name} 阵亡`, 'dmg');
+  } else {
+    addLog(`☠ ${p.name} 阵亡，身份公开：${ROLES[p.role].name}`, 'hl');
+  }
+  if (NET.isHost && NET.mode === 'host') scheduleSync();
+}
+
+export function checkWin(): void {
+  if (G.gameOver) return;
+  const alive = G.players.filter((p) => p.alive);
+  const lord = G.players.find((p) => p.role === 'lord');
+  const rebelsAlive = alive.some((p) => p.role === 'rebel');
+  const spiesAlive = alive.some((p) => p.role === 'spy');
+  if (!lord?.alive) {
+    if (!rebelsAlive && spiesAlive && alive.length === 1 && alive[0].role === 'spy') {
+      G.gameOver = true;
+      G.winnerText = '内奸获胜';
+    } else {
+      G.gameOver = true;
+      G.winnerText = '反贼获胜';
+    }
+    addLog('⚑ ' + G.winnerText, 'hl');
+    Sound.play('win');
+    maybeSettle();
+    return;
+  }
+  if (!rebelsAlive && !spiesAlive) {
+    G.gameOver = true;
+    G.winnerText = '主公与忠臣获胜';
+    addLog('⚑ ' + G.winnerText, 'hl');
+    Sound.play('win');
+    maybeSettle();
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+    "noFallthroughCasesInSwitch": false,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "#peer": ["./src/net/peer.cdn.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

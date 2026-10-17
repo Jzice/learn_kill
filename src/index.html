@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>学堂杀 · 九科争鸣</title>
+<script type="module" src="/main.ts"></script>
+</head>
+<body>
+
+<button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
+
+<h1>学堂杀</h1>
+<div class="subtitle">九 科 争 鸣 · 学 科 阵 营</div>
+
+<!-- 大厅 -->
+<div id="screenLobby" class="screen active">
+  <div class="panel">
+    <h3>◈ 我的档案 ◈</h3>
+    <div id="profileCard"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 游戏模式 ◈</h3>
+    <div class="opt-row" id="modePicker">
+      <button class="opt-btn active" data-mode="single">单机对局<small>你 + AI</small></button>
+      <button class="opt-btn" data-mode="host">创建房间<small>联机房主</small></button>
+      <button class="opt-btn" data-mode="join">加入房间<small>联机玩家</small></button>
+    </div>
+  </div>
+  <div id="hostConfig">
+    <div class="panel">
+      <h3>◈ 选择年级 / 学期 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（角色随年级累加）</span></h3>
+      <div class="opt-row" id="gradePicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 玩家总数 ◈</h3>
+      <div class="opt-row" id="playerCountPicker">
+        <button class="opt-btn" data-count="2">2人</button>
+        <button class="opt-btn" data-count="3">3人</button>
+        <button class="opt-btn active" data-count="4">4人</button>
+        <button class="opt-btn" data-count="5">5人</button>
+        <button class="opt-btn" data-count="6">6人</button>
+        <button class="opt-btn" data-count="7">7人</button>
+        <button class="opt-btn" data-count="8">8人</button>
+      </div>
+      <div id="aiCountHint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;"></div>
+    </div>
+    <div class="panel" id="roomConfig" style="display:none;">
+      <h3>◈ 联机配置 ◈</h3>
+      <div class="input-row"><input type="text" id="nicknameInput" placeholder="你的昵称" maxlength="12"></div>
+      <div class="lobby-btns" style="justify-content:flex-start;margin-top:0">
+        <button class="btn btn-accent" onclick="createRoom()" id="createRoomBtn">📡 创建房间</button>
+        <button class="btn" onclick="closeRoom()" id="closeRoomBtn" style="display:none;border-color:#e74c3c;color:#e74c3c">✕ 关闭房间</button>
+      </div>
+      <div id="roomInfo" style="margin-top:8px;font-size:12px;color:var(--gold);"></div>
+      <div id="hostMemberList" class="room-member-list" style="display:none"></div>
+      <button class="btn btn-accent" style="width:100%;margin-top:8px;display:none" onclick="hostStartGame()" id="hostStartBtn">▶ 开始游戏（AI 补齐空位）</button>
+    </div>
+    <div class="panel">
+      <h3>◈ 题库管理 ◈</h3>
+      <div class="bank-info" id="bankInfo">加载中…</div>
+      <div class="input-row" style="margin-bottom:6px">
+        <input type="text" id="bankUrlInput" placeholder="外部题库 URL（.json 或 .js）">
+      </div>
+      <div class="opt-row" style="margin-bottom:0;flex-wrap:wrap">
+        <button class="btn" style="flex:1" onclick="loadBankFromUrlInput()">🌐 从 URL 加载</button>
+        <button class="btn btn-accent" style="flex:1" onclick="document.getElementById('fileInput').click()">📂 导入本地题库</button>
+        <button class="btn" style="flex:0 0 auto" onclick="clearExternalBank()">🗑️ 清空外部</button>
+      </div>
+      <input type="file" id="fileInput" class="file-input" accept=".json,.js" onchange="importQuestionBank(event)">
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的身份 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（不选则随机）</span></h3>
+      <div class="role-grid" id="rolePicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的科目阵营 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（未选则随机）</span></h3>
+      <div class="faction-grid" id="factionPicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的角色 ◈ <span id="charPoolHint" style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;"></span></h3>
+      <div class="char-grid" id="charGrid"></div>
+    </div>
+    <div class="lobby-btns">
+      <button class="btn btn-accent btn-lg" id="startBtn" onclick="startSingle()">开始单机对局</button>
+    </div>
+  </div>
+  <div id="joinConfig" style="display:none;">
+    <div class="panel">
+      <h3>◈ 加入房间 ◈</h3>
+      <div class="input-row"><input type="text" id="joinNick" placeholder="你的昵称" maxlength="12"></div>
+      <div class="input-row"><input type="text" id="joinCode" placeholder="6 位房间号" maxlength="6" inputmode="numeric"></div>
+      <div class="lobby-btns" style="justify-content:flex-start;margin-top:0">
+        <button class="btn btn-accent" onclick="joinRoom()" id="joinRoomBtn">🔌 加入房间</button>
+        <button class="btn" onclick="leaveRoom()" id="leaveRoomBtn" style="display:none;border-color:#e74c3c;color:#e74c3c">✕ 退出房间</button>
+      </div>
+      <div id="joinStatus" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+      <div id="guestMemberList" class="room-member-list" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 游戏界面 -->
+<div id="screenGame" class="screen">
+  <div class="top-bar">
+    <span>回合：<span class="turn-name" id="turnName">—</span></span>
+    <span class="self-role-badge" id="selfRoleBadge">—</span>
+    <span id="connInfo" style="color:var(--green);font-size:10px;"></span>
+    <button class="btn btn-sm btn-rules" onclick="openRules()">📖 规则</button>
+  </div>
+  <div class="game-main">
+    <div class="table-area" id="tableArea">
+      <div class="seat-ring" id="seatRing"></div>
+      <div class="table-center">
+        <div class="pile">
+          <div class="pile-label">牌堆</div>
+          <div class="pile-stack"><div class="card-back-pile"></div><div class="card-back-pile"></div><div class="card-back-pile"></div></div>
+          <div class="pile-count" id="deckCount">0</div>
+        </div>
+        <div class="play-zone" id="playZoneCards">
+          <div class="play-zone-label">出 牌 区</div>
+          <span class="play-zone-empty">— 牌桌中央 —</span>
+        </div>
+        <div class="pile">
+          <div class="pile-label">弃牌</div>
+          <div class="pile-stack"><div class="card-back-pile" style="filter:brightness(.6)"></div></div>
+          <div class="pile-count" id="discardCount">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="play-log-panel" id="playLogPanel">
+        <div class="panel-title">
+          <span>战 报 <span class="badge" id="playLogBadge">0</span></span>
+          <button class="panel-toggle" onclick="togglePanel('playLogPanel')">▾</button>
+        </div>
+        <div class="play-log-list" id="playLogList"></div>
+      </div>
+      <div class="chat-panel" id="chatPanel" style="display:none;">
+        <div class="panel-title">
+          <span>聊 天 室 <span class="badge">💬</span></span>
+          <button class="panel-toggle" onclick="togglePanel('chatPanel')">▾</button>
+        </div>
+        <div class="chat-body">
+          <div class="chat-list" id="chatList"></div>
+          <div class="chat-input-row">
+            <input id="chatInput" placeholder="说点什么…" maxlength="40" onkeydown="if(event.key==='Enter')sendChat()">
+            <button onclick="sendChat()">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="center-area">
+    <div class="action-hint" id="actionHint"></div>
+    <div class="action-btns" id="actionBtns"></div>
+  </div>
+  <div class="hand-row" id="handRow"></div>
+  <div style="text-align:center;margin-top:5px;position:relative;z-index:2">
+    <button class="btn btn-sm" onclick="exitGame()">退出重开</button>
+  </div>
+</div>
+
+<!-- 移动端 dock -->
+<div class="mobile-dock" id="mobileDock">
+  <button class="dock-btn" id="dockLogBtn" onclick="openDock('log')">
+    <span>📋 战 报</span>
+    <span class="dock-badge" id="logDockBadge">0</span>
+  </button>
+  <button class="dock-btn" id="dockChatBtn" onclick="openDock('chat')">
+    <span>💬 聊 天</span>
+    <span class="dock-badge" id="chatDockBadge">0</span>
+  </button>
+</div>
+
+<!-- 移动端抽屉 -->
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="mobile-drawer-header">
+    <span id="mobileDrawerTitle">战 报</span>
+    <button class="btn btn-sm" onclick="closeDock()">✕ 关闭</button>
+  </div>
+  <div class="mobile-drawer-body" id="mobileDrawerBody"></div>
+</div>
+
+<!-- 答题弹窗 -->
+<div id="quizModal">
+  <div class="quiz-box">
+    <div class="quiz-header">
+      <div class="quiz-icon" id="quizIcon">📖</div>
+      <div class="quiz-meta">
+        <div class="quiz-subject" id="quizSubject"></div>
+        <div class="quiz-progress" id="quizProgress"></div>
+      </div>
+    </div>
+    <div class="quiz-kp" id="quizKP"></div>
+    <div class="quiz-question" id="quizQuestion"></div>
+    <div id="quizOptions"></div>
+    <div id="quizFeedback"></div>
+  </div>
+</div>
+
+<!-- 标记弹窗 -->
+<div id="markModal">
+  <div class="mark-box">
+    <div class="mark-title">标记 <span id="markTargetName"></span> 的身份</div>
+    <div class="mark-options" id="markOptions"></div>
+    <button class="btn btn-sm" onclick="closeMarkMenu()" style="width:100%">取消</button>
+  </div>
+</div>
+
+<!-- 档案 / 成就弹窗 -->
+<div id="profileModal" class="rules-modal">
+  <div class="rules-box" style="max-width:540px">
+    <div class="rules-header"><span id="profileModalTitle">我的档案</span><button onclick="closeProfileModal()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="profileModalBody"></div>
+  </div>
+</div>
+
+<!-- 规则弹窗 -->
+<div id="rulesModal" class="rules-modal">
+  <div class="rules-box">
+    <div class="rules-header"><span>📖 学堂杀规则说明</span><button onclick="closeRules()" class="rules-close">✕</button></div>
+    <div class="rules-tabs">
+      <button class="rule-tab active" data-tab="basic" onclick="switchRulesTab('basic')">基本规则</button>
+      <button class="rule-tab" data-tab="factions" onclick="switchRulesTab('factions')">九科阵营</button>
+      <button class="rule-tab" data-tab="cards" onclick="switchRulesTab('cards')">卡牌说明</button>
+      <button class="rule-tab" data-tab="chars" onclick="switchRulesTab('chars')">角色技能</button>
+      <button class="rule-tab" data-tab="ach" onclick="switchRulesTab('ach')">成就</button>
+    </div>
+    <div class="rules-content" id="rulesContent"></div>
+  </div>
+</div>
+
+<div class="fx-layer" id="fxLayer"></div>
+</body>
+</html>
