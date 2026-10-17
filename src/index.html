@@ -10,7 +10,7 @@
 
 <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
-<!-- 固定顶栏：名称 / 用户状态 / 题库浏览 / 设置 -->
+<!-- 统一固定顶栏：名称 / 用户状态 / 游戏状态 / 题库 / 规则 / 退出 / 设置 -->
 <div id="topBar">
   <button class="tb-user" onclick="openSettings()" title="查看资料">
     <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
@@ -19,9 +19,16 @@
       <span class="tb-status" id="tbStatus">蒙童 · 0 分</span>
     </span>
   </button>
+  <span class="tb-status-area" id="tbStatusArea">
+    <span class="tb-stat" id="tbTurn">回合：—</span>
+    <span class="tb-stat" id="tbRole"></span>
+    <span class="tb-stat" id="tbConn"></span>
+  </span>
   <span class="tb-actions">
-    <button class="tb-btn" onclick="openBankBrowser()" title="浏览全部题库">📚 题库</button>
-    <button class="tb-btn" onclick="openSettings()" title="设置">⚙ 设置</button>
+    <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
+    <button class="tb-icon tb-game-only" onclick="openRules()" title="规则说明">📖</button>
+    <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
+    <button class="tb-icon" onclick="openSettings()" title="设置">⚙</button>
   </span>
 </div>
 
@@ -166,13 +173,6 @@
 
 <!-- 游戏界面 -->
 <div id="screenGame" class="screen">
-  <div class="top-bar">
-    <span>回合：<span class="turn-name" id="turnName">—</span></span>
-    <span class="self-role-badge" id="selfRoleBadge">—</span>
-    <span id="connInfo" style="color:var(--green);font-size:10px;"></span>
-    <button class="btn btn-sm" onclick="openBankBrowser()" title="浏览全部题库">📚 题库</button>
-    <button class="btn btn-sm btn-rules" onclick="openRules()">📖 规则</button>
-  </div>
   <div class="game-main">
     <div class="table-area" id="tableArea">
       <div class="seat-ring" id="seatRing"></div>
@@ -216,7 +216,7 @@
       </div>
     </div>
   </div>
-  <div class="center-area">
+  <div class="center-area" id="centerArea">
     <div class="action-hint" id="actionHint"></div>
     <div class="action-btns" id="actionBtns"></div>
   </div>

@@ -1,12 +1,12 @@
 :root{--gold:#f5c542;--gold-dim:#8a6d3b;--parch:#f7f0dd;--parch2:#e8dcc0;--ink:#2a1f0f;--red:#c0392b;--green:#27ae60;--text:#e8e0d0;--muted:#a89880}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:radial-gradient(ellipse at 50% 0%,#4a2218,#2a1210 45%,#120604);background-attachment:fixed;color:var(--text);font-family:"PingFang SC","Microsoft YaHei",serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 0%,#4a2218,#2a1210 45%,#120604);background-attachment:fixed;color:var(--text);font-family:"PingFang SC","Microsoft YaHei",serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:52px 8px 8px;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px);pointer-events:none;z-index:0}
 h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba(245,197,66,.5),0 2px 0 #000;margin-bottom:2px;position:relative;z-index:1}
 .subtitle{font-size:10px;color:var(--gold-dim);letter-spacing:3px;margin-bottom:8px;position:relative;z-index:1}
 .screen{display:none;width:100%;max-width:1180px;position:relative;z-index:1}
 .screen.active{display:block}
-.sound-toggle{position:fixed;top:8px;right:8px;z-index:50;background:linear-gradient(160deg,#2a1a10,#160a06);border:2px solid var(--gold-dim);color:var(--gold);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.sound-toggle{position:fixed;top:54px;right:8px;z-index:280;background:linear-gradient(160deg,#2a1a10,#160a06);border:2px solid var(--gold-dim);color:var(--gold);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
 .sound-toggle.muted{opacity:.5;color:var(--muted)}
 .panel{background:linear-gradient(160deg,#2a1610,#1a0c08);border:1px solid var(--gold-dim);border-radius:10px;padding:12px;margin-bottom:8px;box-shadow:inset 0 0 30px rgba(0,0,0,.6)}
 .panel h3{font-size:13px;color:var(--gold);margin-bottom:8px;letter-spacing:2px}
@@ -252,7 +252,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .chat-input-row{display:flex;gap:4px;padding:5px;background:rgba(0,0,0,.35);border-top:1px solid rgba(138,109,59,.4);flex-shrink:0}
 .chat-input-row input{flex:1;background:#0a0402;border:1px solid var(--gold-dim);color:var(--text);border-radius:4px;padding:4px 8px;font-size:10.5px;font-family:inherit;min-width:0}
 .chat-input-row button{background:linear-gradient(160deg,#3a2a10,#1a0e04);border:1px solid var(--gold-dim);color:var(--gold);border-radius:4px;padding:0 10px;font-size:10.5px;cursor:pointer;font-family:inherit;flex-shrink:0}
-.center-area{background:rgba(0,0,0,.35);border:1px solid #3a2a1a;border-radius:7px;padding:5px 8px;margin-bottom:5px;min-height:50px;position:relative;z-index:2}
+.center-area{display:none;background:rgba(0,0,0,.35);border:1px solid #3a2a1a;border-radius:7px;padding:5px 8px;margin-bottom:5px;min-height:50px;position:relative;z-index:2}
 .action-hint{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px;line-height:1.4}
 .action-hint.hint-play{color:var(--gold);font-weight:600}
 .action-hint.hint-target{color:#e74c3c;font-weight:600}
@@ -504,19 +504,25 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .profile-avatar{width:44px;height:44px;font-size:20px}
 }
 
-/* ===== 固定顶栏 ===== */
-#topBar{position:sticky;top:0;z-index:300;display:flex;align-items:center;justify-content:space-between;
-  padding:6px 14px;background:linear-gradient(180deg,rgba(20,12,8,.98),rgba(20,12,8,.92));
-  border-bottom:1px solid var(--gold-dim);backdrop-filter:blur(4px)}
-.tb-user{display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;color:inherit;padding:0}
+/* ===== 统一固定顶栏（全宽 + 玻璃半透明 + 纯图标右栏） ===== */
+#topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--gold-dim)}
+.tb-user{display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;color:inherit;padding:0;min-width:0}
 .tb-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;
-  justify-content:center;font-size:18px;background:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);box-shadow:0 0 14px rgba(245,197,66,.4)}
-.tb-name{font-size:13px;color:var(--gold);font-weight:700;display:block}
-.tb-status{display:block;font-size:10px;color:var(--muted)}
-.tb-actions{display:flex;gap:6px}
-.tb-btn{background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);
-  border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit}
-.tb-btn:hover{border-color:var(--gold);box-shadow:0 0 10px rgba(245,197,66,.3)}
+  justify-content:center;font-size:18px;background:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);box-shadow:0 0 14px rgba(245,197,66,.4);flex-shrink:0}
+.tb-info{min-width:0}
+.tb-name{font-size:13px;color:var(--gold);font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-status{display:block;font-size:10px;color:var(--muted);white-space:nowrap}
+.tb-status-area{display:none;align-items:center;gap:14px;font-size:11px;color:var(--muted)}
+#topBar.in-game .tb-status-area{display:flex}
+.tb-stat{white-space:nowrap}
+.tb-stat b{color:var(--gold)}
+.tb-actions{display:flex;gap:6px;flex-shrink:0}
+.tb-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;padding:0}
+.tb-icon:hover{border-color:var(--gold);box-shadow:0 0 10px rgba(245,197,66,.3);transform:translateY(-1px)}
+.tb-game-only{display:none}
+#topBar.in-game .tb-game-only{display:flex}
 
 /* ===== 首页：模式卡 + 成就网格 ===== */
 .mode-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}

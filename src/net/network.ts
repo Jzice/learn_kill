@@ -258,6 +258,7 @@ export function onClientData(data: NetMessage): void {
     document.getElementById('screenLobby')!.classList.remove('active');
     document.getElementById('screenSetup')!.classList.remove('active');
     document.getElementById('screenGame')!.classList.add('active');
+    document.getElementById('topBar')?.classList.add('in-game');
     clearPlayZone();
     render();
   } else if (data.type === 'state_sync') {

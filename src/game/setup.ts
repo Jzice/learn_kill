@@ -168,6 +168,7 @@ export async function startSingle(): Promise<void> {
   document.getElementById('screenLobby')!.classList.remove('active');
   document.getElementById('screenSetup')!.classList.remove('active');
   document.getElementById('screenGame')!.classList.add('active');
+  document.getElementById('topBar')?.classList.add('in-game');
   clearPlayZone();
   document.getElementById('chatPanel')!.style.display = 'none';
   addLog(`游戏开始（${G.grade}）。你是 ${FACTIONS[localChar.faction].name} 阵营 ${ROLES[G.players[0].role].name}。`, 'hl');
@@ -212,6 +213,7 @@ export async function hostStartGame(): Promise<void> {
   document.getElementById('screenLobby')!.classList.remove('active');
   document.getElementById('screenSetup')!.classList.remove('active');
   document.getElementById('screenGame')!.classList.add('active');
+  document.getElementById('topBar')?.classList.add('in-game');
   clearPlayZone();
   document.getElementById('chatPanel')!.style.display = 'flex';
   addLog(`游戏开始（${G.grade}）。你是 ${FACTIONS[localChar.faction].name} 阵营 ${ROLES[G.players[0].role].name}。`, 'hl');

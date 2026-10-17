@@ -186,15 +186,15 @@ export function render(): void {
     hintText = `等待 ${G.players[G.current].name} 行动…`;
   }
 
-  document.getElementById('turnName')!.textContent = G.players[G.current]?.name || '—';
-  const roleBadge = document.getElementById('selfRoleBadge');
-  if (roleBadge && me) {
+  const tbTurn = document.getElementById('tbTurn');
+  if (tbTurn) tbTurn.textContent = '回合：' + (G.players[G.current]?.name || '—');
+  const tbRole = document.getElementById('tbRole');
+  if (tbRole && me) {
     const roleInfo = ROLES[me.role];
-    roleBadge.textContent = `${ROLE_ICON[me.role]} ${roleInfo.name}`;
-    roleBadge.className = 'self-role-badge ' + me.role;
+    tbRole.textContent = `${ROLE_ICON[me.role]} ${roleInfo.name}`;
   }
-  document.getElementById('connInfo')!.innerHTML =
-    NET.mode === 'host' ? `房间 ${NET.roomCode}` : NET.mode === 'join' ? '已连接' : '';
+  const tbConn = document.getElementById('tbConn');
+  if (tbConn) tbConn.innerHTML = NET.mode === 'host' ? `房间 ${NET.roomCode}` : NET.mode === 'join' ? '已连接' : '';
 
   renderSeats();
 
@@ -218,6 +218,9 @@ export function render(): void {
   hintEl.innerHTML = hintText;
   hintEl.className = 'action-hint ' + (hintClass || '');
   document.getElementById('actionBtns')!.innerHTML = btnHtml;
+  // 「中间的选择区域」仅在本地方有决策（有待选操作按钮）时显示，否则只呈现主游戏区
+  const centerArea = document.getElementById('centerArea');
+  if (centerArea) centerArea.style.display = btnHtml.trim() ? 'block' : 'none';
   document.getElementById('deckCount')!.textContent = String(G.deck.length || 0);
   document.getElementById('discardCount')!.textContent = String(G.discard.length || 0);
 

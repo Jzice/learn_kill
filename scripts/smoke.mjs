@@ -177,8 +177,8 @@ await page.click('#startBtn');
 await page.waitForSelector('#screenGame.active', { timeout: 5000 });
 await page.waitForTimeout(2500);
 
-// 3. 规则弹窗（位于游戏界面顶栏）
-await page.locator('#screenGame button:has-text("规则")').first().click();
+// 3. 规则弹窗（位于统一顶栏，游戏内显示）
+await page.locator('#topBar button[onclick="openRules()"]').first().click();
 await page.waitForSelector('#rulesModal.show', { timeout: 3000 });
 const rulesLen = (await page.textContent('#rulesContent'))?.length || 0;
 check('规则弹窗', rulesLen > 500, `${rulesLen} 字`);
@@ -229,7 +229,7 @@ await page.screenshot({ path: shot, fullPage: false });
 console.log('screenshot:', shot);
 
 // 8.5 题库浏览（游戏顶栏入口）
-await page.click('#screenGame button:has-text("题库")');
+await page.click('#topBar button[onclick="openBankBrowser()"]');
 await page.waitForSelector('#screenBank.active', { timeout: 3000 });
 check('题库浏览界面打开（顶栏入口）', await page.isVisible('#screenBank.active'));
 const bankGrades = await page.locator('#bankGradePicker .opt-btn').count();
