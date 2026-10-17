@@ -272,13 +272,14 @@ export function closeBankMenu(): void {
 /* ==================== 固定顶栏 / 个人成就 / 设置抽屉 ==================== */
 export function renderTopBar(): void {
   const lv = levelOf(PROFILE.score);
-  const wr = PROFILE.games ? Math.round(((PROFILE.wins || 0) / PROFILE.games) * 100) : 0;
   const av = document.getElementById('tbAvatar');
   const nm = document.getElementById('tbName');
-  const st = document.getElementById('tbStatus');
+  const lvEl = document.getElementById('tbLevel');
+  const sc = document.getElementById('tbScore');
   if (av) av.textContent = PROFILE.avatar || DEFAULT_AVATAR;
   if (nm) nm.textContent = PROFILE.name || '玩家';
-  if (st) st.textContent = `${lv.n} · ${PROFILE.score} 分 · 胜率 ${wr}%`;
+  if (lvEl) lvEl.textContent = lv.n;
+  if (sc) sc.textContent = `${PROFILE.score} 分`;
 }
 
 export function renderAchievements(): void {

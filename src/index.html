@@ -8,32 +8,40 @@
 </head>
 <body>
 
-<button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
-
-<!-- 统一固定顶栏：名称 / 用户状态 / 游戏状态 / 题库 / 规则 / 退出 / 设置 -->
+<!-- 统一固定顶栏：品牌 / 用户 / 操作图标 / 游戏状态 / 主功能 -->
 <div id="topBar">
-  <button class="tb-user" onclick="openSettings()" title="查看资料">
-    <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
-    <span class="tb-info">
-      <span class="tb-name" id="tbName">玩家</span>
-      <span class="tb-status" id="tbStatus">蒙童 · 0 分</span>
+  <div class="tb-left">
+    <div class="tb-brand">
+      <span class="tb-logo">🎓</span>
+      <span class="tb-brand-text">
+        <span class="tb-title">学堂杀</span>
+        <span class="tb-sub">九科争鸣 · 学科阵营</span>
+      </span>
+    </div>
+    <div class="tb-user-chip">
+      <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
+      <span class="tb-uname" id="tbName">玩家</span>
+      <span class="tb-badge" id="tbLevel">蒙童</span>
+      <span class="tb-badge tb-score" id="tbScore">0 分</span>
+    </div>
+    <span class="tb-actions">
+      <button class="tb-icon" onclick="openProfileMenu()" title="我的档案">👤</button>
+      <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
+      <button class="tb-icon" onclick="openPersonaMenu()" title="个性化资料">🧑</button>
     </span>
-  </button>
+  </div>
   <span class="tb-status-area" id="tbStatusArea">
     <span class="tb-stat" id="tbTurn">回合：—</span>
     <span class="tb-stat" id="tbRole"></span>
     <span class="tb-stat" id="tbConn"></span>
   </span>
-  <span class="tb-actions">
+  <span class="tb-actions tb-right">
     <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
     <button class="tb-icon tb-game-only" onclick="openRules()" title="规则说明">📖</button>
     <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
     <button class="tb-icon" onclick="openSettings()" title="设置">⚙</button>
   </span>
 </div>
-
-<h1>学堂杀</h1>
-<div class="subtitle">九 科 争 鸣 · 学 科 阵 营</div>
 
 <!-- 首页：个人成就 + 模式选择 -->
 <div id="screenLobby" class="screen active">

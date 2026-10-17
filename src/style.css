@@ -504,25 +504,54 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .profile-avatar{width:44px;height:44px;font-size:20px}
 }
 
-/* ===== 统一固定顶栏（全宽 + 玻璃半透明 + 纯图标右栏） ===== */
-#topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:space-between;gap:10px;
+/* ===== 统一固定顶栏：品牌 / 用户 / 操作图标 / 游戏状态 / 主功能 ===== */
+#topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap;
   padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--gold-dim)}
-.tb-user{display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;color:inherit;padding:0;min-width:0}
-.tb-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;
-  justify-content:center;font-size:18px;background:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);box-shadow:0 0 14px rgba(245,197,66,.4);flex-shrink:0}
-.tb-info{min-width:0}
-.tb-name{font-size:13px;color:var(--gold);font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tb-status{display:block;font-size:10px;color:var(--muted);white-space:nowrap}
-.tb-status-area{display:none;align-items:center;gap:14px;font-size:11px;color:var(--muted)}
+.tb-left{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 auto;flex-wrap:nowrap}
+.tb-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+/* 品牌 */
+.tb-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.tb-logo{font-size:22px;line-height:1}
+.tb-brand-text{display:flex;flex-direction:column;line-height:1.1}
+.tb-title{font-size:15px;color:var(--gold);font-weight:700;letter-spacing:3px}
+.tb-sub{font-size:9px;color:var(--gold-dim);letter-spacing:1px}
+/* 用户芯片 */
+.tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0}
+.tb-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;background:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);box-shadow:0 0 10px rgba(245,197,66,.4);flex-shrink:0}
+.tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
+.tb-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:linear-gradient(160deg,#5a3a10,#3a1a06);border:1px solid var(--gold-dim);color:var(--gold);white-space:nowrap;flex-shrink:0}
+.tb-badge.tb-score{color:var(--text);background:linear-gradient(160deg,#2a1a10,#160a06)}
+/* 游戏状态（仅游戏内） */
+.tb-status-area{display:none;align-items:center;gap:14px;font-size:11px;color:var(--muted);flex-shrink:0}
 #topBar.in-game .tb-status-area{display:flex}
 .tb-stat{white-space:nowrap}
 .tb-stat b{color:var(--gold)}
+/* 操作图标 */
 .tb-actions{display:flex;gap:6px;flex-shrink:0}
 .tb-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;padding:0}
 .tb-icon:hover{border-color:var(--gold);box-shadow:0 0 10px rgba(245,197,66,.3);transform:translateY(-1px)}
+.tb-icon.muted{opacity:.5;color:var(--muted)}
 .tb-game-only{display:none}
 #topBar.in-game .tb-game-only{display:flex}
+/* 响应式：窄屏允许换行两行，撑高头部 */
+@media (max-width:960px){
+  .tb-sub{display:none}
+}
+@media (max-width:640px){
+  body{padding-top:96px}
+  #topBar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px}
+  .tb-left{flex-wrap:wrap;gap:10px}
+  .tb-right{flex-wrap:wrap;justify-content:flex-end}
+  .tb-icon{width:30px;height:30px;font-size:15px}
+  .tb-uname{max-width:64px}
+  .tb-status-area{gap:8px;font-size:10px}
+}
+@media (max-width:400px){
+  body{padding-top:120px}
+  .tb-title{font-size:13px;letter-spacing:1px}
+  .tb-badge{font-size:9px;padding:2px 6px}
+}
 
 /* ===== 首页：模式卡 + 成就网格 ===== */
 .mode-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
