@@ -193,11 +193,13 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .profile-bar{height:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden;margin-top:6px;border:1px solid var(--border)}
 .profile-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));transition:width .4s}
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
-.ach-item{background:linear-gradient(160deg,#1a1a1a,#0a0a0a);border:1.5px solid #444;border-radius:7px;padding:8px 4px;text-align:center;opacity:.4;filter:grayscale(1)}
-.ach-item.unlocked{opacity:1;filter:none;border-color:var(--gold-dim);box-shadow:0 0 10px rgba(245,197,66,.25)}
+.ach-item{background:linear-gradient(160deg,#1a1a1a,#0a0a0a);border:1.5px solid #444;border-radius:7px;padding:8px 4px;text-align:center}
+.ach-item.locked{opacity:.42;filter:grayscale(1)}
+.ach-item.unlocked{opacity:1;filter:none;border-color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.35);background:linear-gradient(160deg,#241d0c,#120e05)}
 .ach-item .ach-icon{font-size:20px}
 .ach-item .ach-name{font-size:10.5px;color:var(--gold);font-weight:700;margin-top:3px}
 .ach-item .ach-desc{font-size:8.5px;color:var(--muted);line-height:1.3;margin-top:2px}
+.ach-item.locked .ach-name{color:var(--muted)}
 
 /* 游戏主界面 */
 #screenGame{max-width:1180px}
@@ -339,11 +341,74 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .wb-clear{margin-top:8px;width:100%}
 /* 档案弹窗标题栏徽章（等级/积分，仅自我视图） */
 .pm-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:10.5px;font-weight:700;color:#2a1a06;background:var(--gold);box-shadow:0 1px 6px rgba(0,0,0,.4);vertical-align:1px}
+
+/* ==================== 一局结束结算 ==================== */
+.settle-hero{position:relative;height:150px;border-radius:10px;overflow:hidden;margin-bottom:10px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(245,197,66,.16),transparent 70%)}
+.settle-hero.lose{background:radial-gradient(ellipse at center,rgba(120,120,140,.18),transparent 70%)}
+.settle-hero.spy{background:radial-gradient(ellipse at center,rgba(155,89,182,.22),transparent 70%)}
+.settle-hero.rebel{background:radial-gradient(ellipse at center,rgba(231,76,60,.22),transparent 70%)}
+.sh-text{text-align:center;z-index:3;position:relative}
+.sh-title{font-size:30px;font-weight:800;letter-spacing:4px;color:var(--gold);text-shadow:0 2px 18px rgba(245,197,66,.6);animation:shPop .6s cubic-bezier(.2,1.6,.4,1)}
+.settle-hero.lose .sh-title{color:#b0b0c0;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+@keyframes shPop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.sh-sub{font-size:12px;color:var(--text);margin-top:6px;letter-spacing:1px;text-shadow:0 1px 4px #000}
+.settle-idcard{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(0,0,0,.28);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+.si-av{font-size:26px}
+.si-main{flex:1;display:flex;flex-direction:column}
+.si-name{font-size:14px;color:var(--gold);font-weight:700}
+.si-role{font-size:10.5px;color:var(--muted)}
+.si-result{font-size:11px;padding:2px 8px;border-radius:10px}
+.si-result.win{background:rgba(95,224,138,.16);color:#5fe08a}
+.si-result.lose{background:rgba(231,76,60,.16);color:#e88b7f}
+.settle-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.ss-cell{background:rgba(0,0,0,.24);border:1px solid var(--border);border-radius:7px;padding:7px 4px;text-align:center}
+.ss-cell b{display:block;font-size:16px;color:var(--gold)}
+.ss-cell span{font-size:9.5px;color:var(--muted)}
+.settle-score{text-align:center;font-size:12px;color:#8fd0ff;margin-bottom:8px}
+.settle-ach{display:flex;flex-wrap:wrap;gap:6px}
+.sd-ach{font-size:11px;padding:3px 9px;border-radius:12px;background:rgba(245,197,66,.16);color:var(--gold);border:1px solid var(--gold-dim)}
+.settle-table{width:100%;border-collapse:collapse;font-size:11px}
+.settle-table th{color:var(--gold-dim);font-weight:600;font-size:10px;text-align:left;padding:3px 5px;border-bottom:1px solid var(--border)}
+.settle-table td{padding:4px 5px;border-bottom:1px solid rgba(255,255,255,.05)}
+.settle-table tr.me{background:rgba(245,197,66,.1)}
+.sd-me{font-size:9px;padding:0 5px;border-radius:8px;background:var(--gold);color:#2a1a06}
+.settle-btns{display:flex;gap:8px;margin-top:10px}
+.settle-btns .btn{flex:1}
+
+/* ---- 胜利方式个性动画 ---- */
+.vic-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.vic-icon{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:52px;z-index:2;animation:vicIcon .8s cubic-bezier(.2,1.6,.4,1)}
+.vic-word{position:absolute;left:50%;top:78%;transform:translateX(-50%);z-index:3;font-size:16px;font-weight:800;letter-spacing:6px;color:var(--gold);text-shadow:0 2px 10px #000;animation:vicWord .7s .25s both}
+@keyframes vicIcon{0%{transform:translate(-50%,-140%) scale(.3);opacity:0}70%{transform:translate(-50%,-50%) scale(1.2)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+@keyframes vicWord{from{opacity:0;transform:translateX(-50%) scale(.6)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+/* 主公：金色光柱 + 旋转光芒 */
+.vic-lord .vic-beam{position:absolute;left:50%;top:-10%;width:60px;height:130%;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(245,197,66,.42),transparent);animation:vicBeam 1.1s ease-out}
+@keyframes vicBeam{0%{width:6px;opacity:0}40%{opacity:1}100%{width:190px;opacity:0}}
+.vic-lord .vic-rays{position:absolute;left:50%;top:50%;width:340px;height:340px;margin:-170px 0 0 -170px;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(245,197,66,.22) 0deg 6deg,transparent 6deg 16deg);animation:vicSpin 6s linear infinite}
+@keyframes vicSpin{to{transform:rotate(360deg)}}
+/* 反贼：冲击波 + 火焰 */
+.vic-rebel .vic-boom{position:absolute;left:50%;top:46%;width:40px;height:40px;margin:-20px 0 0 -20px;border:4px solid rgba(231,76,60,.85);border-radius:50%;animation:vicBoom 1.2s ease-out forwards}
+.vic-rebel .vic-boom.b2{animation-delay:.28s}
+@keyframes vicBoom{0%{transform:scale(.2);opacity:1}100%{transform:scale(7);opacity:0}}
+.vic-rebel .vic-fire{position:absolute;left:50%;bottom:6%;font-size:22px;animation:vicFire 1.4s ease-out forwards;filter:drop-shadow(0 0 10px rgba(231,76,60,.9))}
+@keyframes vicFire{0%{transform:translate(-50%,40px) scale(.5);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-40px) scale(1.4);opacity:0}}
+/* 内奸：紫雾 + 翻牌 */
+.vic-spy .vic-smoke{position:absolute;inset:0;background:radial-gradient(circle at 50% 55%,rgba(155,89,182,.55),transparent 62%);animation:vicSmoke 1.8s ease-out forwards}
+@keyframes vicSmoke{0%{transform:scale(.3);opacity:0}35%{opacity:1}100%{transform:scale(2.4);opacity:0}}
+.vic-spy .vic-cards{position:absolute;left:50%;top:40%;transform:translateX(-50%);font-size:30px;letter-spacing:14px;animation:vicCards 1.3s ease-out forwards}
+@keyframes vicCards{0%{transform:translateX(-50%) rotateY(0);opacity:0}50%{opacity:1}100%{transform:translateX(-50%) rotateY(720deg) scale(1.5);opacity:0}}
+/* 败北：碎片飘落 */
+.vic-lose .vic-shard{position:absolute;top:-12px;width:9px;height:9px;background:#8a8a99;opacity:.85;animation:vicShard 1.8s linear forwards}
+.vic-lose .vic-shard.s1{left:26%}.vic-lose .vic-shard.s2{left:52%;width:7px;height:12px}.vic-lose .vic-shard.s3{left:74%;width:11px;height:6px}
+@keyframes vicShard{0%{transform:translateY(0) rotate(0);opacity:0}15%{opacity:.9}100%{transform:translateY(170px) rotate(320deg);opacity:0}}
 .play-log-item{margin-bottom:3px;padding:2px 5px;background:rgba(0,0,0,.3);border-left:2px solid var(--gold-dim);border-radius:0 4px 4px 0;animation:logIn .35s ease-out;color:#c8b8a0}
 @keyframes logIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
 .play-log-item .pl-from{font-weight:600;color:#e8a0a0}
 .play-log-item .pl-card{color:var(--gold);font-weight:600}
 .play-log-item .pl-to{color:#a0c8e8;font-weight:600}
+/* 战报中的角色头像 + 名字 */
+.play-log-item .pl-who{display:inline-flex;align-items:center;gap:3px;vertical-align:-2px}
+.play-log-item .pl-av{font-size:11px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .play-log-item.dmg{border-left-color:#e74c3c}
 .play-log-item.heal{border-left-color:#27ae60}
 .play-log-item.skill{border-left-color:#9b59b6}
@@ -722,8 +787,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .mc-icon{font-size:28px}.mc-title{font-size:14px;color:var(--gold);font-weight:700}.mc-desc{font-size:10px;color:var(--muted)}
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:5px}
 .ach-item{border:1px solid var(--border);border-radius:7px;padding:6px 4px;text-align:center;background:rgba(0,0,0,.28)}
-.ach-item.locked{opacity:.42;filter:grayscale(.7)}
+.ach-item.locked{opacity:.45;filter:grayscale(1)}
+.ach-item.unlocked{border-color:var(--gold-dim);box-shadow:0 0 10px rgba(245,197,66,.25)}
 .ach-item .ai{font-size:20px}.ach-item .an{font-size:9px;color:var(--muted);margin-top:2px}
+.ach-item.unlocked .an{color:var(--gold)}
 .ach-item .ap{font-size:8.5px;color:var(--gold-dim)}
 .ach-summary{font-size:10px;color:var(--muted);font-weight:400;margin-left:4px}
 

@@ -328,5 +328,33 @@ export async function resultBanner(text: string, win: boolean): Promise<void> {
     { duration: 2000, easing: 'cubic-bezier(.3,1.4,.5,1)', fill: 'forwards' },
   );
   await sleep(1400);
-  setTimeout(() => el.remove(), 700);
-}
+    setTimeout(() => el.remove(), 700);
+  }
+
+  /** 胜利方式：按获胜阵营区分不同个性动画 */
+  export type WinCamp = 'lord' | 'rebel' | 'spy' | 'lose';
+
+  /**
+   * 结算胜利动画：不同胜利方式各不相同
+   *  - lord  主公阵营：金色光柱 + 旋转光芒 + 皇冠加冕
+   *  - rebel 反贼胜利：红色冲击波 + 火焰升腾
+   *  - spy   内奸胜利：紫色迷雾 + 翻牌
+   *  - lose  我方败北：灰色碎片飘落
+   */
+  export function victoryFx(camp: WinCamp, mountId = 'settleHero'): void {
+    const mount = document.getElementById(mountId) || document.getElementById('fxLayer');
+    if (!mount) return;
+    const wrap = document.createElement('div');
+    wrap.className = `vic-fx vic-${camp}`;
+    if (camp === 'lord') {
+      wrap.innerHTML = `<div class="vic-beam"></div><div class="vic-rays"></div><div class="vic-icon">👑</div><div class="vic-word">加冕</div>`;
+    } else if (camp === 'rebel') {
+      wrap.innerHTML = `<div class="vic-boom b1"></div><div class="vic-boom b2"></div><div class="vic-fire">🔥</div><div class="vic-icon">🔥</div><div class="vic-word">揭竿</div>`;
+    } else if (camp === 'spy') {
+      wrap.innerHTML = `<div class="vic-smoke"></div><div class="vic-cards">🂠 🂡 🂢</div><div class="vic-icon">🦊</div><div class="vic-word">渔利</div>`;
+    } else {
+      wrap.innerHTML = `<div class="vic-shard s1"></div><div class="vic-shard s2"></div><div class="vic-shard s3"></div><div class="vic-icon">💔</div><div class="vic-word">折戟</div>`;
+    }
+    mount.appendChild(wrap);
+    setTimeout(() => wrap.remove(), 4000);
+  }

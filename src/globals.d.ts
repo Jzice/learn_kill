@@ -56,6 +56,10 @@ declare global {
     requestSeatMove: (toIndex: number) => void;
     pickSeatMember: (peerId: string) => void;
     randomizeSeats: () => void;
+    // 一局结束结算
+    closeSettle: () => void;
+    requestRematch: () => void;
+    startSingleGame: () => void;
     // 二级菜单 / 对局设置子界面
     openProfileMenu: () => void;
     openBankMenu: () => void;

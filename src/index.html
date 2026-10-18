@@ -93,7 +93,6 @@
         <span class="mc-desc">创建房间或加入房间（下一步选择联机方式）</span>
       </button>
     </div>
-    <div class="setup-summary" id="setupSummary"></div>
   </div>
 </div>
 
@@ -307,6 +306,14 @@
   <div class="rules-box" style="max-width:540px">
     <div class="rules-header"><span id="profileModalTitle">我的档案</span><button onclick="closeProfileModal()" class="rules-close">✕</button></div>
     <div class="rules-content" id="profileModalBody"></div>
+  </div>
+</div>
+
+<!-- 一局结束结算 -->
+<div id="settleModal" class="rules-modal">
+  <div class="rules-box" style="max-width:620px">
+    <div class="rules-header"><span>本局结算</span><button onclick="closeSettle()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="settleBody"></div>
   </div>
 </div>
 

@@ -8,6 +8,7 @@ import { addLog, appendPlayLog, playLog, setPlayLog } from '../game/log';
 import { render } from '../ui/render';
 import { clearPlayZone } from '../ui/playzone';
 import { SELECTED_COUNT, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
+import { backToRoomForRematch, hostHandleRematchRequest } from '../ui/settle';
 import { onAskQuizRequest } from '../game/quiz';
 import { maybeSettle, publicProfile } from '../profile/profile';
 
@@ -287,6 +288,10 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
   } else if (data.type === 'seat_move_request') {
     // 房主权威：只允许请求者移动自己（无法代他人操作，避免越权改他人座位）
     NET.moveSeat(conn.peer, data.toIndex);
+  } else if (data.type === 'rematch_request') {
+    // 加入方申请重开：房主同意后全体回到房间界面
+    const nm = NET.roomMembers.find((m) => m.peerId === conn.peer)?.name || '玩家';
+    hostHandleRematchRequest(nm);
   } else if (data.type === 'choose_response') {
     if (G.pendingPlayer != null && G.pendingResolve) {
       const r = G.pendingResolve;
@@ -325,6 +330,8 @@ export function onClientData(data: NetMessage): void {
   if (data.type === 'seat_update') {
     NET.seats = (data.seats || []).map((s) => (s ? { peerId: s.peerId, name: s.name } : null));
     renderSeatPanel();
+  } else if (data.type === 'rematch') {
+    backToRoomForRematch();
   } else if (data.type === 'start_game') {
     G.players = data.players;
     G.myPlayerIdx = data.myPlayerIdx;

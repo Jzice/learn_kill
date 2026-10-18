@@ -33,6 +33,8 @@ export type NetMessage =
   | { type: 'leave_room'; name?: string }
   /** 请求换座（仅能移动自己）：与目标座位占位者互换，空位则直接落座 */
   | { type: 'seat_move_request'; toIndex: number }
+  /** 加入方申请直接重开一局 */
+  | { type: 'rematch_request' }
   // ---- 房主 → 客户端 ----
   | { type: 'chat'; name: string; text: string; avatar?: string; moodIcon?: string; mood?: string }
   | { type: 'play_log'; entry: LogEntry }
@@ -66,6 +68,8 @@ export type NetMessage =
   | { type: 'ask_quiz_request'; question: Question; isSkill: boolean; quizId: number }
   /** 座位表更新（下标即座位号，null 由 AI 补齐） */
   | { type: 'seat_update'; seats: (SeatSlot | null)[]; targetCount: number }
+  /** 房主通知全体：回到房间界面直接重开一局 */
+  | { type: 'rematch' }
   | { type: 'host_closed' };
 
 /** 客户端加入时房主保存的成员信息（含 peerId，不广播） */

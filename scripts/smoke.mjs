@@ -91,8 +91,7 @@ const achCount = await page.locator('#achGrid .ach-item').count();
 check('个人成就网格渲染', achCount > 0, `${achCount} 项`);
 const modeCount = await page.locator('#modePicker .mode-card').count();
 check('模式选择（单机/联机）', modeCount === 2, `${modeCount} 张`);
-const summaryText = await page.textContent('#setupSummary');
-check('主界面配置摘要', !!summaryText && summaryText.includes('年级'), (summaryText || '').replace(/\s+/g, ' ').slice(0, 50));
+check('主界面已移除模式/年级/出题范围摘要', (await page.locator('#setupSummary').count()) === 0);
 
 // 1.0 顶栏直达入口（个人信息芯片=我的档案+个性化资料合并弹窗；⚙ 题库管理在题库浏览内）
 check('顶栏个人信息芯片可点（打开我的档案）', (await page.getAttribute('#topBar .tb-user-chip', 'onclick'))?.includes('openProfileMenu') === true);
@@ -165,11 +164,10 @@ check('滑块联动身份可选范围', roleCards >= 4, `${roleCards} 个身份�
 await page.fill('#countSlider', '4'); // 复位为 4 人局以便后续断言
 await page.waitForTimeout(200);
 
-// 1.6 返回主界面 → 摘要更新
+// 1.6 返回主界面 → 无配置摘要块
 await page.click('#screenSetup .setup-top button');
 await page.waitForSelector('#screenLobby.active', { timeout: 3000 });
-const summary2 = await page.textContent('#setupSummary');
-check('返回主界面且摘要同步', !!summary2 && summary2.includes('4 人'), (summary2 || '').replace(/\s+/g, ' ').slice(0, 40));
+check('返回主界面且无摘要块', (await page.locator('#setupSummary').count()) === 0);
 await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 

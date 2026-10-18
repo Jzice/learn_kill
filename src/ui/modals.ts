@@ -82,7 +82,7 @@ export function switchRulesTab(tab: string): void {
     el.innerHTML = `<div class="rule-section"><h4>🏅 成就一览</h4><div class="ach-grid">${
       ACHIEVEMENTS.map((a) => {
         const un = !!PROFILE.achievements[a.id];
-        return `<div class="ach-item ${un ? 'unlocked' : ''}"><div class="ach-icon">${a.icon}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
+        return `<div class="ach-item ${un ? 'unlocked' : 'locked'}"><div class="ach-icon">${un ? a.icon : '🔒'}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
       }).join('')
     }</div></div>`;
   }

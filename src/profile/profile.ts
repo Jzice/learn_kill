@@ -8,6 +8,7 @@ import type {
   PublicProfile,
 } from '../core/types';
 import { escapeHtml } from '../core/dom';
+import { showSettle } from '../ui/settle';
 import { SUBJECT_ICON } from '../data/factions';
 import { G, quizStats } from '../game/state';
 import { addLog } from '../game/log';
@@ -288,7 +289,7 @@ export function showAchievements(p: Profile | PublicProfile, title: string, opts
   const moodIcon = (p as PublicProfile).moodIcon || DEFAULT_MOOD_ICON;
   const grid = ACHIEVEMENTS.map((a) => {
     const un = !!(p.achievements && p.achievements[a.id]);
-    return `<div class="ach-item ${un ? 'unlocked' : ''}"><div class="ach-icon">${a.icon}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
+    return `<div class="ach-item ${un ? 'unlocked' : 'locked'}"><div class="ach-icon">${un ? a.icon : '🔒'}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
   }).join('');
   const subs = p.subjects || {};
   const subNames = Object.keys(SUBJECT_ICON);
@@ -376,4 +377,16 @@ export function maybeSettle(): void {
   if (NET.isHost && NET.mode === 'host') {
     NET.broadcast({ type: 'chat', name: '系统', text: `${PROFILE.name} 本局${win ? '胜利' : '败北'}，积分 +${gained}` });
   }
+  // 一局结束结算面板（含按胜利方式的个性动画 + 重开一局入口）
+  showSettle({
+    win,
+    gained,
+    correct,
+    total,
+    score: PROFILE.score,
+    newAch: newAch
+      .map((id) => ACHIEVEMENTS.find((x) => x.id === id))
+      .filter((a): a is (typeof ACHIEVEMENTS)[number] => !!a)
+      .map((a) => ({ icon: a.icon, name: a.name })),
+  });
 }

@@ -302,10 +302,11 @@ export function renderAchievements(): void {
   if (!grid) return;
   const got = ACHIEVEMENTS.filter((a) => (PROFILE.achievements || {})[a.id]);
   if (sum) sum.textContent = `已解锁 ${got.length}/${ACHIEVEMENTS.length}`;
+  // 按当前用户实际成就状态展示：已解锁彩色高亮，未解锁灰化并显示解锁条件
   grid.innerHTML = ACHIEVEMENTS.map((a) => {
     const has = !!(PROFILE.achievements || {})[a.id];
-    return `<div class="ach-item ${has ? '' : 'locked'}" title="${escapeHtml(a.desc || '')}">
-      <div class="ai">${a.icon}</div>
+    return `<div class="ach-item ${has ? 'unlocked' : 'locked'}" title="${escapeHtml(a.desc || '')}">
+      <div class="ai">${has ? a.icon : '🔒'}</div>
       <div class="an">${escapeHtml(a.name)}</div>
       <div class="ap">${has ? '已解锁' : escapeHtml(a.desc || '')}</div></div>`;
   }).join('');
