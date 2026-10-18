@@ -1,6 +1,7 @@
 // 题库构建：读取 data/questions/<年级>/<科目>.tsv，生成按年级懒加载的配置模块
 //   TSV 列：题干 \t 单元 \t 知识点 \t 选项A \t 选项B \t 选项C \t 选项D \t 正确序号(0-3)
 // 产物：src/data/banks/gNN.ts（每年级一个模块）+ src/data/banks/manifest.ts（年级清单、科目题数、动态加载器）
+// 选项重排：正确答案在 A/B/C/D 四个选项中均匀分布（见 redistributeOptions）
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -99,10 +100,55 @@ for (const grade of GRADE_ORDER) {
   grandTotal += all.length;
 }
 
+// ---- 选项重排：使正确答案在 A/B/C/D 中均匀分布 ----
+// 正确项按生成序号轮转落位（每 4 题恰好 A/B/C/D 各一次，最多 ±1），
+// 干扰项以「科目|题干」为种子的确定性 Fisher-Yates 洗牌，避免出现可预测模式；
+// 重建结果可复现，题目内容不丢失（仅改变选项排列与正确项下标）。
+function hashSeed(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function redistributeOptions(questions) {
+  let seq = 0;
+  const dist = [0, 0, 0, 0];
+  for (const q of questions) {
+    if (!q.o || q.o.length !== 4 || !Number.isInteger(q.a) || q.a < 0 || q.a > 3) continue;
+    const target = seq++ % 4;
+    const rand = mulberry32(hashSeed(q.s + '|' + q.q));
+    const correct = q.o[q.a];
+    const others = q.o.filter((_, i) => i !== q.a);
+    for (let i = others.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [others[i], others[j]] = [others[j], others[i]];
+    }
+    const o = [];
+    let k = 0;
+    for (let i = 0; i < 4; i++) o.push(i === target ? correct : others[k++]);
+    q.o = o;
+    q.a = target;
+    dist[target]++;
+  }
+  return dist;
+}
+
 // 生成年级模块
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 const files = result.map((g, i) => {
+  const dist = redistributeOptions(g.questions);
   const slug = 'g' + String(i + 1).padStart(2, '0');
   const body = `// 由 scripts/build-banks.mjs 从 data/questions/${g.grade}/ 生成，请勿手改题目数据
 // 年级：${g.grade}（${g.questions.length} 题）—— 按需动态加载
@@ -113,7 +159,7 @@ const QUESTIONS: Question[] = ${JSON.stringify(g.questions)};
 export default QUESTIONS;
 `;
   fs.writeFileSync(path.join(outDir, slug + '.ts'), body, 'utf8');
-  return { slug, grade: g.grade, count: g.questions.length, perSubject: g.perSubject };
+  return { slug, grade: g.grade, count: g.questions.length, perSubject: g.perSubject, dist };
 });
 
 const meta = files
@@ -150,6 +196,7 @@ fs.writeFileSync(path.join(outDir, 'manifest.ts'), manifest, 'utf8');
 console.log(`年级 ${files.length} 个，题目总计 ${grandTotal} 题`);
 for (const f of files) {
   console.log(`  ${f.grade}: ${f.count} 题  ${Object.entries(f.perSubject).map(([k, v]) => `${k}${v}`).join(' ')}`);
+  console.log(`    答案分布 A/B/C/D: ${f.dist.join(' / ')}`);
 }
 if (pending.length) {
   console.log(`\n⏳ 待补充 ${pending.length} 项（不阻断构建）：`);
