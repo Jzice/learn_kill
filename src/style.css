@@ -513,7 +513,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 }
 
 /* ===== 统一固定顶栏：品牌 / 用户 / 操作图标 / 游戏状态 / 主功能 ===== */
-#topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:nowrap;
+#topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;
   padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--gold-dim)}
 /* 按钮区：放不下时横向来回滚动（隐藏滚动条，触摸/滚轮均可滑动） */
@@ -531,6 +531,9 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
 .tb-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:linear-gradient(160deg,#5a3a10,#3a1a06);border:1px solid var(--gold-dim);color:var(--gold);white-space:nowrap;flex-shrink:0}
 .tb-badge.tb-score{color:var(--text);background:linear-gradient(160deg,#2a1a10,#160a06)}
+/* 布局模式（JS 实测切换）：tb-mode2 = 信息+按钮同在第二行、整体靠左 */
+#topBar.tb-mode2 .tb-brand{flex-basis:100%}
+#topBar.tb-mode2 .tb-user-chip{margin-left:0}
 /* 游戏内状态条（牌桌上方，非顶栏） */
 .game-status-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);
   padding:5px 10px;margin-bottom:5px;background:rgba(0,0,0,.35);border:1px solid #3a2a1a;border-radius:7px;position:relative;z-index:2}
@@ -551,8 +554,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .tb-sub{display:none}
 }
 @media (max-width:640px){
-  #topBar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px}
-  .tb-right{justify-content:flex-start;gap:8px;margin-left:auto}
+  #topBar{gap:6px 10px;padding:6px 10px}
+  .tb-right{gap:8px}
   .tb-icon{width:30px;height:30px;font-size:15px}
   .tb-uname{max-width:64px}
 }

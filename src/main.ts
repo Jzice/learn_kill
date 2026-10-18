@@ -108,14 +108,33 @@ window.selectChar = selectChar;
 window.openBankBrowser = openBankBrowser;
 window.closeBankBrowser = closeBankBrowser;
 
-/** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位 */
+/** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位；
+ *  并实测三段宽度切换布局模式：单行放得下=单行；信息+按钮第二行放得下=第二行靠左；否则信息回第一行右、按钮第二行左 */
 function syncTopBarHeight(): void {
   const tb = document.getElementById('topBar');
   if (!tb) return;
-  const set = () => document.documentElement.style.setProperty('--tb-h', tb.offsetHeight + 6 + 'px');
+  const brand = tb.querySelector<HTMLElement>('.tb-brand');
+  const chip = tb.querySelector<HTMLElement>('.tb-user-chip');
+  const right = tb.querySelector<HTMLElement>('.tb-right');
+  const set = () => {
+    document.documentElement.style.setProperty('--tb-h', tb.offsetHeight + 6 + 'px');
+    if (!brand || !chip || !right) return;
+    tb.classList.remove('tb-mode2'); // 先按默认样式测自然宽度
+    const cs = getComputedStyle(tb);
+    const avail = tb.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const gap = parseFloat(cs.columnGap) || 10;
+    const nat = (el: HTMLElement) => el.scrollWidth + (el.offsetWidth - el.clientWidth);
+    const allFit = nat(brand) + nat(chip) + nat(right) + gap * 2 <= avail;
+    const pairFit = nat(chip) + nat(right) + gap <= avail;
+    const wantMode2 = !allFit && pairFit;
+    if (wantMode2 !== tb.classList.contains('tb-mode2')) tb.classList.toggle('tb-mode2', wantMode2);
+  };
   set();
   try {
-    new ResizeObserver(set).observe(tb);
+    const ro = new ResizeObserver(set);
+    ro.observe(tb);
+    if (chip) ro.observe(chip);
+    if (right) ro.observe(right);
   } catch (e) {
     window.addEventListener('resize', set);
   }
