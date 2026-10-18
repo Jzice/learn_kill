@@ -8,6 +8,7 @@ import { escapeHtml } from '../core/dom';
 import { displayOrder, handLimit } from '../game/rules';
 import { isCardClickable, cardClickHint } from './hand';
 import { ROLE_MARKS } from '../game/marks';
+import { closeDock, isDockOpen } from './dock';
 import { NET, scheduleSync } from '../net/network';
 
 const EQUIP_ICON: Record<string, string> = {
@@ -241,7 +242,12 @@ export function render(): void {
   document.getElementById('actionBtns')!.innerHTML = btnHtml;
   // 「中间的选择区域」仅在本地方有决策（有待选操作按钮）时显示，否则只呈现主游戏区
   const centerArea = document.getElementById('centerArea');
-  if (centerArea) centerArea.style.display = btnHtml.trim() ? 'block' : 'none';
+  if (centerArea) {
+    const show = !!btnHtml.trim();
+    // 弹出操作按钮时自动收起移动端抽屉，避免遮挡操作提示
+    if (show && centerArea.style.display !== 'block' && isDockOpen('chat')) closeDock();
+    centerArea.style.display = show ? 'block' : 'none';
+  }
   document.getElementById('deckCount')!.textContent = String(G.deck.length || 0);
   document.getElementById('discardCount')!.textContent = String(G.discard.length || 0);
 
