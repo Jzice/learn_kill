@@ -186,15 +186,15 @@ export function render(): void {
     hintText = `等待 ${G.players[G.current].name} 行动…`;
   }
 
-  const tbTurn = document.getElementById('tbTurn');
-  if (tbTurn) tbTurn.textContent = '回合：' + (G.players[G.current]?.name || '—');
-  const tbRole = document.getElementById('tbRole');
-  if (tbRole && me) {
+  const gsTurn = document.getElementById('gsTurn');
+  if (gsTurn) gsTurn.textContent = '回合：' + (G.players[G.current]?.name || '—');
+  const gsRole = document.getElementById('gsRole');
+  if (gsRole && me) {
     const roleInfo = ROLES[me.role];
-    tbRole.textContent = `${ROLE_ICON[me.role]} ${roleInfo.name}`;
+    gsRole.textContent = `${ROLE_ICON[me.role]} ${roleInfo.name}`;
   }
-  const tbConn = document.getElementById('tbConn');
-  if (tbConn) tbConn.innerHTML = NET.mode === 'host' ? `房间 ${NET.roomCode}` : NET.mode === 'join' ? '已连接' : '';
+  const gsConn = document.getElementById('gsConn');
+  if (gsConn) gsConn.innerHTML = NET.mode === 'host' ? `房间 ${NET.roomCode}` : NET.mode === 'join' ? '已连接' : '';
 
   renderSeats();
 

@@ -259,7 +259,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .action-hint.hint-urgent{color:#ff9a5a;font-weight:600;animation:hintPulse 1s infinite}
 @keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.65}}
 .action-btns{display:flex;gap:4px;flex-wrap:wrap}
-.hand-row{display:flex;gap:5px;overflow-x:auto;padding:4px 2px 8px;min-height:98px;align-items:flex-end;position:relative;z-index:2;justify-content:center}
+.hand-row{display:flex;flex-wrap:wrap;gap:5px;padding:4px 2px 8px;min-height:98px;align-items:flex-end;position:relative;z-index:2;justify-content:center}
 .card{width:58px;height:84px;flex-shrink:0;border-radius:5px;background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.5),transparent 60%),linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);box-shadow:0 3px 9px rgba(0,0,0,.65);position:relative;cursor:default;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600}
 .card.clickable{cursor:pointer}
 .card.clickable:hover{transform:translateY(-10px) scale(1.06);box-shadow:0 10px 22px rgba(245,197,66,.55);border-color:var(--gold);z-index:3}
@@ -521,11 +521,12 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
 .tb-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:linear-gradient(160deg,#5a3a10,#3a1a06);border:1px solid var(--gold-dim);color:var(--gold);white-space:nowrap;flex-shrink:0}
 .tb-badge.tb-score{color:var(--text);background:linear-gradient(160deg,#2a1a10,#160a06)}
-/* 游戏状态（仅游戏内） */
-.tb-status-area{display:none;align-items:center;gap:14px;font-size:11px;color:var(--muted);flex-shrink:0}
-#topBar.in-game .tb-status-area{display:flex}
-.tb-stat{white-space:nowrap}
-.tb-stat b{color:var(--gold)}
+/* 游戏内状态条（牌桌上方，非顶栏） */
+.game-status-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);
+  padding:5px 10px;margin-bottom:5px;background:rgba(0,0,0,.35);border:1px solid #3a2a1a;border-radius:7px;position:relative;z-index:2}
+.game-status-bar #gsTurn{color:var(--gold);font-weight:700;white-space:nowrap}
+.game-status-bar #gsRole{white-space:nowrap}
+.game-status-bar #gsConn{margin-left:auto;white-space:nowrap;font-size:10px}
 /* 操作图标 */
 .tb-actions{display:flex;gap:6px;flex-shrink:0}
 .tb-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;padding:0}
@@ -543,7 +544,6 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .tb-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}
   .tb-icon{width:30px;height:30px;font-size:15px}
   .tb-uname{max-width:64px}
-  .tb-status-area{gap:8px;font-size:10px}
 }
 @media (max-width:400px){
   body{padding-top:140px}

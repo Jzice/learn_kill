@@ -24,11 +24,6 @@
       <span class="tb-badge" id="tbLevel">蒙童</span>
       <span class="tb-badge tb-score" id="tbScore">0 分</span>
     </div>
-    <span class="tb-status-area" id="tbStatusArea">
-      <span class="tb-stat" id="tbTurn">回合：—</span>
-      <span class="tb-stat" id="tbRole"></span>
-      <span class="tb-stat" id="tbConn"></span>
-    </span>
     <span class="tb-actions">
       <button class="tb-icon" onclick="openProfileMenu()" title="我的档案">👤</button>
       <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
@@ -181,6 +176,11 @@
 
 <!-- 游戏界面 -->
 <div id="screenGame" class="screen">
+  <div class="game-status-bar" id="gameStatusBar">
+    <span id="gsTurn">回合：—</span>
+    <span id="gsRole"></span>
+    <span id="gsConn"></span>
+  </div>
   <div class="game-main">
     <div class="table-area" id="tableArea">
       <div class="seat-ring" id="seatRing"></div>
