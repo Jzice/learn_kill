@@ -256,12 +256,13 @@ export async function requestShan(targetIdx: number, srcIdx: number): Promise<bo
     return false;
   }
   const opts: { label: string; value: string }[] = [];
-  t.hand
-    .filter((c) => c.sub === 'shan')
-    .forEach((c) => opts.push({ label: `【闪】${c.suit}${c.num}`, value: 'card_' + c.id }));
-  if (t.knowledge >= 1) opts.push({ label: '1学识当闪', value: 'know' });
+  const shans = t.hand.filter((c) => c.sub === 'shan');
+  shans.forEach((c) => opts.push({ label: `【闪】${c.suit}${c.num}`, value: 'card_' + c.id }));
+  // 答题免伤/学识当闪 仅在手中无【闪】时可选：有闪必须出闪，保证闪牌价值（提高可玩性）
+  const noShan = shans.length === 0;
+  if (noShan && t.knowledge >= 1) opts.push({ label: '1学识当闪', value: 'know' });
   if ((t.shield || 0) >= 1) opts.push({ label: '1护盾当闪', value: 'shield' });
-  opts.push({ label: '答题免伤', value: 'quiz' });
+  if (noShan) opts.push({ label: '答题免伤', value: 'quiz' });
   opts.push({ label: '承受伤害', value: 'none' });
   const ch = await waitChoice(targetIdx, opts, 'shan');
   if (ch === 'none') return false;
