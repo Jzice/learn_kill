@@ -49,6 +49,9 @@ declare global {
     selectGender: (v: 'male' | 'female' | 'hidden') => void;
     selectMoodIcon: (v: string) => void;
     setPlayerCount: (n: number) => void;
+    // 学习档案：出题范围 / 错题本
+    setQuizScopeMode: (s: 'grade' | 'past' | 'junior' | 'senior') => void;
+    clearWrongBook: () => void;
     // 二级菜单 / 对局设置子界面
     openProfileMenu: () => void;
     openBankMenu: () => void;

@@ -207,6 +207,8 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
     const m = NET.roomMembers.find((x) => x.peerId === conn.peer);
     if (m) {
       m.pref = data.pref;
+      // 记下该玩家的出题范围：房主为他抽题时按其偏好覆盖年级
+      if (data.pref?.scope) m.scope = data.pref.scope;
       NET.broadcastRoomState();
     }
   } else if (data.type === 'choose_response') {

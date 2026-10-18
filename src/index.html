@@ -53,9 +53,9 @@
   <div class="notify-list" id="notifyList"></div>
 </div>
 
-<!-- 顶栏主题设置下拉（🎨：光线模式 × 内置配色风格） -->
+<!-- 主题设置（居中弹窗：光线模式 × 内置配色风格） -->
 <div id="themePanel">
-  <div class="theme-head">🎨 主题设置 <span style="font-size:9px;color:var(--muted)">点击切换</span></div>
+  <div class="theme-head">🎨 主题设置 <span style="font-size:9px;color:var(--muted)">点击切换</span><button class="theme-close" onclick="closeThemePanel()" title="关闭">✕</button></div>
   <div class="theme-sec-label">光线模式</div>
   <div class="theme-modes">
     <button class="opt-btn theme-mode" data-mode="day" onclick="setThemeMode('day')">☀️ 白天</button>
@@ -117,6 +117,11 @@
     <div class="panel">
       <h3>◈ 选择年级 / 学期 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（角色随年级累加）</span></h3>
       <div class="opt-row" id="gradePicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 出题范围 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（决定抽题覆盖的年级；错题会优先重复出现）</span></h3>
+      <div class="opt-row" id="scopePicker"></div>
+      <div class="scope-hint" id="scopeHint"></div>
     </div>
     <div class="panel">
       <h3>◈ 玩家总数 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（拖动滑块选择 2–8 人）</span></h3>

@@ -35,6 +35,8 @@ import {
   renderCharPicker,
   renderFactionPicker,
   renderGradePicker,
+  renderScopePicker,
+  setQuizScopeMode,
   renderProfileEditor,
   renderRolePicker,
   renderSetupSummary,
@@ -53,6 +55,7 @@ import {
   viewMemberProfile,
 } from './ui/lobby';
 import { bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
+import { clearWrongBook } from './profile/quizbook';
 import { closeRoom, createRoom, joinRoom, leaveRoom } from './net/rooms';
 import { EXTERNAL_BANK_URLS, loadBankFromUrl } from './data/questionBank';
 
@@ -103,6 +106,8 @@ window.closeBankMenu = closeBankMenu;
 window.backToLobby = backToLobby;
 window.enterSetup = enterSetup;
 window.setNetMode = setNetMode;
+window.setQuizScopeMode = setQuizScopeMode;
+window.clearWrongBook = clearWrongBook;
 window.selectFaction = (k: string) => selectFaction(k as FactionId);
 window.selectChar = selectChar;
 window.openBankBrowser = openBankBrowser;
@@ -176,6 +181,7 @@ function init(): void {
   renderProfileEditor();
   ensureCharValid();
   renderGradePicker();
+  renderScopePicker();
   renderFactionPicker();
   renderCharPicker();
   renderRolePicker();

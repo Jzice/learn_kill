@@ -80,7 +80,12 @@ function renderGradePicker(): void {
     if (!b || !b.dataset.grade) return;
     state.grade = b.dataset.grade;
     Sound.play('click');
-    void openBankBrowser();
+    // 切换年级：仅刷新内容，不重设返回目标（避免 prevScreen 被题库页自身覆盖）
+    renderGradePicker();
+    void loadGrade(state.grade).then(() => {
+      renderSubjectFilter();
+      renderBody();
+    });
   };
 }
 
@@ -97,7 +102,8 @@ function renderSubjectFilter(): void {
 export function openBankBrowser(): void {
   Sound.play('click');
   const cur = document.querySelector<HTMLElement>('.screen.active');
-  prevScreen = cur ? cur.id : 'screenLobby';
+  // 仅在真正「从别的界面进入」时记录返回目标；题库页内部切换不得覆盖，否则返回会原地不动
+  if (cur && cur.id !== 'screenBank') prevScreen = cur.id;
   showScreen('screenBank');
   renderGradePicker();
   void loadGrade(state.grade).then(() => {
@@ -109,7 +115,8 @@ export function openBankBrowser(): void {
 /** 返回打开题库前的界面（大厅或游戏） */
 export function closeBankBrowser(): void {
   Sound.play('click');
-  showScreen(prevScreen);
+  // 兜底：任何异常情况下都不允许「返回」停在题库页自己
+  showScreen(prevScreen && prevScreen !== 'screenBank' ? prevScreen : 'screenLobby');
 }
 
 /** 在 init 中调用一次：绑定搜索框与科目筛选 */

@@ -50,10 +50,12 @@ body[data-theme="purple"]{--gold:#b07cff;--gold-dim:#6a4a9a;--accent-strong:#e2c
 body[data-theme="green"]{--gold:#5fd07a;--gold-dim:#2e8a4a;--accent-strong:#c2f0cc}
 body[data-theme="blue"]{--gold:#4aa8ff;--gold-dim:#2a6aa8;--accent-strong:#b2d8ff}
 
-/* ===== 主题设置面板 ===== */
-#themePanel{display:none;position:fixed;top:calc(var(--tb-h,52px) + 2px);right:4px;width:min(280px,calc(100vw - 8px));max-height:62vh;z-index:150;flex-direction:column;background:var(--surface);border:1px solid var(--gold-dim);border-radius:8px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.7)}
+/* ===== 主题设置面板（屏幕居中弹窗） ===== */
+#themePanel{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(320px,calc(100vw - 24px));max-height:78vh;z-index:150;flex-direction:column;background:var(--surface);border:1px solid var(--gold-dim);border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.75)}
 #themePanel.show{display:flex}
-.theme-head{font-size:12px;color:var(--gold);padding:8px 12px;background:rgba(0,0,0,.35);border-bottom:1px solid var(--gold-dim);letter-spacing:2px;display:flex;justify-content:space-between;align-items:center}
+.theme-head{font-size:12px;color:var(--gold);padding:8px 12px;background:rgba(0,0,0,.35);border-bottom:1px solid var(--gold-dim);letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.theme-close{flex:0 0 auto;background:transparent;border:1px solid var(--gold-dim);border-radius:5px;color:var(--gold);font-size:11px;line-height:1;padding:3px 7px;cursor:pointer}
+.theme-close:hover{background:var(--gold-dim);color:#1a1206}
 .theme-sec-label{font-size:10px;color:var(--muted);padding:8px 12px 2px;letter-spacing:1px}
 .theme-modes,.theme-styles{display:flex;gap:6px;flex-wrap:wrap;padding:4px 12px 8px}
 .theme-modes .opt-btn,.theme-styles .opt-btn{min-width:0;flex:1 1 28%;font-size:11px;padding:7px 4px;display:flex;align-items:center;justify-content:center;gap:4px}
@@ -307,6 +309,18 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .play-log-list{flex:1;overflow-y:auto;padding:5px 7px;font-size:10px;line-height:1.55}
 /* 联机配置/加入房间的昵称提示（昵称在顶栏个人头像「我的档案」中编辑） */
 .cfg-nick-hint{font-size:10.5px;color:var(--muted);text-align:center;padding:5px 4px 2px;letter-spacing:0}
+/* 出题范围选择器提示 */
+.scope-hint{font-size:10.5px;color:var(--gold);text-align:center;padding:6px 4px 0;letter-spacing:0}
+/* 错题本（我的档案内） */
+.wb-empty{font-size:11.5px;color:var(--muted);text-align:center;padding:14px 6px;background:rgba(0,0,0,.22);border-radius:6px}
+.wb-list{max-height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px}
+.wb-item{padding:6px 8px;background:rgba(0,0,0,.25);border-left:3px solid #c0392b;border-radius:0 6px 6px 0}
+.wb-top{font-size:10.5px;color:var(--gold-dim);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wb-tag{margin-left:auto;padding:0 6px;border-radius:8px;background:rgba(192,57,43,.25);color:#e88b7f;font-size:10px}
+.wb-q{font-size:11.5px;color:var(--text);margin:4px 0;line-height:1.55}
+.wb-bar{font-size:10.5px;color:#f0c040;letter-spacing:2px}
+.wb-bar span{margin-left:6px;color:var(--muted);letter-spacing:0}
+.wb-clear{margin-top:8px;width:100%}
 /* 档案弹窗标题栏徽章（等级/积分，仅自我视图） */
 .pm-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:10.5px;font-weight:700;color:#2a1a06;background:var(--gold);box-shadow:0 1px 6px rgba(0,0,0,.4);vertical-align:1px}
 .play-log-item{margin-bottom:3px;padding:2px 5px;background:rgba(0,0,0,.3);border-left:2px solid var(--gold-dim);border-radius:0 4px 4px 0;animation:logIn .35s ease-out;color:#c8b8a0}

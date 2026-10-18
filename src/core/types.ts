@@ -81,9 +81,32 @@ export interface Question {
   o: string[];
   /** 正确选项下标 0-3 */
   a: number;
+  /** 所属年级学期（抽题时按范围标记，题库原始数据可无此字段） */
+  g?: string;
 }
 
 export type QuestionBank = Record<string, Question[]>;
+
+/** 出题范围：本年级本学期 / 本学期及以前年级 / 初中阶段 / 高中阶段 */
+export type QuizScope = 'grade' | 'past' | 'junior' | 'senior';
+
+/** 单题答题记录（个人错题本 / 掌握度） */
+export interface QuizRec {
+  /** 累计答错次数 */
+  w: number;
+  /** 连续答对次数（答错清零），达到 MASTER_STREAK 视为掌握，不再抽到 */
+  c: number;
+  /** 最后作答时间戳 */
+  ts: number;
+  /** 学科 */
+  s: string;
+  /** 知识点 */
+  kp: string;
+  /** 年级学期 */
+  g: string;
+  /** 题干（错题本展示用） */
+  text: string;
+}
 
 export interface Card {
   id: number;
@@ -231,6 +254,10 @@ export interface Profile {
   themeMode: 'day' | 'night' | 'dusk';
   /** 界面主题：内置配色风格 */
   themeStyle: 'gold' | 'teal' | 'red' | 'purple' | 'green' | 'blue';
+  /** 出题范围（个人偏好，决定抽题覆盖的年级/阶段） */
+  quizScope: QuizScope;
+  /** 个人错题本：题干哈希 → 答题记录（掌握度） */
+  quizRec: Record<string, QuizRec>;
 }
 
 export interface PublicProfile extends PlayerIdentity {
@@ -246,6 +273,8 @@ export interface PublicProfile extends PlayerIdentity {
 export interface PlayerPref {
   faction: FactionId;
   charId: string | null;
+  /** 加入方的出题范围（房主为该玩家抽题时按其偏好覆盖年级） */
+  scope?: QuizScope;
 }
 
 export interface RoomMember {
@@ -255,6 +284,8 @@ export interface RoomMember {
   profile: PublicProfile | null;
   /** 加入方在设置界面自选的阵营 / 角色偏好（房主开局时优先采纳） */
   pref?: PlayerPref;
+  /** 加入方的出题范围（房主抽题时按各自偏好出题） */
+  scope?: QuizScope;
 }
 
 export interface QuizStats {

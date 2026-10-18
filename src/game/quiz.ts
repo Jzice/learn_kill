@@ -1,5 +1,5 @@
 /* ==================== 答题 & 学习奖励 ==================== */
-import type { Player, Question } from '../core/types';
+import type { Player, Question, QuizScope } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { Sound } from '../core/sound';
 import { comboFx } from '../core/fx';
@@ -9,6 +9,17 @@ import { G, quizStats } from './state';
 import { addPlayLog } from './log';
 import { drawCards } from './rules';
 import { PROFILE, saveProfile } from '../profile/profile';
+import {
+  MASTER_STREAK,
+  isMastered,
+  quizScope,
+  recOf,
+  recordAnswer,
+  scopeGrades,
+  weightedPick,
+  wrongBoostRate,
+  wrongKpSet,
+} from '../profile/quizbook';
 import { NET, isLocalPlayer, type PendingQuiz } from '../net/network';
 import { aiQuiz } from './ai';
 
@@ -26,22 +37,62 @@ async function currentBank(): Promise<Question[]> {
   return [];
 }
 
-export async function pickQ(p?: Player): Promise<Question> {
-  const bank = await currentBank();
-  if (!bank.length)
+/** 按出题范围加载题库：跨年级合并去重，并给每题打上所属年级标签 g */
+async function scopedBank(scope: QuizScope | undefined, grade: string): Promise<Question[]> {
+  const grades = scopeGrades(scope ?? quizScope(), grade);
+  const pool: Question[] = [];
+  const seen = new Set<string>();
+  for (const gr of grades.length ? grades : [grade]) {
+    await loadGrade(gr);
+    const b = QUESTION_BANK[gr];
+    if (!b || !b.length) continue;
+    for (const q of b) {
+      if (seen.has(q.q)) continue;
+      seen.add(q.q);
+      pool.push({ ...q, g: gr });
+    }
+  }
+  return pool;
+}
+
+/** 取题：范围过滤 → 剔除已掌握 → 错题加权 → 学科偏好
+ *  scope 缺省用本地设置；联机时房主为某玩家出题可传该玩家的范围 */
+export async function pickQ(p?: Player, scope?: QuizScope): Promise<Question> {
+  const grade = G.grade;
+  let pool = await scopedBank(scope, grade);
+  if (!pool.length) pool = await scopedBank('grade', grade);
+  if (!pool.length) pool = (await currentBank()).map((q) => ({ ...q, g: grade }));
+  if (!pool.length)
     return { s: '综合', kp: '综合', q: '（题库为空，请先导入题库）', o: ['继续', '跳过'], a: 0 };
+  // 连续答对达标 → 已掌握，不再出现（全部掌握时退回全池避免无题可出）
+  const fresh = pool.filter((q) => !isMastered(q));
+  const base = fresh.length ? fresh : pool;
+  // 错题/同知识点优先：概率随错题占比提升（15%~60%）
+  const kps = wrongKpSet();
+  if (Math.random() < wrongBoostRate(base.length)) {
+    const hot = base.filter((q) => {
+      const r = recOf(q);
+      return (!!r && r.w > 0) || kps.has(`${q.s}|${q.kp}`);
+    });
+    if (hot.length) {
+      const pick = weightedPick(hot, kps);
+      if (pick) return pick;
+    }
+  }
+  // 学科偏好：阵营学科 50% / 角色学科 70%（沿用原有手感）
+  let cand = base;
   if (p) {
     const f = FACTIONS[p.faction];
     if (f && Math.random() < 0.5) {
-      const sub = bank.filter((q) => q.s === f.subject);
-      if (sub.length) return sub[Math.floor(Math.random() * sub.length)];
+      const sub = base.filter((q) => q.s === f.subject);
+      if (sub.length) cand = sub;
     }
     if (p.subject && Math.random() < 0.7) {
-      const sub = bank.filter((q) => q.s === p.subject);
-      if (sub.length) return sub[Math.floor(Math.random() * sub.length)];
+      const sub = cand.filter((q) => q.s === p.subject);
+      if (sub.length) cand = sub;
     }
   }
-  return bank[Math.floor(Math.random() * bank.length)];
+  return weightedPick(cand, kps) || base[0];
 }
 
 export function displayQuiz(q: Question, player: Player, isSkill: boolean): Promise<boolean> {
@@ -71,19 +122,32 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
         if (correct) {
           quizStats.correct++;
           if (player) player.knowledge += 1;
-          // 记录本地玩家科目正确数
-          if (player && G.players[G.myPlayerIdx] === player && q.s) {
-            PROFILE.subjects[q.s] = (PROFILE.subjects[q.s] || 0) + 1;
-            saveProfile();
+          // 记录本地玩家科目正确数 + 个人错题本/掌握度
+          let bookNote = '';
+          if (player && G.players[G.myPlayerIdx] === player) {
+            if (q.s) {
+              PROFILE.subjects[q.s] = (PROFILE.subjects[q.s] || 0) + 1;
+              saveProfile();
+            }
+            const rec = recordAnswer(q, true, q.g || G.grade);
+            bookNote =
+              rec.c >= MASTER_STREAK
+                ? `<br><span style="font-size:10.5px;color:#8a6a10">🎓 该知识点累计答对 ${rec.c} 次，已掌握，后续不再出现</span>`
+                : `<br><span style="font-size:10.5px;color:#8a6a10">掌握进度 ${rec.c}/${MASTER_STREAK}（连对 ${MASTER_STREAK} 次即出本）</span>`;
           }
           const rewards = grantLearningReward(player, isSkill, q);
-          fb.innerHTML = `✓ 答对！知识点【${q.kp || '综合'}】+1学识<br><span style="font-size:10.5px;color:#1e7a3a;">${rewards.join(' · ')}</span>`;
+          fb.innerHTML = `✓ 答对！知识点【${q.kp || '综合'}】+1学识<br><span style="font-size:10.5px;color:#1e7a3a;">${rewards.join(' · ')}</span>${bookNote}`;
           fb.style.color = '#1e7a3a';
           Sound.play('correct');
           if (player) addPlayLog(player.name, 'kp', `${q.s}·${q.kp || '综合'}`, '', 'kp');
         } else {
           if (player) player.combo = 0;
-          fb.innerHTML = `✗ 正确答案是 ${String.fromCharCode(65 + q.a)}<br><span style="font-size:10.5px;">知识点【${q.kp || '综合'}】</span>`;
+          let wrongNote = '';
+          if (player && G.players[G.myPlayerIdx] === player) {
+            const rec = recordAnswer(q, false, q.g || G.grade);
+            wrongNote = `<br><span style="font-size:10.5px;color:#a02020">📕 已记入错题本（累计错 ${rec.w} 次），将优先重复出现</span>`;
+          }
+          fb.innerHTML = `✗ 正确答案是 ${String.fromCharCode(65 + q.a)}<br><span style="font-size:10.5px;">知识点【${q.kp || '综合'}】</span>${wrongNote}`;
           fb.style.color = '#a02020';
           Sound.play('wrong');
         }
@@ -111,7 +175,9 @@ let quizSeq = 0;
 async function askQuizRemote(player: Player, isSkill: boolean): Promise<boolean> {
   const conn = NET.playerConns[player.peerId!];
   if (!conn) return aiQuiz(0.6);
-  const q = await pickQ(player);
+  // 房主按该玩家自己同步来的出题范围出题（未同步则用房主本地设置）
+  const member = NET.roomMembers.find((m) => m.peerId === player.peerId);
+  const q = await pickQ(player, member?.scope);
   return new Promise((resolve) => {
     const quizId = ++quizSeq;
     const entry: PendingQuiz = { resolve, player, q, quizId, timer: null };

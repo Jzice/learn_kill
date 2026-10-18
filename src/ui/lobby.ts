@@ -31,6 +31,8 @@ import {
   showAchievements,
 } from '../profile/profile';
 import { startSingle } from '../game/setup';
+import type { QuizScope } from '../core/types';
+import { SCOPES, quizScope, setQuizScope, scopeDesc, scopeLabel, renderWrongBook } from '../profile/quizbook';
 
 /* ---- 大厅选择状态（原版全局变量，仅本模块写入，其他模块只读） ---- */
 export let SELECTED_GRADE = '初二上';
@@ -81,6 +83,28 @@ export function selectRole(r: Role | 'random'): void {
   Sound.play('click');
   SELECTED_ROLE = r;
   renderRolePicker();
+}
+
+/** 出题范围选择器（本年级本学期 / 本学期及以前 / 初中 / 高中） */
+export function renderScopePicker(): void {
+  const box = document.getElementById('scopePicker');
+  if (!box) return;
+  const cur = quizScope();
+  box.innerHTML = SCOPES.map(
+    (s) =>
+      `<button class="opt-btn ${s.id === cur ? 'active' : ''}" data-scope="${s.id}" onclick="setQuizScopeMode('${s.id}')">${s.label}<small>${s.desc}</small></button>`,
+  ).join('');
+  const hint = document.getElementById('scopeHint');
+  if (hint) hint.textContent = `当前：${scopeLabel()} · ${scopeDesc()}`;
+}
+
+/** 切换出题范围（联机加入方同时同步给房主，房主即按此范围为其抽题） */
+export function setQuizScopeMode(s: QuizScope): void {
+  Sound.play('click');
+  setQuizScope(s);
+  renderScopePicker();
+  renderSetupSummary();
+  pushGuestPref();
 }
 
 export function renderFactionPicker(): void {
@@ -190,7 +214,7 @@ export function pushGuestPref(): void {
   if (NET.isHost) return; // 仅客户端发送
   NET.sendToHost({
     type: 'guest_pref',
-    pref: { faction: SELECTED_FACTION, charId: SELECTED_CHAR ? SELECTED_CHAR.id : null },
+    pref: { faction: SELECTED_FACTION, charId: SELECTED_CHAR ? SELECTED_CHAR.id : null, scope: quizScope() },
   });
   renderJoinPickers();
 }
@@ -232,6 +256,7 @@ export function renderSetupSummary(): void {
   box.innerHTML = `
     <div class="sum-row"><span class="sum-k">模式</span><b>${modeName}</b></div>
     <div class="sum-row"><span class="sum-k">年级</span><b>${SELECTED_GRADE}</b></div>
+    <div class="sum-row"><span class="sum-k">出题范围</span><b style="color:var(--gold)">${scopeLabel()}</b></div>
     <div class="sum-row"><span class="sum-k">人数</span><b>${SELECTED_COUNT} 人</b>（含 ${SELECTED_COUNT - 1} 名 AI）</div>
     <div class="sum-row"><span class="sum-k">身份</span><b>${roleName}</b></div>
     <div class="sum-row"><span class="sum-k">阵营</span><b style="color:${faction.color}">${faction.icon} ${faction.name}</b></div>
@@ -239,11 +264,12 @@ export function renderSetupSummary(): void {
     <div class="sum-tip">选择上方任一模式即进入设置界面修改</div>`;
 }
 
-/** 个人信息（点头像）：我的档案 + 个性化资料 合并弹窗 */
+/** 个人信息（点头像）：我的档案 + 个性化资料 + 错题本 合并弹窗 */
 export function openProfileMenu(): void {
   Sound.play('click');
   showAchievements(PROFILE, '我的档案', { editor: true });
   renderProfileEditor(); // 填充档案弹窗内的编辑器容器
+  renderWrongBook(); // 填充错题本区块
 }
 
 /** 题库管理二级菜单 */
