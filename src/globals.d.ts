@@ -66,6 +66,7 @@ declare global {
     closeBankMenu: () => void;
     openBankBrowser: () => void;
     closeBankBrowser: () => void;
+    copyInviteLink: () => void;
     setNetMode: (net: 'host' | 'join') => void;
     backToLobby: () => void;
     enterSetup: (mode: 'single' | 'host' | 'join') => void;

@@ -157,6 +157,52 @@ function syncTopBarHeight(): void {
   }
 }
 
+/** 复制邀请链接到剪贴板（房主分享用），带降级方案 */
+function copyInviteLink(): void {
+  const inp = document.getElementById('inviteLink') as HTMLInputElement | null;
+  if (!inp) return;
+  const text = inp.value;
+  const btn = document.getElementById('copyInviteBtn');
+  const ok = () => {
+    if (btn) btn.textContent = '✅ 已复制';
+    setTimeout(() => { if (btn) btn.textContent = '📋 复制'; }, 1500);
+  };
+  const fallback = () => {
+    inp.select();
+    try {
+      document.execCommand('copy');
+      ok();
+    } catch {
+      /* ignore */
+    }
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(ok, fallback);
+  } else {
+    fallback();
+  }
+}
+window.copyInviteLink = copyInviteLink;
+
+/** 通过 ?room=XXXXXX 分享链接进入时，自动进入加入模式并预填房间号、发起加入 */
+function handleSharedRoom(): void {
+  let code = '';
+  try {
+    code = new URLSearchParams(location.search).get('room') || '';
+  } catch {
+    return;
+  }
+  if (!/^\d{6}$/.test(code)) return;
+  enterSetup('join');
+  const inp = document.getElementById('joinCode') as HTMLInputElement | null;
+  if (inp) inp.value = code;
+  const st = document.getElementById('joinStatus');
+  if (st) st.textContent = `已自动填入房间号 ${code}，正在加入…`;
+  setTimeout(() => {
+    void joinRoom();
+  }, 50);
+}
+
 /** 小屏(≤600px)时战报移到出牌区下方，宽屏还原到侧栏 */
 function bindPlayLogRelayout(): void {
   const log = document.getElementById('playLogPanel');
@@ -208,6 +254,7 @@ function init(): void {
   bindLogResize();
   bindNetChat();
   bindNotify();
+  handleSharedRoom();
 
   if (EXTERNAL_BANK_URLS.length) {
     Promise.all(EXTERNAL_BANK_URLS.map((u) => loadBankFromUrl(u, true))).then(() => {
