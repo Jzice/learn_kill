@@ -116,7 +116,6 @@ await host.goto(url, { waitUntil: 'networkidle' });
 await guest.goto(url, { waitUntil: 'networkidle' });
 
 await host.click('#modePicker .mode-card[data-mode="net"]');
-await host.fill('#nicknameInput', '房主甲');
 await host.click('#createRoomBtn');
 await host.waitForFunction(
   () => /房间号：<span[^>]*>(\d{6})/.test(document.getElementById('roomInfo')?.innerHTML || ''),
@@ -128,7 +127,6 @@ console.log('房间号:', code);
 await guest.click('#modePicker .mode-card[data-mode="net"]');
 await guest.click('#netModePicker .opt-btn[data-net="join"]');
 await guest.waitForSelector('#joinConfig', { state: 'visible', timeout: 3000 });
-await guest.fill('#joinNick', '客人乙');
 await guest.fill('#joinCode', code);
 await guest.click('#joinRoomBtn');
 await guest.waitForFunction(

@@ -101,7 +101,6 @@ check(
 
 // 房主：切到创建房间模式
 await host.click('#modePicker .mode-card[data-mode="net"]');
-await host.fill('#nicknameInput', '房主甲');
 await host.click('#createRoomBtn');
 await host.waitForFunction(
   () => /房间号：<span[^>]*>(\d{6})/.test(document.getElementById('roomInfo')?.innerHTML || ''),
@@ -122,7 +121,6 @@ await guest.locator('#joinFactionPicker .faction-card').nth(1).click();
 await guest.waitForTimeout(150);
 const jc = await guest.locator('#joinCharGrid .char-card').count();
 check('加入档角色选择器渲染', jc > 0, `${jc} 名`);
-await guest.fill('#joinNick', '客人乙');
 await guest.fill('#joinCode', roomCode);
 await guest.click('#joinRoomBtn');
 await guest.waitForFunction(

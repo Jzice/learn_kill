@@ -2,6 +2,21 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.38] - 2026-10-18
+
+### 优化
+
+- **联机配置不再显示可编辑昵称输入框，昵称统一在顶栏编辑**
+  - `index.html`：移除房主「联机配置」的 `#nicknameInput` 与「加入房间」的 `#joinNick` 输入框，替换为提示「👤 昵称：顶栏「🧑 个性化资料」中修改」（`.cfg-nick-hint` 样式）
+  - `net/rooms.ts`：`createRoom/joinRoom` 昵称直接取 `PROFILE.name`，不再读输入框、不再回写档案
+  - `ui/lobby.ts`：删除 `syncNameInputs`/`bindNicknamePersistence`（输入框同步与持久化）及档案编辑器中的同步调用；`main.ts` 移除初始化调用
+  - `game/setup.ts`：`readNickname` 简化为取档案昵称（单机开局同样以档案为准）
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力零卡死（回归脚本同步移除对已删输入框的填充）
+- 实测（双页联机 12/12）：两个输入框均已移除且提示显示；顶栏昵称来自档案（房主甲/客人乙）；创建/加入房间及成员列表昵称正确；档案昵称未被流程篡改
+
 ## [1.4.37] - 2026-10-18
 
 ### 修复

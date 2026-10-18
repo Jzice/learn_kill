@@ -23,7 +23,6 @@ import {
   backToLobby,
   bindCountSlider,
   bindLobbyEvents,
-  bindNicknamePersistence,
   clearExternalBank,
   closeBankMenu,
   closePersonaMenu,
@@ -179,7 +178,6 @@ function init(): void {
   bindCountSlider();
   refreshProfileUI();
   renderProfileEditor();
-  bindNicknamePersistence();
   ensureCharValid();
   renderGradePicker();
   renderFactionPicker();

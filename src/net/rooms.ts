@@ -6,12 +6,8 @@ import { PROFILE, publicProfile, refreshProfileUI, saveProfile } from '../profil
 import { SELECTED_COUNT } from '../ui/lobby';
 
 export async function createRoom(): Promise<void> {
-  const nick = (inputValue('nicknameInput') || PROFILE.name || '房主').trim().slice(0, 12);
-  if (nick) {
-    PROFILE.name = nick;
-    saveProfile();
-    refreshProfileUI();
-  }
+  // 昵称统一取档案（在顶栏「🧑 个性化资料」中编辑）
+  const nick = (PROFILE.name || '房主').trim().slice(0, 12);
   const code = String(Math.floor(100000 + Math.random() * 900000));
   document.getElementById('roomInfo')!.innerHTML = '正在连接…';
   try {
@@ -31,12 +27,8 @@ export async function createRoom(): Promise<void> {
 }
 
 export async function joinRoom(): Promise<void> {
-  const nick = (inputValue('joinNick') || PROFILE.name || '玩家').trim().slice(0, 12);
-  if (nick) {
-    PROFILE.name = nick;
-    saveProfile();
-    refreshProfileUI();
-  }
+  // 昵称统一取档案（在顶栏「🧑 个性化资料」中编辑）
+  const nick = (PROFILE.name || '玩家').trim().slice(0, 12);
   const code = inputValue('joinCode').trim();
   if (!/^\d{6}$/.test(code)) {
     alert('请输入6位数字房间号');

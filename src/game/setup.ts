@@ -148,8 +148,8 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
 }
 
 function readNickname(fallback: string): string {
-  const v = (document.getElementById('nicknameInput') as HTMLInputElement | null)?.value || '';
-  return (v || PROFILE.name || fallback).trim().slice(0, 12);
+  // 昵称统一取档案（在顶栏「🧑 个性化资料」中编辑）
+  return (PROFILE.name || fallback).trim().slice(0, 12);
 }
 
 export async function startSingle(): Promise<void> {

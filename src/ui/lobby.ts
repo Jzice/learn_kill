@@ -592,7 +592,6 @@ export function renderProfileEditor(): void {
     const v = (nameEl.value || '').trim().slice(0, 12);
     if (v) {
       setters.setName(v);
-      syncNameInputs(false);
       refreshProfileUI();
     }
   });
@@ -624,17 +623,6 @@ export function selectMoodIcon(v: string): void {
   refreshProfileUI();
 }
 
-/** 同步昵称到联机配置/加入房间的输入框（skipSelf 用于编辑自身输入框时不打断输入） */
-export function syncNameInputs(skipSelf = true): void {
-  if (!skipSelf) {
-    /* noop：自身输入框无需同步 */
-  }
-  ['nicknameInput', 'joinNick'].forEach((id) => {
-    const el = document.getElementById(id) as HTMLInputElement | null;
-    if (el) el.value = PROFILE.name || '玩家';
-  });
-}
-
 /* ==================== 玩家总数滑块 ==================== */
 export function setPlayerCount(n: number): void {
   const v = Math.max(2, Math.min(8, Math.round(n)));
@@ -657,21 +645,4 @@ export function bindCountSlider(): void {
   });
 }
 
-/* ==================== 昵称持久化 ==================== */
-export function bindNicknamePersistence(): void {
-  ['nicknameInput', 'joinNick'].forEach((id) => {
-    const el = document.getElementById(id) as HTMLInputElement | null;
-    if (!el) return;
-    el.value = PROFILE.name || '玩家';
-    el.addEventListener('input', () => {
-      const v = (el.value || '').trim().slice(0, 12);
-      if (v) {
-        PROFILE.name = v;
-        saveProfile();
-        const pe = document.getElementById('profileNameInput') as HTMLInputElement | null;
-        if (pe) pe.value = v;
-        refreshProfileUI();
-      }
-    });
-  });
-}
+
