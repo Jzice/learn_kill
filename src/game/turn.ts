@@ -1,5 +1,5 @@
 /* ==================== 回合流程 ==================== */
-import type { ChoiceOption } from '../core/types';
+import type { Card, ChoiceOption } from '../core/types';
 import { G } from './state';
 import { FX } from '../core/fx';
 import { FACTIONS } from '../data/factions';
@@ -113,7 +113,7 @@ export async function playPhase(idx: number): Promise<void> {
       if (c.sub === 'sha') opts.push({ label: `【杀】${c.suit}${c.num}`, value: 'sha_' + c.id });
       else if (c.sub === 'tao' && p.hp < p.maxHp) opts.push({ label: `【桃】`, value: 'tao_' + c.id });
       else if (c.sub === 'jiu') opts.push({ label: `【酒】`, value: 'jiu_' + c.id });
-      else if (c.type === 'trick') opts.push({ label: `【${c.name}】`, value: 'trick_' + c.id });
+      else if (c.type === 'trick' && c.sub !== 'wuxie') opts.push({ label: `【${c.name}】`, value: 'trick_' + c.id });
       else if (c.type === 'equip') opts.push({ label: `【${c.name}】`, value: 'equip_' + c.id });
     }
     if (!p.flags.skillUsed) {
@@ -129,10 +129,27 @@ export async function playPhase(idx: number): Promise<void> {
         }
       });
     }
+    if (p.equip.weapon?.skill === 'zhangba' && p.hand.length >= 2) {
+      opts.push({ label: '【丈八蛇矛】两张手牌当杀', value: 'zhangba' });
+    }
     opts.push({ label: '结束出牌', value: 'end' });
     const ch = await waitChoice(idx, opts, 'play');
     if (ch === 'end' || !ch) break;
     if (!p.alive || G.gameOver) break;
+    if (ch === 'zhangba') {
+      const two = await pickTwoCards(idx);
+      if (two.length === 2) {
+        const tgt = await pickShaTarget(idx);
+        if (tgt >= 0) {
+          const suit = two.every((c) => c.suit === '♥' || c.suit === '♦') ? '♥' : '♠';
+          discardCard(p, two[0]);
+          discardCard(p, two[1]);
+          addLog(`${p.name} 丈八蛇矛：两张手牌当杀`, 'hl');
+          await useSha(idx, tgt, { suit });
+        }
+      }
+      continue;
+    }
     if (String(ch).startsWith('skill_')) {
       await useActiveSkill(idx, String(ch).slice(6));
       continue;
@@ -159,7 +176,7 @@ export async function playPhase(idx: number): Promise<void> {
       const t = await waitChoice(idx, targets, 'target');
       if (Number(t) < 0) continue;
       discardCard(p, card);
-      await useSha(idx, t as number);
+      await useSha(idx, t as number, { suit: card.suit });
     } else if (kind === 'tao') {
       discardCard(p, card);
       await useTao(idx);
@@ -233,4 +250,42 @@ export async function discardPhase(p: (typeof G.players)[number]): Promise<void>
     }
   }
   render();
+}
+
+/** 选杀的目标（攻击范围内存活玩家） */
+async function pickShaTarget(idx: number): Promise<number> {
+  const targets: ChoiceOption[] = [];
+  for (let i = 0; i < G.players.length; i++) {
+    if (i === idx || !G.players[i].alive) continue;
+    if (inRange(idx, i)) targets.push({ label: `攻击 ${G.players[i].name}`, value: i });
+  }
+  if (!targets.length) {
+    addLog('攻击范围内无目标');
+    return -1;
+  }
+  targets.push({ label: '取消', value: -1 });
+  const t = await waitChoice(idx, targets, 'target');
+  return Number(t);
+}
+
+/** 依次选择两张手牌（丈八蛇矛用），任意一步取消则返回空 */
+async function pickTwoCards(idx: number): Promise<Card[]> {
+  const p = G.players[idx];
+  const firstOpts = p.hand.map((c) => ({ label: `${c.name} ${c.suit}${c.num}`, value: c.id }));
+  firstOpts.push({ label: '取消', value: -1 });
+  const f = await waitChoice(idx, firstOpts, 'list');
+  const fid = typeof f === 'number' ? f : Number(f);
+  if (fid < 0) return [];
+  const fc = p.hand.find((c) => c.id === fid);
+  if (!fc) return [];
+  const secondOpts = p.hand
+    .filter((c) => c.id !== fid)
+    .map((c) => ({ label: `${c.name} ${c.suit}${c.num}`, value: c.id }));
+  secondOpts.push({ label: '取消', value: -1 });
+  const s = await waitChoice(idx, secondOpts, 'list');
+  const sid = typeof s === 'number' ? s : Number(s);
+  if (sid < 0) return [];
+  const sc = p.hand.find((c) => c.id === sid);
+  if (!sc) return [];
+  return [fc, sc];
 }

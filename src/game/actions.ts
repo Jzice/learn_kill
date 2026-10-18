@@ -4,23 +4,28 @@ import { G } from './state';
 import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
+import { C } from '../data/cards';
 import { addLog, addPlayLog } from './log';
-import { hasSkill, discardCard, drawCards } from './rules';
+import { hasSkill, discardCard, drawCards, inRange } from './rules';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { aiQuiz, aiSpeak } from './ai';
-import { aiQuizRate } from './aibrain';
+import { aiQuizRate, aiShouldCounter } from './aibrain';
 import { dealDamage } from './damage';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { NET, scheduleSync } from '../net/network';
 
-export async function useSha(attackerIdx: number, targetIdx: number): Promise<void> {
+export async function useSha(
+  attackerIdx: number,
+  targetIdx: number,
+  opts: { fromQinglong?: boolean; suit?: string } = {},
+): Promise<void> {
   const a = G.players[attackerIdx],
     t = G.players[targetIdx];
   const hasLiannu = a.equip.weapon?.skill === 'liannu';
-  if (!hasLiannu && (a.flags.shaUsed || 0) >= 1) {
+  if (!hasLiannu && !opts.fromQinglong && (a.flags.shaUsed || 0) >= 1) {
     addLog('本回合已使用过【杀】');
     return;
   }
@@ -31,8 +36,35 @@ export async function useSha(attackerIdx: number, targetIdx: number): Promise<vo
   Sound.play('sha');
   showPlayCard({ name: '杀', suit: '♠', num: '?', type: 'basic' }, a.name, FACTIONS[a.faction].color);
   await FX.flyCard(attackerIdx, targetIdx, '杀', 'basic');
+  // 仁王盾：黑色【杀】无效
+  const suit = opts.suit ?? '♠';
+  const black = suit === '♠' || suit === '♣';
+  if (t.equip.armor?.skill === 'renwang' && black) {
+    addLog(`${t.name} 的【仁王盾】挡下了黑色【杀】`, 'hl');
+    render();
+    return;
+  }
   const dodged = await requestShan(targetIdx, attackerIdx);
-  if (dodged) return;
+  if (dodged) {
+    // 青龙偃月刀：杀被闪后可对同目标再出一张杀
+    if (a.equip.weapon?.skill === 'qinglong' && t.alive) {
+      const again = a.isAI
+        ? a.hand.some((c) => c.sub === 'sha') && inRange(attackerIdx, targetIdx)
+        : (await waitChoice(
+            attackerIdx,
+            [
+              { label: '🐉 青龙偃月刀：再出一张杀', value: 'yes' },
+              { label: '不发动', value: 'no' },
+            ],
+            'list',
+          )) === 'yes';
+      if (again) {
+        await useSha(attackerIdx, targetIdx, { fromQinglong: true, suit });
+        return;
+      }
+    }
+    return;
+  }
   let dmg = 1;
   if (hasSkill(a, 'jingzhong')) dmg += 1;
   if (a.flags.extraDamage) {
@@ -103,6 +135,17 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
           ? '#f5c542'
           : '#b57fff',
   );
+
+  // 无懈可击：即时锦囊结算前插入响应链（延时类乐/闪电在判定区，不在范围）
+  const COUNTERABLE = ['wuzhong', 'guohe', 'shunshou', 'juedou', 'nanman', 'wanjian', 'taoyuan'];
+  if (COUNTERABLE.includes(card.sub)) {
+    const countered = await counterChain(attackerIdx, card.sub, targetIdx);
+    if (countered) {
+      addLog(`【无懈可击】生效，${card.name} 被抵消`, 'hl');
+      render();
+      return;
+    }
+  }
 
   switch (card.sub) {
     case 'wuzhong': {
@@ -205,6 +248,53 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
   render();
 }
 
+/** 无懈可击响应链：返回该锦囊是否最终被抵消（支持无懈可叠，每人每条链一次） */
+async function counterChain(srcIdx: number, sub: string, primary: number | null): Promise<boolean> {
+  let countered = false;
+  let lastCounterer = -1;
+  const responders = G.players.map((_, i) => i).filter((i) => i !== srcIdx && G.players[i].alive);
+  const responded = new Set<number>();
+  const queue: number[] = [...responders];
+  while (queue.length) {
+    const pid = queue.shift()!;
+    if (responded.has(pid)) continue;
+    const p = G.players[pid];
+    if (!p.hand.some((c) => c.sub === 'wuxie')) continue;
+    let want = false;
+    if (p.isAI) {
+      want = aiShouldCounter(pid, srcIdx, countered, sub, primary, lastCounterer);
+    } else {
+      const ch = await waitChoice(
+        pid,
+        [
+          { label: `🚫 无懈可击（抵消【${trickLabel(sub)}】）`, value: 'use' },
+          { label: '不响应', value: 'skip' },
+        ],
+        'list',
+      );
+      want = ch === 'use';
+    }
+    if (want) {
+      const w = p.hand.find((c) => c.sub === 'wuxie')!;
+      discardCard(p, w);
+      addLog(`${p.name} 打出【无懈可击】`, 'hl');
+      responded.add(pid);
+      countered = !countered;
+      lastCounterer = pid;
+      for (const r of responders) if (!responded.has(r)) queue.push(r);
+    }
+  }
+  return countered;
+}
+
+function trickLabel(sub: string): string {
+  const m: Record<string, string> = {
+    wuzhong: '无中生有', guohe: '过河拆桥', shunshou: '顺手牵羊', juedou: '决斗',
+    nanman: '南蛮入侵', wanjian: '万箭齐发', taoyuan: '桃园结义',
+  };
+  return m[sub] || '锦囊';
+}
+
 export async function discardTargetCard(targetIdx: number, srcIdx: number, mode: string): Promise<void> {
   const t = G.players[targetIdx];
   if (hasSkill(t, 'fenshu')) return;
@@ -261,6 +351,17 @@ export async function requestShan(targetIdx: number, srcIdx: number): Promise<bo
   shans.forEach((c) => opts.push({ label: `【闪】${c.suit}${c.num}`, value: 'card_' + c.id }));
   // 答题免伤/学识当闪 仅在手中无【闪】时可选：有闪必须出闪，保证闪牌价值（提高可玩性）
   const noShan = shans.length === 0;
+  if (noShan && t.equip.armor?.skill === 'bagua') {
+    const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+    addLog(`【八卦阵】判定：${jc.suit}${jc.num}`, 'hl');
+    G.discard.push(jc);
+    if (jc.suit === '♥' || jc.suit === '♦') {
+      addLog('【八卦阵】判定为红色，视为闪', 'hl');
+      await FX.shield(targetIdx);
+      return true;
+    }
+    addLog('【八卦阵】判定失败');
+  }
   if (noShan && t.knowledge >= 1) opts.push({ label: '1学识当闪', value: 'know' });
   if ((t.shield || 0) >= 1) opts.push({ label: '1护盾当闪', value: 'shield' });
   if (noShan) opts.push({ label: '答题免伤', value: 'quiz' });

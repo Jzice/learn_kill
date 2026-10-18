@@ -72,8 +72,9 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       // 博弈式目标选择：基于信念推断与身份策略（可能观望/佯攻）
       const ti = pickAiTarget(idx);
       if (ti >= 0) {
+        const suit = sha.suit;
         discardCard(p, sha);
-        await useSha(idx, ti);
+        await useSha(idx, ti, { suit });
         await sleep(300);
       }
     }

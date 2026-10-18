@@ -318,3 +318,44 @@ export function aiQuizRate(p: Player): number {
   if (p.hp <= 2) return 0.7;
   return 0.5;
 }
+
+/** 同阵营判定：用于无懈可击的「盟友/敌人」识别（身份公开时按主忠/反内，否则按学科阵营） */
+function sameTeam(a: Player, b: Player): boolean {
+  if (a.roleRevealed && b.roleRevealed) {
+    const ta = a.role === 'lord' || a.role === 'loyal';
+    const tb = b.role === 'lord' || b.role === 'loyal';
+    return ta === tb;
+  }
+  return a.faction === b.faction;
+}
+
+/** 原始锦囊是否对 idx 有害（指向性锦囊看目标，AOE 对所有人有害） */
+function trickHarms(sub: string, primary: number | null, idx: number): boolean {
+  if (['guohe', 'shunshou', 'juedou', 'lebu'].includes(sub)) return primary === idx;
+  if (sub === 'nanman' || sub === 'wanjian') return true;
+  return false;
+}
+
+/**
+ * AI 是否对当前生效的锦囊打出【无懈可击】。
+ * - 尚未被无懈（countered=false）：抵消「对自己/盟友有害」的锦囊。
+ * - 已被某人无懈（countered=true）：若刚刚无懈者是敌人且原始锦囊对我方有利（如桃园回血），则再无懈恢复之。
+ */
+export function aiShouldCounter(
+  idx: number,
+  srcIdx: number,
+  countered: boolean,
+  sub: string,
+  primary: number | null,
+  lastCounterer: number,
+): boolean {
+  const p = G.players[idx];
+  if (!p?.alive || idx === srcIdx) return false;
+  if (!p.hand.some((c) => c.sub === 'wuxie')) return false;
+  if (!countered) return trickHarms(sub, primary, idx);
+  if (lastCounterer < 0) return false;
+  const lc = G.players[lastCounterer];
+  if (!lc || !lc.alive) return false;
+  if (sameTeam(p, lc)) return false; // 盟友已无懈，维持现状
+  return sub === 'taoyuan'; // 敌人无懈了有利锦囊 → 我方恢复
+}
