@@ -109,7 +109,6 @@ function renderSeats(): void {
   const ring = document.getElementById('seatRing');
   if (!ring) return;
   const total = G.players.length;
-  const isMobile = window.innerWidth <= 600;
   const order = displayOrder(); // 本人第一
   const targetValues = new Set<number>();
   if (G.targetSelectable && G.pendingOptions) {
@@ -123,12 +122,12 @@ function renderSeats(): void {
     const isTarget = targetValues.has(i);
     const clickAttr = isTarget ? `onclick="clickTargetSeat(${i})"` : '';
     const cls = isTarget ? 'seat seat-targetable' : 'seat';
-    if (isMobile) {
-      html += `<div class="${cls}" data-idx="${i}" ${clickAttr}>${buildPlayerCard(p, i)}</div>`;
-    } else {
-      const ppos = seatPos(pos, total);
-      html += `<div class="${cls}" data-idx="${i}" ${clickAttr} style="left:${ppos.x}%;top:${ppos.y}%;">${buildPlayerCard(p, i)}</div>`;
-    }
+    // 始终写入 left/top，不再按渲染时的屏宽决定：≤600 时由 CSS 的 !important 覆盖为 static 横滚
+    // 布局（style.css 600px 媒体查询），窗口放大到 600px 以上后 absolute 定位立即生效。
+    // 反之若窄屏渲染时不写坐标，放大后座位会因缺少 left/top 而全部堆叠在静态位置
+    // （曾复现：560px 开局放大到 620~1000px，4 个座位全重叠在 (-40,36) 且部分在视口外，整体不可见）
+    const ppos = seatPos(pos, total);
+    html += `<div class="${cls}" data-idx="${i}" ${clickAttr} style="left:${ppos.x}%;top:${ppos.y}%;">${buildPlayerCard(p, i)}</div>`;
   });
   ring.innerHTML = html;
 }

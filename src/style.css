@@ -664,6 +664,9 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .table-area > .play-log-panel .log-resize{display:flex}
   .table-area .play-log-list{font-size:9px}
   .play-zone-label{font-size:7px;padding:0 4px}
+  /* 窄屏座位改横滚列表：renderSeats 始终写入 left/top，这里靠 !important 覆盖为 static。
+     二者是配套的——去掉 !important 会让内联坐标在窄屏生效、座位错位；renderSeats 若改为
+     按屏宽决定是否写坐标，则窄屏渲染后放大窗口会因缺少坐标而全部堆叠（历史 bug） */
   .seat-ring{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:6px 4px;width:100%;-webkit-overflow-scrolling:touch}
   .seat{position:static !important;transform:none !important;left:auto !important;top:auto !important;transition:none !important;flex-shrink:0}
   .p-card{width:92px;padding:4px;border-radius:8px;transition:none}
