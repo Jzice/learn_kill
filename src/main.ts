@@ -226,6 +226,8 @@ function init(): void {
   renderSetupSummary();
   // 固定顶栏 / 个人成就 / 题库浏览
   renderTopBar();
+  const verEl = document.getElementById('tbVersion');
+  if (verEl) verEl.textContent = `v${__APP_VERSION__}`;
   renderAchievements();
   bindBankBrowser();
   syncTopBarHeight();

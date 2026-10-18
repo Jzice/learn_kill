@@ -136,6 +136,10 @@ check('我的档案二级菜单打开（点击个人信息芯片）', true);
 await page.click('#profileModal .rules-close');
 await page.waitForTimeout(150);
 
+// 1.35 首页年级 / 学期选择器（已从设置子界面移至首页）
+const gradeBtnsHome = await page.locator('#gradePicker .opt-btn').count();
+check('年级选择器（首页）', gradeBtnsHome === 12 && (await page.isVisible('#gradePicker')), `${gradeBtnsHome} 个年级`);
+
 await page.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-lobby.png'), fullPage: true });
 
 // 1.4 选择模式 → 进入对局设置子界面
@@ -144,8 +148,8 @@ await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 check('选择模式后进入设置子界面', await page.isVisible('#screenSetup.active'));
 const npStyle = await page.getAttribute('#netModePanel', 'style');
 check('单机模式隐藏联机二选一', !npStyle || npStyle.includes('none'), npStyle || '');
-const gradeBtns = await page.locator('#gradePicker .opt-btn').count();
-check('年级选择器（子界面）', gradeBtns === 12, `${gradeBtns} 个年级`);
+const setupGrade = (await page.textContent('#setupGradeHint')) || '';
+check('设置界面年级只读提示', setupGrade.includes('当前年级'), setupGrade.trim().slice(0, 30));
 const charCards = await page.locator('#charGrid .char-card').count();
 check('角色卡渲染（子界面）', charCards > 0, `${charCards} 名角色`);
 const factions = await page.locator('#factionPicker .faction-card').count();

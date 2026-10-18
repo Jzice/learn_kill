@@ -735,6 +735,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-right::-webkit-scrollbar{display:none}
 /* 品牌 */
 .tb-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
+/* 顶栏版本号（构建期由 vite define 注入，胶囊小字） */
+.tb-ver{font-size:10px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;padding:1px 7px;line-height:1.5;white-space:nowrap}
 .tb-logo{font-size:22px;line-height:1}
 .tb-brand-text{display:flex;align-items:baseline;gap:8px;line-height:1.1}
 .tb-title{font-size:15px;color:var(--gold);font-weight:700;letter-spacing:3px}

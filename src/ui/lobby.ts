@@ -53,6 +53,7 @@ export function renderGradePicker(): void {
     return;
   }
   if (!grades.includes(SELECTED_GRADE)) SELECTED_GRADE = grades[0];
+  updateSetupGradeHint();
   grid.innerHTML = grades
     .map((g) => {
       // 题数来自年级清单（内置）+ 外部导入，无需加载题目本身
@@ -61,6 +62,12 @@ export function renderGradePicker(): void {
       return `<button class="opt-btn ${g === SELECTED_GRADE ? 'active' : ''}" data-grade="${g}">${g}<small>${n}题 · ${cn}角色</small></button>`;
     })
     .join('');
+}
+
+/** 设置界面的年级只读提示（年级/学期选择已移至首页） */
+export function updateSetupGradeHint(): void {
+  const el = document.getElementById('setupGradeHint');
+  if (el) el.textContent = `📚 当前年级 / 学期：${SELECTED_GRADE}（在首页修改，决定题库与可选角色）`;
 }
 
 export function getAvailableRoles(count: number): Role[] {
@@ -413,6 +420,7 @@ export function bindLobbyEvents(): void {
     document.querySelectorAll('#gradePicker .opt-btn').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
     SELECTED_GRADE = b.dataset.grade || SELECTED_GRADE;
+    updateSetupGradeHint();
     ensureCharValid();
     renderFactionPicker();
     renderCharPicker();

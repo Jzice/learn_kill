@@ -5,6 +5,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+/** 版本号取自 package.json，构建期注入为常量（顶栏显示，避免手改版本漏改） */
+const appVersion: string = JSON.parse(
+  fs.readFileSync(path.resolve(dirname, 'package.json'), 'utf-8'),
+).version;
 
 // PeerJS 供给模式：cdn = 保留 CDN script 标签（与原版一致）；bundled = npm 包打进产物
 const peerjsMode: 'cdn' | 'bundled' =
@@ -39,6 +43,10 @@ function renameOutput(): Plugin {
 export default defineConfig({
   root: path.resolve(dirname, 'src'),
   plugins: [peerjsCdnTag(), renameOutput(), viteSingleFile()],
+  // 构建期把版本号替换进源码常量，顶栏无需手写版本字符串
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   resolve: {
     alias: [
       {

@@ -28,6 +28,7 @@
       <span class="tb-title">学堂杀</span>
       <span class="tb-sub">九科争鸣 · 学科阵营</span>
     </span>
+    <span class="tb-ver" id="tbVersion" title="当前版本"></span>
   </div>
   <div class="tb-right">
     <span class="tb-stats">
@@ -89,6 +90,10 @@
     <div class="ach-grid" id="achGrid"></div>
   </div>
   <div class="panel">
+    <h3>◈ 选择年级 / 学期 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（决定题库与可选角色；角色随年级累加）</span></h3>
+    <div class="opt-row" id="gradePicker"></div>
+  </div>
+  <div class="panel">
     <h3>◈ 选择游戏模式 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（选择后进入对局设置）</span></h3>
     <div class="mode-cards" id="modePicker">
       <button class="mode-card" data-mode="single">
@@ -122,10 +127,7 @@
   </div>
 
   <div id="hostConfig">
-    <div class="panel">
-      <h3>◈ 选择年级 / 学期 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（角色随年级累加）</span></h3>
-      <div class="opt-row" id="gradePicker"></div>
-    </div>
+    <div class="cfg-nick-hint" id="setupGradeHint"></div>
     <div class="panel">
       <h3>◈ 出题范围 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（决定抽题覆盖的年级；错题会优先重复出现）</span></h3>
       <div class="opt-row" id="scopePicker"></div>

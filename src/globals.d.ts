@@ -4,6 +4,9 @@
 import type { PublicProfile } from './core/types';
 
 declare global {
+  /** 构建期由 vite define 注入（取自 package.json 的 version），供顶栏显示版本号 */
+  const __APP_VERSION__: string;
+
   interface Window {
     // 工具 / 音效
     togglePanel: (id: string) => void;
