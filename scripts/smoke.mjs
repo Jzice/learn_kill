@@ -90,7 +90,7 @@ check('顶栏显示昵称', tbName0.trim().length > 0, tbName0);
 const achCount = await page.locator('#achGrid .ach-item').count();
 check('个人成就网格渲染', achCount > 0, `${achCount} 项`);
 const modeCount = await page.locator('#modePicker .mode-card').count();
-check('模式选择（单机/创建/加入）', modeCount === 3, `${modeCount} 张`);
+check('模式选择（单机/联机）', modeCount === 2, `${modeCount} 张`);
 const summaryText = await page.textContent('#setupSummary');
 check('主界面配置摘要', !!summaryText && summaryText.includes('年级'), (summaryText || '').replace(/\s+/g, ' ').slice(0, 50));
 

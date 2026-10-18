@@ -393,9 +393,9 @@ export function bindLobbyEvents(): void {
     if (!b) return;
     document.querySelectorAll('#modePicker .mode-card').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
-    const mode = (b.dataset.mode as 'single' | 'host' | 'join') || 'single';
-    // 选定模式后进入对局设置子界面
-    enterSetup(mode);
+    const mode = (b.dataset.mode as 'single' | 'host' | 'join' | 'net') || 'single';
+    // 选定模式后进入对局设置子界面（联机卡默认建立服务器档，下一屏联机方式可切换）
+    enterSetup(mode === 'net' ? 'host' : mode);
   });
   // 档案变更时同步刷新顶栏 / 成就网格
   window.addEventListener('profile-updated', () => {

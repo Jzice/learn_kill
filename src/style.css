@@ -221,6 +221,11 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .side-panel{width:230px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;height:540px}
 .play-log-panel,.chat-panel{background:linear-gradient(160deg,#2a1610,#160a06);border:1px solid var(--gold-dim);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
 .play-log-panel{flex:1;min-height:0}
+/* 技能 / 锦囊内容提示面板 */
+#skillHintPanel{flex:0.9}
+.hint-body{flex:1;overflow-y:auto;padding:6px 9px;font-size:11px;line-height:1.65;color:#d8c8a8}
+.hint-body.flash{animation:hintFlash .6s ease-out}
+@keyframes hintFlash{0%{background:rgba(155,89,182,.35)}100%{background:transparent}}
 .chat-panel{flex:1.15;min-height:0}
 .panel-title{font-size:10.5px;color:var(--gold);padding:5px 10px;background:rgba(0,0,0,.35);border-bottom:1px solid rgba(138,109,59,.4);letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
 .panel-title .badge{font-size:9px;color:var(--muted);letter-spacing:0}
@@ -432,8 +437,12 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .play-card .pcowner{font-size:5px}
   .play-zone{gap:3px;height:90px;padding:5px 4px}
   /* 战报独立成块，置于出牌区下方（上下放置，不叠放） */
-  .table-area > .play-log-panel{flex:none;width:100%;height:110px;box-shadow:none}
-  .table-area > .play-log-panel .play-log-list{font-size:9px}
+  .table-area > .log-hint-row{flex:none;width:100%;height:110px}
+  .log-hint-row{display:flex;gap:6px;width:100%;min-height:0}
+  .log-hint-row .play-log-panel{flex:1.35;min-height:0;box-shadow:none}
+  .log-hint-row #skillHintPanel{flex:1;min-height:0;box-shadow:none}
+  .log-hint-row .play-log-list{font-size:9px}
+  .log-hint-row .hint-body{font-size:9px}
   .play-zone-label{font-size:7px;padding:0 4px}
   .seat-ring{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:6px 4px;width:100%;-webkit-overflow-scrolling:touch}
   .seat{position:static !important;transform:none !important;left:auto !important;top:auto !important;transition:none !important;flex-shrink:0}

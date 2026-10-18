@@ -100,7 +100,7 @@ check(
 );
 
 // 房主：切到创建房间模式
-await host.click('#modePicker .mode-card[data-mode="host"]');
+await host.click('#modePicker .mode-card[data-mode="net"]');
 await host.fill('#nicknameInput', '房主甲');
 await host.click('#createRoomBtn');
 await host.waitForFunction(
@@ -112,8 +112,10 @@ const roomCode = roomInfoText.match(/(\d{6})/)[1];
 check('房主创建房间', !!roomCode, '房间号 ' + roomCode);
 
 // 房主等待 peer 连接（ PeerJS open 事件后 roomInfo 才显示，说明信令服务连通）
-// 客人：加入房间
-await guest.click('#modePicker .mode-card[data-mode="join"]');
+// 客人：加入房间（联机卡进入后切到「加入服务器」档）
+await guest.click('#modePicker .mode-card[data-mode="net"]');
+await guest.click('#netModePicker .opt-btn[data-net="join"]');
+await guest.waitForSelector('#joinConfig', { state: 'visible', timeout: 3000 });
 const jf = await guest.locator('#joinFactionPicker .faction-card').count();
 check('加入档阵营选择器渲染', jf === 9, `${jf} 个`);
 await guest.locator('#joinFactionPicker .faction-card').nth(1).click();

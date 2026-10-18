@@ -8,6 +8,7 @@ import { addLog, addPlayLog } from './log';
 import { hasSkill, drawCards, discardCard } from './rules';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
+import { showPlayHint } from '../ui/hint';
 import { aiSpeak } from './ai';
 import { dealDamage } from './damage';
 import { waitChoice } from './choice';
@@ -35,6 +36,7 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     return;
   }
   addPlayLog(p.name, 'skill', sk.name, '');
+  showPlayHint('技能', sk.name, sk.desc || '');
   aiSpeak(p, 'skill');
   FX.skillWave(idx);
   showPlayCard({ name: sk.name, suit: '✦', num: '', type: 'trick' }, p.name, FACTIONS[p.faction].color);

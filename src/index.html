@@ -50,15 +50,10 @@
         <span class="mc-title">单机对局</span>
         <span class="mc-desc">与 AI 同学同场竞技</span>
       </button>
-      <button class="mode-card" data-mode="host">
-        <span class="mc-icon">📡</span>
-        <span class="mc-title">创建房间</span>
-        <span class="mc-desc">建立联机服务器，邀请好友</span>
-      </button>
-      <button class="mode-card" data-mode="join">
-        <span class="mc-icon">🔌</span>
-        <span class="mc-title">加入房间</span>
-        <span class="mc-desc">输入房间号进入他人房间</span>
+      <button class="mode-card" data-mode="net">
+        <span class="mc-icon">🌐</span>
+        <span class="mc-title">联机对战</span>
+        <span class="mc-desc">创建房间或加入房间（下一步选择联机方式）</span>
       </button>
     </div>
     <div class="setup-summary" id="setupSummary"></div>
@@ -196,6 +191,10 @@
           <button class="panel-toggle" onclick="togglePanel('playLogPanel')">▾</button>
         </div>
         <div class="play-log-list" id="playLogList"></div>
+      </div>
+      <div class="play-log-panel" id="skillHintPanel">
+        <div class="panel-title"><span id="hintTitle">💡 技能 / 锦囊</span></div>
+        <div class="hint-body" id="hintBody">使用技能或锦囊时，这里显示对应内容说明</div>
       </div>
       <div class="chat-panel" id="chatPanel" style="display:none;">
         <div class="panel-title">
