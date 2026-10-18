@@ -43,7 +43,7 @@ export function openDock(tab: 'log' | 'chat'): void {
   const drawer = document.getElementById('mobileDrawer')!;
   const title = document.getElementById('mobileDrawerTitle')!;
   const body = document.getElementById('mobileDrawerBody')!;
-  document.getElementById('mobileDock')!.style.display = 'none';
+  document.getElementById('mobileDock')!.classList.add('dock-hidden');
   drawer.classList.add('show');
   if (tab === 'log') {
     title.textContent = '📋 战 报';
@@ -69,7 +69,7 @@ export function openDock(tab: 'log' | 'chat'): void {
 export function closeDock(): void {
   mobileDockOpen = null;
   document.getElementById('mobileDrawer')!.classList.remove('show');
-  document.getElementById('mobileDock')!.style.display = 'flex';
+  document.getElementById('mobileDock')!.classList.remove('dock-hidden');
 }
 
 export function sendChatFromMobile(): void {

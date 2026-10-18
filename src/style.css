@@ -394,6 +394,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .sound-switch b{font-size:13px}
 
 .mobile-dock,.mobile-drawer{display:none}
+/* dock 打开抽屉时隐藏（用类而非内联 style，避免绕过游戏内门控） */
+#mobileDock.dock-hidden{display:none!important}
 
 @media(max-width:900px){
   .game-main{flex-direction:column;gap:6px}
@@ -407,6 +409,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 
 @media(max-width:600px){
   body{padding:var(--tb-h,52px) 4px 4px;padding-bottom:70px}
+  /* 非游戏界面不显示战报/聊天 dock，无需底部让位 */
+  body:not(:has(#screenGame.active)){padding-bottom:4px}
   h1{font-size:18px;letter-spacing:5px}
   .subtitle{font-size:9px;margin-bottom:5px}
   .top-bar{font-size:10px;padding:4px 6px;gap:4px}
@@ -487,14 +491,15 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .panel{padding:9px;margin-bottom:6px}
   .panel h3{font-size:12px;margin-bottom:6px}
   .opt-btn{padding:6px 2px;font-size:11px}
-  .mobile-dock{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:90;background:linear-gradient(180deg,#2a1610,#160a06);border-top:2px solid var(--gold-dim);padding:6px 8px;gap:6px;box-shadow:0 -4px 16px rgba(0,0,0,.7)}
+  /* 战报/聊天 dock 仅在游戏进行界面显示 */
+  #screenGame.active ~ .mobile-dock{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:90;background:linear-gradient(180deg,#2a1610,#160a06);border-top:2px solid var(--gold-dim);padding:6px 8px;gap:6px;box-shadow:0 -4px 16px rgba(0,0,0,.7)}
   .dock-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:#d8c8a8;padding:8px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;position:relative;transition:all .15s}
   .dock-btn.has-unread{border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.5);animation:dockPulse 1.5s infinite}
   @keyframes dockPulse{0%,100%{box-shadow:0 0 12px rgba(245,197,66,.5)}50%{box-shadow:0 0 18px rgba(245,197,66,.9)}}
   .dock-badge{position:absolute;top:-5px;right:-5px;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;padding:0 4px;border-radius:8px;display:none}
   .dock-badge.show{display:inline-block}
   .mobile-drawer{display:none;position:fixed;bottom:0;left:0;right:0;z-index:95;background:linear-gradient(180deg,#2a1610,#160a06);border-top:2px solid var(--gold);height:55vh;flex-direction:column;overflow:hidden;animation:drawerIn .3s ease-out}
-  .mobile-drawer.show{display:flex}
+  #screenGame.active ~ .mobile-drawer.show{display:flex}
   @keyframes drawerIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
   .mobile-drawer-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--gold-dim);color:var(--gold);font-size:13px;flex-shrink:0;letter-spacing:1px;background:rgba(0,0,0,.35)}
   .mobile-drawer-body{flex:1;overflow-y:auto;padding:0;display:flex;flex-direction:column;min-height:0}

@@ -2,6 +2,19 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.7] - 2026-10-18
+
+### 修复
+
+- **小屏首页/设置界面误显战报/聊天 dock**：`#mobileDock/#mobileDrawer` 位于 `#screenGame` 外层，≤600px 媒体查询无条件 `display:flex`，导致非游戏界面也显示——改为 `#screenGame.active ~ .mobile-dock/.mobile-drawer.show` 兄弟选择器门控，仅游戏进行界面显示
+- `dock.ts` 打开/关闭抽屉由内联 `style.display` 改为 `dock-hidden` 类切换，避免内联样式绕过门控
+- 非游戏界面移除 dock 的 70px 底部让位（`body:not(:has(#screenGame.active)){padding-bottom:4px}`）
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力回归零卡死
+- 380px 实测：首页/设置界面 dock=`none`，游戏界面 dock=`flex` 且正常渲染
+
 ## [1.4.6] - 2026-10-18
 
 ### 变更
