@@ -399,7 +399,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 
 @media(max-width:900px){
   .game-main{flex-direction:column;gap:6px}
-  .table-area{height:460px;border-radius:48% / 36%}
+  /* 纵向布局中 flex:1 的 basis:0 会使 height 失效导致区域塌陷，改为固定高度不伸缩 */
+  .table-area{flex:none;height:460px;border-radius:48% / 36%}
   .side-panel{width:100%;height:auto;flex-direction:row;gap:6px}
   .play-log-panel,.chat-panel{flex:1;min-height:0;max-height:160px}
   .p-card{width:100px}
