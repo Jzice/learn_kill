@@ -2,6 +2,18 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.18] - 2026-10-18
+
+### 变更
+
+- **技能 / 锦囊提示改为出牌区浮现**：撤掉侧栏独立提示面板（`#skillHintPanel`），`showPlayHint` 改为在出牌区（`#playZoneCards`）底部浮现半透明浮层（`div.play-hint`，绝对定位、pointer-events:none），5 秒后淡出并移除；新提示自动替换旧提示
+- **布局还原**：小屏(≤600px) 战报恢复独立成块置于出牌区下方（移除 `log-hint-row` 并排容器）；`bindPlayLogRelayout` 还原为仅迁移战报
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力回归零卡死
+- 实测（1280px / 380px）：提示浮层位于出牌区内（absolute、z-index 6、不遮挡点击）、真实对局中 AI 使用【无中生有】时自动浮现 ✓；独立面板已移除 ✓
+
 ## [1.4.17] - 2026-10-18
 
 ### 新增

@@ -13,14 +13,25 @@ export const TRICK_DESC: Record<string, string> = {
   shandian: '留存判定：黑桃 2-9 受 3 点伤害，否则移交下家',
 };
 
-/** 更新顶栏下方的技能 / 锦囊内容提示面板（大屏：战报下方；小屏：战报右侧） */
+let hintTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** 使用技能 / 锦囊时在出牌区内浮现内容提示，数秒后自动淡出 */
 export function showPlayHint(kind: '技能' | '锦囊', name: string, desc: string): void {
-  const title = document.getElementById('hintTitle');
-  const body = document.getElementById('hintBody');
-  if (!title || !body) return;
-  title.textContent = `💡 ${kind} · ${name}`;
-  body.textContent = desc || '（暂无说明）';
-  body.classList.remove('flash');
-  void (body as HTMLElement).offsetWidth; // 重启动画
-  body.classList.add('flash');
+  const zone = document.getElementById('playZoneCards');
+  if (!zone) return;
+  zone.querySelectorAll('.play-hint').forEach((e) => e.remove());
+  if (hintTimer) clearTimeout(hintTimer);
+  const el = document.createElement('div');
+  el.className = 'play-hint';
+  const t = document.createElement('span');
+  t.className = 'ph-title';
+  t.textContent = `💡 ${kind} · ${name}`;
+  const d = document.createElement('span');
+  d.textContent = desc || '（暂无说明）';
+  el.append(t, d);
+  zone.appendChild(el);
+  hintTimer = setTimeout(() => {
+    el.classList.add('fade-out');
+    setTimeout(() => el.remove(), 600);
+  }, 5000);
 }

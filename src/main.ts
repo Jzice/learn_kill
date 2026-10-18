@@ -136,29 +136,18 @@ function syncTopBarHeight(): void {
   }
 }
 
-/** 小屏(≤600px)时战报+技能提示并排放到出牌区下方，宽屏还原到侧栏（提示在战报下方/右侧） */
+/** 小屏(≤600px)时战报移到出牌区下方，宽屏还原到侧栏 */
 function bindPlayLogRelayout(): void {
   const log = document.getElementById('playLogPanel');
-  const hint = document.getElementById('skillHintPanel');
   const side = document.querySelector('.side-panel');
   const area = document.getElementById('tableArea');
   if (!log || !side || !area) return;
   const mq = window.matchMedia('(max-width:600px)');
   const apply = () => {
     if (mq.matches) {
-      let row = document.getElementById('logHintRow');
-      if (!row) {
-        row = document.createElement('div');
-        row.id = 'logHintRow';
-        row.className = 'log-hint-row';
-      }
-      row.appendChild(log);
-      if (hint) row.appendChild(hint);
-      area.appendChild(row);
+      area.appendChild(log);
     } else {
       side.insertBefore(log, side.firstChild);
-      if (hint) log.after(hint);
-      document.getElementById('logHintRow')?.remove();
     }
   };
   apply();
