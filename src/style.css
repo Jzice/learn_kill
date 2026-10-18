@@ -215,7 +215,12 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .seat-targetable .p-card{border-color:#e74c3c !important;animation:targetPulse 1.2s infinite}
 @keyframes targetPulse{0%,100%{box-shadow:0 0 10px rgba(231,76,60,.5)}50%{box-shadow:0 0 25px rgba(231,76,60,.9)}}
 .p-card{width:118px;border-radius:9px;padding:5px;position:relative;transition:all .25s;border:2px solid var(--faction-color,var(--gold-dim));background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%),linear-gradient(160deg,#2a1a10,#0e0603);box-shadow:inset 0 0 20px rgba(0,0,0,.6),0 3px 12px rgba(0,0,0,.5)}
-.p-card.turn{border-width:3px;box-shadow:0 0 24px var(--faction-color),0 0 46px var(--faction-color),inset 0 0 20px rgba(0,0,0,.6);transform:scale(1.06)}
+/* 当前出牌（回合）角色座位：金边提亮 + 呼吸光晕 + 放大，昵称前带闪烁 ▶（见 .turn-arrow） */
+.p-card.turn{border-width:3px;border-color:var(--gold);box-shadow:0 0 24px var(--faction-color),0 0 46px var(--faction-color),inset 0 0 20px rgba(0,0,0,.6);transform:scale(1.07);z-index:4;animation:turnGlow 1.6s ease-in-out infinite}
+@keyframes turnGlow{0%,100%{box-shadow:0 0 16px var(--gold),0 0 34px var(--faction-color),inset 0 0 20px rgba(0,0,0,.6);border-color:var(--gold)}50%{box-shadow:0 0 30px var(--gold),0 0 62px var(--gold),inset 0 0 20px rgba(0,0,0,.6);border-color:var(--accent-strong)}}
+.p-card.turn .pname{color:var(--gold)}
+.turn-arrow{display:inline-block;color:var(--gold);font-size:9px;margin-right:2px;animation:arrowBlink 1.1s ease-in-out infinite}
+@keyframes arrowBlink{0%,100%{opacity:1;transform:translateX(0)}50%{opacity:.25;transform:translateX(2px)}}
 .p-card.dead{opacity:.28;filter:grayscale(1)}
 /* 玩家标记的身份（未公开）：虚线框 + 外环微光，区别于已确认的实线身份 */
 .p-card.role-marked{box-shadow:0 0 0 2px rgba(255,255,255,.14),inset 0 0 16px rgba(0,0,0,.45)}

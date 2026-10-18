@@ -26,7 +26,8 @@ const EQUIP_LABEL: Record<string, string> = {
 const JUDGE_ICON: Record<string, string> = { lebu: '🎋', shandian: '⚡' };
 
 function buildPlayerCard(p: Player, i: number): string {
-  const isTurn = i === G.current;
+  // 当前出牌（回合）角色：游戏进行中高亮其座位；对局结束不再标识
+  const isTurn = i === G.current && !G.gameOver;
   const isSelf = i === G.myPlayerIdx;
   const mark = ROLE_MARKS[i];
   const isMarked = !!mark && !isSelf && !p.roleRevealed;
@@ -87,7 +88,7 @@ function buildPlayerCard(p: Player, i: number): string {
   return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''} ${isMarked ? 'role-marked' : ''}" style="--faction-color:${fColor};${isMarked ? 'border:2px dashed ' + roleColor + ';' : ''}">
     <div class="faction-icon" style="border-color:${fColor};color:${fColor};">${faction.icon}</div>
     ${markBtn}
-    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${p.name} ${genderIconHtml}${aiTag}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
+    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${isTurn && p.alive ? '<span class="turn-arrow">▶</span>' : ''}${p.name} ${genderIconHtml}${aiTag}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
     <div class="pknow">🔮${p.knowledge}</div>
     <div class="php-bar">${hpGems}</div>
     <div class="pequip-slots">${equipSlots}</div>
