@@ -254,7 +254,7 @@ export function render(): void {
   // 操作提示区始终保留占位（不再 display:none），避免手牌区随其显隐上下跳动。
   // 内容由上面的 hintText 决定：本地方有决策→显示操作提示；否则→显示其他角色的操作信息。
   const centerArea = document.getElementById('centerArea');
-  if (centerArea) centerArea.style.display = 'block';
+  if (centerArea) centerArea.style.display = 'flex';
   document.getElementById('deckCount')!.textContent = String(G.deck.length || 0);
   document.getElementById('discardCount')!.textContent = String(G.discard.length || 0);
 
