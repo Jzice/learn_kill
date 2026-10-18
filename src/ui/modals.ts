@@ -4,17 +4,72 @@ import { GRADE_ORDER } from '../data/grades';
 import { CHARACTERS } from '../data/characters';
 import { ACHIEVEMENTS, PROFILE } from '../profile/profile';
 
+/** 五个 tab（顺序即高度测量顺序） */
+const RULE_TABS = ['basic', 'factions', 'cards', 'chars', 'ach'];
+/** 各 tab 内容自然高度的最大值（与视口无关，缓存以免重复测量） */
+let rulesNaturalMax = 0;
+/** 视口尺寸变化监听（窗口变小/变大时重新套用 85vh 上限） */
+let rulesRO: ResizeObserver | null = null;
+
+/**
+ * 解除高度限制后依次渲染各 tab，量出内容自然高度的最大值。
+ * 必须临时解除 max-height，否则盒子被 85vh 截断、量到的只是上限而非真实内容高度。
+ */
+function measureRulesNaturalMax(): number {
+  if (rulesNaturalMax > 0) return rulesNaturalMax;
+  const box = document.querySelector<HTMLElement>('#rulesModal .rules-box');
+  if (!box) return 0;
+  const keepH = box.style.height;
+  const keepMaxH = box.style.maxHeight;
+  box.style.height = 'auto';
+  box.style.maxHeight = 'none';
+  let max = 0;
+  for (const t of RULE_TABS) {
+    renderRulesContent(t);
+    max = Math.max(max, box.scrollHeight);
+  }
+  box.style.height = keepH;
+  box.style.maxHeight = keepMaxH;
+  rulesNaturalMax = max;
+  return max;
+}
+
+/** 把弹窗高度锁定为 min(内容自然高度上限, 85vh)，使切换 tab 时尺寸与位置恒定 */
+function lockRulesHeight(): void {
+  const box = document.querySelector<HTMLElement>('#rulesModal .rules-box');
+  if (!box) return;
+  const natural = measureRulesNaturalMax();
+  if (natural <= 0) return; // 量不到高度时保持 CSS 自适应，避免塌成 0
+  const cap = Math.round(window.innerHeight * 0.85);
+  box.style.height = `${Math.min(natural, cap)}px`;
+}
+
 export function openRules(): void {
-  document.getElementById('rulesModal')!.classList.add('show');
+  const modal = document.getElementById('rulesModal')!;
+  modal.classList.add('show');
+  lockRulesHeight(); // 先锁定高度再切默认 tab，避免"先撑开再收缩"的跳动
   switchRulesTab('basic');
+  if (!rulesRO && typeof ResizeObserver !== 'undefined') {
+    rulesRO = new ResizeObserver(() => {
+      if (document.getElementById('rulesModal')!.classList.contains('show')) lockRulesHeight();
+    });
+    rulesRO.observe(modal);
+  }
 }
 
 export function closeRules(): void {
   document.getElementById('rulesModal')!.classList.remove('show');
 }
 
+/** 切换 tab：仅切换高亮与内容；高度已锁定，故不会引起弹窗缩放或位移 */
 export function switchRulesTab(tab: string): void {
   document.querySelectorAll('.rule-tab').forEach((t) => t.classList.toggle('active', (t as HTMLElement).dataset.tab === tab));
+  renderRulesContent(tab);
+  document.getElementById('rulesContent')!.scrollTop = 0;
+}
+
+/** 渲染指定 tab 的规则内容（不含 tab 高亮与滚动重置，供高度测量复用） */
+function renderRulesContent(tab: string): void {
   const el = document.getElementById('rulesContent')!;
   if (tab === 'basic') {
     el.innerHTML = `<div class="rule-section"><h4>🎯 游戏目标</h4><ul>
@@ -86,5 +141,4 @@ export function switchRulesTab(tab: string): void {
       }).join('')
     }</div></div>`;
   }
-  el.scrollTop = 0;
 }
