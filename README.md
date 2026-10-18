@@ -7,7 +7,7 @@
 
 一款运行在浏览器中的**学科主题身份竞技卡牌游戏**（类三国杀规则）：玩家扮演语文、数学、英语、物理、化学、生物、历史、地理、政治九大"科目阵营"的名人角色（鲁迅、牛顿、门捷列夫、秦始皇……），在主公/忠臣/反贼/内奸的身份局中出牌博弈，而**答题是核心成长机制**——答对题目可获得"学识""护盾""连击"等奖励，用于免伤、摸牌、发动技能。
 
-> 🎮 **[在线试玩](https://jzice.github.io/learn_kill/)** · 📦 **[Releases 下载](https://github.com/Jzice/learn_kill/releases)**
+> 🎮 **[在线试玩](https://jzice.github.io/learn_kill/)** · 📦 **[Releases 下载](https://github.com/Jzice/learn_kill/releases/latest)**
 
 本项目由单文件 HTML 游戏（`docs/学堂杀.html`，保留为 1:1 复刻基线）工程化重构为 **TypeScript 模块化工程**，并可完整编译回**单一 HTML 文件**，双击即玩、零部署成本。
 
@@ -47,6 +47,7 @@ npm run build      # 构建两种模式到 dist/
 | `npm run typecheck` | TypeScript 严格模式检查（`tsc --noEmit`） |
 | `npm run build:banks` | 由 `data/questions/**/*.tsv` 重新生成 `src/data/banks/*.ts`（生成物，勿手改） |
 | `npm run build:pages` | 组装 GitHub Pages 站点目录到 `_site/`（本地预览将要发布的站点） |
+| `npm run stage:release` | 准备 Release 资产到 `release/`（ASCII 文件名，避免 GitHub 把中文名重命名为占位名） |
 | `npm run audit:banks` | 题库质量审计：短题干 / 空选项 / 跨年级重复 / 学科枚举 |
 | `npm run smoke` / `npm run smoke:net` | 冒烟测试（无头 Chromium）：单机主流程 / 联机建房同步 |
 | `npm run repro:net` | 联机牌局压力回归（含死锁检测，退出码即结果） |
@@ -63,6 +64,10 @@ npm run build      # 构建两种模式到 dist/
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | push / PR 到 `main` | 类型检查 → 题库生成物一致性 → 构建双模式 → 产物校验 → 题库审计 → 上传 dist 产物 |
 | [`.github/workflows/release.yml`](.github/workflows/release.yml) | 推送 `v*` 标签 | 构建 → 产物校验 → **单机 + 联机冒烟门禁** → 自动创建 GitHub Release 并上传两个 HTML 产物（附自动生成变更日志） |
 | [`.github/workflows/pages.yml`](.github/workflows/pages.yml) | push 到 `main` / 手动 | 以 bundled 产物作为站点 `index.html` 部署到 [GitHub Pages](https://jzice.github.io/learn_kill/) |
+
+Release 资产统一使用 ASCII 文件名（`xuetangsha.html` / `xuetangsha.bundled.html`，附中文显示名）—— GitHub 会把中文资产名重命名为 `bundled.html` / `default.html` 之类的占位名。
+
+> ⚙️ **Pages 必须切换一次部署源**：本仓库历史上启用了「Deploy from a branch」（GitHub 内置的 Jekyll 工作流 `pages-build-deployment`），它会把 README 渲染成首页并**覆盖** Actions 部署的游戏站点。请在仓库 **Settings → Pages → Build and deployment → Source** 改为 **GitHub Actions**，此后每次 push 到 `main` 即发布新版游戏站点。
 
 发布新版本：
 

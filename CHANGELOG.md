@@ -29,6 +29,7 @@
 
 - **Pages 流水线组装步骤失败**：改用跨平台 Node 脚本 `scripts/build-pages.mjs`（`npm run build:pages`）替代 shell `cp`，按 `bundled` 标记识别站点入口、对产物名不再硬编码中文，并对 index.html 做标题与内联脚本自检，失败时输出 dist 实际产物清单
 - **`verify:dist` 由“只打印”改为真正的门禁**：只遍历 HTML 产物（此前会把 PNG 当文本读取）、内联脚本正则允许 `<script type="module" crossorigin>` 属性（此前恒为 false 属误报），并新增标题完整性、无外部样式、bundled 产物不得含 peerjs CDN 标签、CDN 产物必须含 CDN 标签等断言
+- **Release 资产命名**：GitHub 会把含非 ASCII 字符的资产名重命名为 `bundled.html` / `default.html` 占位名（首次发布 `v1.7.0` 即因此附件名不可用）。新增 `scripts/stage-release.mjs`（`npm run stage:release`）统一复制为 ASCII 文件名 `xuetangsha.html` / `xuetangsha.bundled.html` 并生成带中文显示名的资产清单；`release.yml` 改为按清单上传，且当目标 Release 已存在但资产命名异常时自动删除重建
 
 ## [1.6.1] - 2026-10-18
 

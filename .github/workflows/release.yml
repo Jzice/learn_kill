@@ -56,8 +56,8 @@ jobs:
       - name: 联机冒烟测试（发布门禁）
         run: npm run smoke:net
 
-      - name: 产物清单
-        run: ls -lh dist/*.html
+      - name: 准备发布资产（ASCII 文件名，避免 GitHub 重命名为占位名）
+        run: node scripts/stage-release.mjs
 
       - name: 创建 Release 并上传产物
         env:
@@ -65,16 +65,25 @@ jobs:
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
+          # 资产清单形如 "release/xuetangsha.html#中文说明"，gh 会把 # 后内容作为显示名
+          mapfile -t ASSETS < release/assets.txt
+          if [ ${#ASSETS[@]} -eq 0 ]; then
+            echo "release/assets.txt 为空，无法发布"; exit 1
+          fi
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG 已存在，上传产物覆盖同名文件"
-            gh release upload "$TAG" dist/*.html --clobber
-            exit 0
+            if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -q '^xuetangsha\.bundled\.html$'; then
+              echo "Release $TAG 已存在且资产命名正常，覆盖上传"
+              gh release upload "$TAG" "${ASSETS[@]}" --clobber
+              exit 0
+            fi
+            echo "Release $TAG 存在但资产命名异常（历史中文名被重命名），删除后重建"
+            gh release delete "$TAG" --yes
           fi
           # 上一版本标签用于限定自动生成日志的范围；首个版本没有则留空
           PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
           if [ -n "$PREV_TAG" ]; then
-            gh release create "$TAG" dist/*.html --title "学堂杀 $TAG" \
+            gh release create "$TAG" "${ASSETS[@]}" --title "学堂杀 $TAG" \
               --generate-notes --notes-start-tag "$PREV_TAG"
           else
-            gh release create "$TAG" dist/*.html --title "学堂杀 $TAG" --generate-notes
+            gh release create "$TAG" "${ASSETS[@]}" --title "学堂杀 $TAG" --generate-notes
           fi
