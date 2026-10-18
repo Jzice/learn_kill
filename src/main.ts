@@ -14,7 +14,8 @@ import { handleLocalChoice } from './game/choice';
 import { closeMarkMenu, openMarkMenu, setMark } from './game/marks';
 import { closeProfileModal, refreshProfileUI, showAchievements } from './profile/profile';
 import { sendChat } from './game/chat';
-import { closeDock, openDock, sendChatFromMobile } from './ui/dock';
+import { bindNetChat, sendNetChat, toggleNetChat } from './ui/netchat';
+import { bindNotify, closeNotifyPanel, notifyJump, toggleNotifyPanel } from './ui/notify';
 import { closeRules, openRules, switchRulesTab } from './ui/modals';
 import {
   backToLobby,
@@ -76,9 +77,11 @@ window.showAchievements = showAchievements;
 window.closeProfileModal = closeProfileModal;
 window.viewMemberProfile = viewMemberProfile;
 window.sendChat = sendChat;
-window.sendChatFromMobile = sendChatFromMobile;
-window.openDock = openDock;
-window.closeDock = closeDock;
+window.sendNetChat = sendNetChat;
+window.toggleNetChat = toggleNetChat;
+window.toggleNotifyPanel = toggleNotifyPanel;
+window.closeNotifyPanel = closeNotifyPanel;
+window.notifyJump = notifyJump;
 window.clickHandCard = clickHandCard;
 window.clickTargetSeat = clickTargetSeat;
 window.handleLocalChoice = handleLocalChoice;
@@ -183,6 +186,8 @@ function init(): void {
   bindBankBrowser();
   syncTopBarHeight();
   bindPlayLogRelayout();
+  bindNetChat();
+  bindNotify();
 
   if (EXTERNAL_BANK_URLS.length) {
     Promise.all(EXTERNAL_BANK_URLS.map((u) => loadBankFromUrl(u, true))).then(() => {

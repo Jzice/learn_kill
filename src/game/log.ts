@@ -1,7 +1,7 @@
 /* ==================== 战报 ==================== */
 import type { LogAction, LogEntry } from '../core/types';
 import { NET } from '../net/network';
-import { bumpUnreadLog, isDockOpen, refreshMobileDrawer } from '../ui/dock';
+import { pushNotify } from '../ui/notify';
 
 export let playLog: LogEntry[] = [];
 
@@ -10,7 +10,8 @@ export function addLog(t: string, cls = ''): void {
   if (playLog.length > 100) playLog.shift();
   renderPlayLog();
   if (NET.isHost) NET.broadcast({ type: 'play_log', entry: { action: 'log', text: t, cls } });
-  if (!isDockOpen('log')) bumpUnreadLog();
+  // 顶栏通知：高亮/系统级战报（开局·结算·断线等）计入通知中心
+  if (cls === 'hl' || cls === 'sys') pushNotify('sys', t);
 }
 
 export function addPlayLog(
@@ -25,7 +26,6 @@ export function addPlayLog(
   if (playLog.length > 100) playLog.shift();
   renderPlayLog();
   if (NET.isHost) NET.broadcast({ type: 'play_log', entry });
-  if (!isDockOpen('log')) bumpUnreadLog();
 }
 
 /** 客户端追加一条广播来的战报（不二次广播） */
@@ -33,7 +33,8 @@ export function appendPlayLog(entry: LogEntry): void {
   playLog.push(entry);
   if (playLog.length > 100) playLog.shift();
   renderPlayLog();
-  if (!isDockOpen('log')) bumpUnreadLog();
+  // 顶栏通知：广播来的系统级战报（开局·结算·断线等）
+  if (entry.action === 'log' && (entry.cls === 'hl' || entry.cls === 'sys')) pushNotify('sys', entry.text || '');
 }
 
 export function renderPlayLog(): void {
@@ -62,7 +63,6 @@ export function renderPlayLog(): void {
     .join('');
   document.getElementById('playLogBadge')!.textContent = String(playLog.length);
   el.scrollTop = el.scrollHeight;
-  refreshMobileDrawer();
 }
 
 export function resetPlayLog(): void {

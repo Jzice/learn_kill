@@ -398,9 +398,33 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .sound-switch:hover{border-color:var(--gold-dim)}
 .sound-switch b{font-size:13px}
 
-.mobile-dock,.mobile-drawer{display:none}
-/* dock 打开抽屉时隐藏（用类而非内联 style，避免绕过游戏内门控） */
-#mobileDock.dock-hidden{display:none!important}
+/* ==================== 小屏联机聊天面板（固定底部，可折叠） ==================== */
+#netChatPanel{display:none}
+.nchat-head{display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:1px;background:rgba(0,0,0,.35);flex-shrink:0}
+.nchat-title{flex-shrink:0}
+.nchat-latest{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#d8c8a8;letter-spacing:0}
+.nchat-badge{flex-shrink:0;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;padding:0 4px;border-radius:8px;display:none;text-align:center}
+.nchat-badge.show{display:inline-block}
+.nchat-toggle{flex-shrink:0;color:var(--gold);font-size:12px}
+.nchat-body{display:flex;flex-direction:column;min-height:0}
+#netChatList{height:72px;overflow-y:auto;padding:4px 8px;font-size:11px;line-height:1.55;flex:none}
+#netChatPanel .chat-input-row{flex-shrink:0}
+#netChatPanel .chat-input-row input{font-size:12px;padding:6px 8px}
+#netChatPanel .chat-input-row button{font-size:12px;padding:0 14px}
+
+/* ==================== 顶栏消息通知下拉（🔔） ==================== */
+#notifyPanel{display:none;position:fixed;top:calc(var(--tb-h,52px) + 2px);right:4px;width:min(320px,calc(100vw - 8px));max-height:55vh;z-index:150;flex-direction:column;background:linear-gradient(160deg,#2a1610,#160a06);border:1px solid var(--gold-dim);border-radius:8px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.7)}
+#notifyPanel.show{display:flex}
+.notify-head{padding:6px 10px;font-size:11px;color:var(--gold);letter-spacing:2px;background:rgba(0,0,0,.35);border-bottom:1px solid rgba(138,109,59,.4);flex-shrink:0}
+.notify-list{overflow-y:auto;padding:4px}
+.notify-item{display:flex;gap:6px;padding:5px 7px;font-size:11px;color:#d8c8a0;border-radius:4px;cursor:pointer;align-items:flex-start}
+.notify-item:hover{background:rgba(245,197,66,.12);color:var(--gold)}
+.ni-icon{flex-shrink:0}
+.ni-text{flex:1;min-width:0;word-break:break-all;line-height:1.45}
+.notify-empty{padding:14px;text-align:center;color:var(--muted);font-size:11px}
+.tb-notify{position:relative}
+.notify-badge{position:absolute;top:-4px;right:-4px;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;min-width:15px;height:15px;line-height:15px;padding:0 3px;border-radius:8px;display:none}
+.notify-badge.show{display:inline-block}
 
 @media(max-width:900px){
   .game-main{flex-direction:column;gap:6px}
@@ -415,10 +439,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 
 @media(max-width:600px){
   body{padding:var(--tb-h,52px) 4px 4px}
-  /* 仅联机对局显示聊天 dock 时才需要底部让位 */
-  body:has(#mobileDock.net){padding-bottom:70px}
-  /* 悬浮操作提示需让过固定聊天 dock */
-  body:has(#mobileDock.net) .center-area{bottom:76px}
+  /* 联机聊天面板固定底部，让位高度由 --chat-h 驱动（展开 150px / 折叠 40px，由 netchat.ts 写入） */
+  body:has(#netChatPanel.show){padding-bottom:calc(var(--chat-h,0px) + 10px)}
+  /* 悬浮操作提示需让过聊天面板 */
+  body:has(#netChatPanel.show) .center-area{bottom:calc(var(--chat-h,0px) + 14px)}
   h1{font-size:18px;letter-spacing:5px}
   .subtitle{font-size:9px;margin-bottom:5px}
   .top-bar{font-size:10px;padding:4px 6px;gap:4px}
@@ -499,24 +523,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .panel{padding:9px;margin-bottom:6px}
   .panel h3{font-size:12px;margin-bottom:6px}
   .opt-btn{padding:6px 2px;font-size:11px}
-  /* 聊天 dock 仅在联机对局界面显示（战报已在游戏区独立展示） */
-  #screenGame.active ~ .mobile-dock.net{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:90;background:linear-gradient(180deg,#2a1610,#160a06);border-top:2px solid var(--gold-dim);padding:6px 8px;gap:6px;box-shadow:0 -4px 16px rgba(0,0,0,.7)}
-  .dock-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:#d8c8a8;padding:8px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;position:relative;transition:all .15s}
-  .dock-btn.has-unread{border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.5);animation:dockPulse 1.5s infinite}
-  @keyframes dockPulse{0%,100%{box-shadow:0 0 12px rgba(245,197,66,.5)}50%{box-shadow:0 0 18px rgba(245,197,66,.9)}}
-  .dock-badge{position:absolute;top:-5px;right:-5px;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;padding:0 4px;border-radius:8px;display:none}
-  .dock-badge.show{display:inline-block}
-  .mobile-drawer{display:none;position:fixed;bottom:0;left:0;right:0;z-index:95;background:linear-gradient(180deg,#2a1610,#160a06);border-top:2px solid var(--gold);height:55vh;flex-direction:column;overflow:hidden;animation:drawerIn .3s ease-out}
-  #screenGame.active ~ .mobile-drawer.net.show{display:flex}
-  @keyframes drawerIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
-  .mobile-drawer-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--gold-dim);color:var(--gold);font-size:13px;flex-shrink:0;letter-spacing:1px;background:rgba(0,0,0,.35)}
-  .mobile-drawer-body{flex:1;overflow-y:auto;padding:0;display:flex;flex-direction:column;min-height:0}
-  .mobile-drawer-body .play-log-list,.mobile-drawer-body .chat-list{flex:1;overflow-y:auto;padding:8px 10px;font-size:11.5px;line-height:1.6}
-  .mobile-drawer-body .chat-input-row{flex-shrink:0}
-  .mobile-drawer-body .chat-input-row input{font-size:12px;padding:6px 8px}
-  .mobile-drawer-body .chat-input-row button{font-size:12px;padding:0 14px}
-  .mobile-drawer-body .play-log-item{font-size:11px;padding:3px 7px;margin-bottom:4px}
-  .mobile-drawer-body .chat-msg{font-size:11.5px;margin-bottom:5px;padding:3px 8px}
+  /* 联机聊天面板：仅窄屏联机对局显示（可见性由 netchat.ts 按 界面+联机+屏宽 控制） */
+  #netChatPanel.show{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:85;flex-direction:column;background:linear-gradient(180deg,#2a1610,#160a06);border-top:2px solid var(--gold-dim);box-shadow:0 -4px 16px rgba(0,0,0,.7)}
+  #netChatPanel.collapsed .nchat-body{display:none}
+  #netChatPanel.collapsed .nchat-latest{color:var(--gold)}
   .profile-avatar{width:44px;height:44px;font-size:20px}
 }
 
@@ -536,11 +546,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 /* 用户芯片 */
 .tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0;margin-left:auto;background:none;border:none;font-family:inherit;padding:0;cursor:pointer;border-radius:12px}
 .tb-user-chip:hover .tb-uname{color:var(--gold)}
+
 .tb-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;background:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);box-shadow:0 0 10px rgba(245,197,66,.4);flex-shrink:0}
 .tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
-.tb-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:linear-gradient(160deg,#5a3a10,#3a1a06);border:1px solid var(--gold-dim);color:var(--gold);white-space:nowrap;flex-shrink:0}
-.tb-badge.tb-score{color:var(--text);background:linear-gradient(160deg,#2a1a10,#160a06)}
-/* 布局模式（JS 实测切换）：tb-mode2 = 信息+按钮同在第二行、整体靠左 */
+/* 布局模式（JS 实测切换）：tb-mode2 = 按钮+信息同在第二行、整体靠左 */
 #topBar.tb-mode2 .tb-brand{flex-basis:100%}
 #topBar.tb-mode2 .tb-user-chip{margin-left:0}
 /* 游戏内状态条（牌桌上方，非顶栏） */
@@ -570,7 +579,6 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 }
 @media (max-width:400px){
   .tb-title{font-size:13px;letter-spacing:1px}
-  .tb-badge{font-size:9px;padding:2px 6px}
 }
 
 /* ===== 首页：模式卡 + 成就网格 ===== */

@@ -8,7 +8,7 @@ import { escapeHtml } from '../core/dom';
 import { displayOrder, handLimit } from '../game/rules';
 import { isCardClickable, cardClickHint } from './hand';
 import { ROLE_MARKS } from '../game/marks';
-import { closeDock, isDockOpen } from './dock';
+import { updateNetChatVisible } from './netchat';
 import { NET, scheduleSync } from '../net/network';
 
 const EQUIP_ICON: Record<string, string> = {
@@ -242,22 +242,14 @@ export function render(): void {
   document.getElementById('actionBtns')!.innerHTML = btnHtml;
   // 「中间的选择区域」仅在本地方有决策（有待选操作按钮）时显示，否则只呈现主游戏区
   const centerArea = document.getElementById('centerArea');
-  if (centerArea) {
-    const show = !!btnHtml.trim();
-    // 弹出操作按钮时自动收起移动端抽屉，避免遮挡操作提示
-    if (show && centerArea.style.display !== 'block' && isDockOpen('chat')) closeDock();
-    centerArea.style.display = show ? 'block' : 'none';
-  }
+  if (centerArea) centerArea.style.display = btnHtml.trim() ? 'block' : 'none';
   document.getElementById('deckCount')!.textContent = String(G.deck.length || 0);
   document.getElementById('discardCount')!.textContent = String(G.discard.length || 0);
 
   const chatPanel = document.getElementById('chatPanel');
   if (chatPanel) chatPanel.style.display = NET.mode === 'single' ? 'none' : 'flex';
-  // 移动端聊天入口仅联机对局中显示（单机/大厅隐藏，战报已在游戏区独立展示）
-  const inGame = document.getElementById('screenGame')?.classList.contains('active') ?? false;
-  const online = inGame && NET.mode !== 'single';
-  document.getElementById('mobileDock')?.classList.toggle('net', online);
-  document.getElementById('mobileDrawer')?.classList.toggle('net', online);
+  // 小屏联机聊天面板：仅联机对局 + 窄屏显示（内部自行判定并驱动 --chat-h 让位）
+  updateNetChatVisible();
 
   if (NET.isHost && NET.mode === 'host' && G.started) scheduleSync();
 }

@@ -19,11 +19,13 @@ declare global {
     showAchievements: (p: PublicProfile, title: string) => void;
     closeProfileModal: () => void;
     viewMemberProfile: (name: string, profile: PublicProfile | null) => void;
-    // 聊天 / dock
+    // 聊天 / 通知
     sendChat: () => void;
-    sendChatFromMobile: () => void;
-    openDock: (tab: 'log' | 'chat') => void;
-    closeDock: () => void;
+    sendNetChat: () => void;
+    toggleNetChat: () => void;
+    toggleNotifyPanel: () => void;
+    closeNotifyPanel: () => void;
+    notifyJump: (i: number) => void;
     // 大厅
     startSingle: () => Promise<void>;
     createRoom: () => Promise<void>;

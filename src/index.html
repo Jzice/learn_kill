@@ -8,7 +8,7 @@
 </head>
 <body>
 
-<!-- 统一固定顶栏：品牌 / 用户信息 / 图标与主功能（小屏时品牌+用户信息第一行，图标第二行） -->
+<!-- 统一固定顶栏：品牌 / 图标与主功能 / 个人信息（最右侧，仅头像+昵称） -->
 <div id="topBar">
   <div class="tb-brand">
     <span class="tb-logo">🎓</span>
@@ -17,12 +17,6 @@
       <span class="tb-sub">九科争鸣 · 学科阵营</span>
     </span>
   </div>
-  <button class="tb-user-chip" onclick="openProfileMenu()" title="查看我的档案">
-    <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
-    <span class="tb-uname" id="tbName">玩家</span>
-    <span class="tb-badge" id="tbLevel">蒙童</span>
-    <span class="tb-badge tb-score" id="tbScore">0 分</span>
-  </button>
   <div class="tb-right">
     <span class="tb-actions">
       <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
@@ -32,8 +26,19 @@
       <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
       <button class="tb-icon tb-game-only" onclick="openRules()" title="规则说明">📖</button>
       <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
+      <button class="tb-icon tb-notify" onclick="toggleNotifyPanel()" title="消息通知">🔔<span class="notify-badge" id="notifyBadge"></span></button>
     </span>
   </div>
+  <button class="tb-user-chip" onclick="openProfileMenu()" title="查看我的档案">
+    <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
+    <span class="tb-uname" id="tbName">玩家</span>
+  </button>
+</div>
+
+<!-- 顶栏消息通知下拉（🔔：用户聊天 / 系统提示 / 联机事件） -->
+<div id="notifyPanel">
+  <div class="notify-head">🔔 消息通知</div>
+  <div class="notify-list" id="notifyList"></div>
 </div>
 
 <!-- 首页：个人成就 + 模式选择 -->
@@ -214,21 +219,21 @@
   <div class="hand-row" id="handRow"></div>
 </div>
 
-<!-- 移动端 dock（仅联机时显示聊天入口；战报已在游戏区内独立展示） -->
-<div class="mobile-dock" id="mobileDock">
-  <button class="dock-btn" id="dockChatBtn" onclick="openDock('chat')">
-    <span>💬 聊 天</span>
-    <span class="dock-badge" id="chatDockBadge">0</span>
-  </button>
-</div>
-
-<!-- 移动端抽屉 -->
-<div class="mobile-drawer" id="mobileDrawer">
-  <div class="mobile-drawer-header">
-    <span id="mobileDrawerTitle">战 报</span>
-    <button class="btn btn-sm" onclick="closeDock()">✕ 关闭</button>
+<!-- 小屏联机聊天面板（固定底部，可折叠：展开=列表+输入框，折叠=最新一行+未读数） -->
+<div id="netChatPanel">
+  <div class="nchat-head" onclick="toggleNetChat()">
+    <span class="nchat-title">💬 聊天</span>
+    <span class="nchat-latest" id="netChatLatest"></span>
+    <span class="nchat-badge" id="netChatBadge">0</span>
+    <span class="nchat-toggle" id="netChatToggle">▾</span>
   </div>
-  <div class="mobile-drawer-body" id="mobileDrawerBody"></div>
+  <div class="nchat-body">
+    <div class="chat-list" id="netChatList"></div>
+    <div class="chat-input-row">
+      <input id="netChatInput" placeholder="说点什么…" maxlength="40" onkeydown="if(event.key==='Enter')sendNetChat()">
+      <button onclick="sendNetChat()">发送</button>
+    </div>
+  </div>
 </div>
 
 <!-- 答题弹窗 -->

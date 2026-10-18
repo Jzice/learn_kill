@@ -11,6 +11,7 @@ import { addLog, resetPlayLog } from './log';
 import { clearRoleMarks } from './marks';
 import { render } from '../ui/render';
 import { clearPlayZone } from '../ui/playzone';
+import { resetNetChat } from '../ui/netchat';
 import { gameLoop } from './loop';
 import { aiSpeak } from './ai';
 import {
@@ -57,6 +58,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   quizStats.correct = 0;
   resetPlayLog();
   resetChatMessages();
+  resetNetChat();
   clearRoleMarks();
 
   const newPlayer = (

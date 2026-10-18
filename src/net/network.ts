@@ -5,7 +5,6 @@ import { getPeerCtor } from '#peer';
 import { G } from '../game/state';
 import { addChat } from '../game/chat';
 import { addLog, appendPlayLog, playLog, setPlayLog } from '../game/log';
-import { bumpUnreadLog } from '../ui/dock';
 import { render } from '../ui/render';
 import { clearPlayZone } from '../ui/playzone';
 import { SELECTED_COUNT, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
@@ -288,7 +287,6 @@ export function onClientData(data: NetMessage): void {
   } else if (data.type === 'play_log') {
     if (data.entry) {
       appendPlayLog(data.entry);
-      bumpUnreadLog();
     }
   } else if (data.type === 'room_state') {
     updateGuestRoomInfo(data);
