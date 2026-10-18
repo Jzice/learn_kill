@@ -108,7 +108,8 @@ window.openBankBrowser = openBankBrowser;
 window.closeBankBrowser = closeBankBrowser;
 
 /** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位；
- *  并实测三段宽度切换布局模式：单行放得下=单行；信息+按钮第二行放得下=第二行靠左；否则信息回第一行右、按钮第二行左 */
+ *  并实测三段宽度切换布局模式：单行放得下=单行(品牌左, 按钮+信息靠右)；
+ *  放不下但「品牌+信息」可同行=两行(第一行 品牌+信息靠右, 第二行 按钮靠右)；否则回落单行(按钮区横向滚动) */
 function syncTopBarHeight(): void {
   const tb = document.getElementById('topBar');
   if (!tb) return;
@@ -124,8 +125,9 @@ function syncTopBarHeight(): void {
     const gap = parseFloat(cs.columnGap) || 10;
     const nat = (el: HTMLElement) => el.scrollWidth + (el.offsetWidth - el.clientWidth);
     const allFit = nat(brand) + nat(chip) + nat(right) + gap * 2 <= avail;
-    const pairFit = nat(chip) + nat(right) + gap <= avail;
-    const wantMode2 = !allFit && pairFit;
+    // 两行模式：第一行放得下「品牌 + 用户信息」，第二行放按钮
+    const brandChipFit = nat(brand) + nat(chip) + gap <= avail;
+    const wantMode2 = !allFit && brandChipFit;
     if (wantMode2 !== tb.classList.contains('tb-mode2')) tb.classList.toggle('tb-mode2', wantMode2);
   };
   set();
