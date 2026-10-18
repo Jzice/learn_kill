@@ -2,6 +2,18 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.5] - 2026-10-18
+
+### 修复
+
+- **小屏顶栏与内容间距过大/遮挡**：顶栏为 `position:fixed`，此前用静态 `padding-top`（≤640px 120px / ≤400px 140px / ≤600px 4px）让位，而顶栏实际换行行数随宽度变化——未换行时仍让出 120px 产生大空隙，≤600px 时仅让 4px 反而遮挡内容
+- 改为动态方案：`syncTopBarHeight()` 用 `ResizeObserver` 实时测量顶栏实际高度写入 `--tb-h`，`body` 顶部让位 `var(--tb-h, 52px)`，移除所有静态 `padding-top` 覆盖（含移动端 `body{padding:4px}` 一并改为保留顶部变量）
+- 实测：660px（单行 47px→让位 53px）、380px（两行 71px→让位 77px），顶栏与状态条间距均恒定 6px
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力回归零卡死
+
 ## [1.4.4] - 2026-10-18
 
 ### 变更

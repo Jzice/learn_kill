@@ -1,6 +1,6 @@
 :root{--gold:#f5c542;--gold-dim:#8a6d3b;--parch:#f7f0dd;--parch2:#e8dcc0;--ink:#2a1f0f;--red:#c0392b;--green:#27ae60;--text:#e8e0d0;--muted:#a89880}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:radial-gradient(ellipse at 50% 0%,#4a2218,#2a1210 45%,#120604);background-attachment:fixed;color:var(--text);font-family:"PingFang SC","Microsoft YaHei",serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:52px 8px 8px;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 0%,#4a2218,#2a1210 45%,#120604);background-attachment:fixed;color:var(--text);font-family:"PingFang SC","Microsoft YaHei",serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:var(--tb-h,52px) 8px 8px;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px);pointer-events:none;z-index:0}
 h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba(245,197,66,.5),0 2px 0 #000;margin-bottom:2px;position:relative;z-index:1}
 .subtitle{font-size:10px;color:var(--gold-dim);letter-spacing:3px;margin-bottom:8px;position:relative;z-index:1}
@@ -406,7 +406,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 }
 
 @media(max-width:600px){
-  body{padding:4px;padding-bottom:70px}
+  body{padding:var(--tb-h,52px) 4px 4px;padding-bottom:70px}
   h1{font-size:18px;letter-spacing:5px}
   .subtitle{font-size:9px;margin-bottom:5px}
   .top-bar{font-size:10px;padding:4px 6px;gap:4px}
@@ -539,14 +539,12 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .tb-sub{display:none}
 }
 @media (max-width:640px){
-  body{padding-top:120px}
   #topBar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px}
   .tb-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}
   .tb-icon{width:30px;height:30px;font-size:15px}
   .tb-uname{max-width:64px}
 }
 @media (max-width:400px){
-  body{padding-top:140px}
   .tb-title{font-size:13px;letter-spacing:1px}
   .tb-badge{font-size:9px;padding:2px 6px}
 }

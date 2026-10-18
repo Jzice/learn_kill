@@ -108,6 +108,19 @@ window.selectChar = selectChar;
 window.openBankBrowser = openBankBrowser;
 window.closeBankBrowser = closeBankBrowser;
 
+/** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位 */
+function syncTopBarHeight(): void {
+  const tb = document.getElementById('topBar');
+  if (!tb) return;
+  const set = () => document.documentElement.style.setProperty('--tb-h', tb.offsetHeight + 6 + 'px');
+  set();
+  try {
+    new ResizeObserver(set).observe(tb);
+  } catch (e) {
+    window.addEventListener('resize', set);
+  }
+}
+
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
   loadSoundPref();
@@ -131,6 +144,7 @@ function init(): void {
   renderTopBar();
   renderAchievements();
   bindBankBrowser();
+  syncTopBarHeight();
 
   if (EXTERNAL_BANK_URLS.length) {
     Promise.all(EXTERNAL_BANK_URLS.map((u) => loadBankFromUrl(u, true))).then(() => {
