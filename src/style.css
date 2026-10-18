@@ -51,7 +51,7 @@ body[data-theme="green"]{--gold:#5fd07a;--gold-dim:#2e8a4a;--accent-strong:#c2f0
 body[data-theme="blue"]{--gold:#4aa8ff;--gold-dim:#2a6aa8;--accent-strong:#b2d8ff}
 
 /* ===== 主题设置面板（屏幕居中弹窗） ===== */
-#themePanel{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(320px,calc(100vw - 24px));max-height:78vh;z-index:150;flex-direction:column;background:var(--surface);border:1px solid var(--gold-dim);border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.75)}
+#themePanel{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(320px,calc(100vw - 24px));max-height:78vh;z-index:350;flex-direction:column;background:var(--surface);border:1px solid var(--gold-dim);border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.75)}
 #themePanel.show{display:flex}
 .theme-head{font-size:12px;color:var(--gold);padding:8px 12px;background:rgba(0,0,0,.35);border-bottom:1px solid var(--gold-dim);letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .theme-close{flex:0 0 auto;background:transparent;border:1px solid var(--gold-dim);border-radius:5px;color:var(--gold);font-size:11px;line-height:1;padding:3px 7px;cursor:pointer}
@@ -469,7 +469,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 
 /* 弹窗 */
 /* 答题/标记弹窗：半透明遮罩，使牌桌与角色列表在等待选择时仍可见；仍拦截点击避免误触 */
-#quizModal,#markModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:14px}
+#quizModal,#markModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:350;padding:14px}
 #quizModal.show,#markModal.show{display:flex}
 .quiz-box{width:100%;max-width:460px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold-dim);box-shadow:0 0 0 2px var(--gold),0 20px 60px rgba(0,0,0,.9);border-radius:10px;padding:16px;color:var(--ink);animation:cardIn .3s ease-out}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
@@ -498,7 +498,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .mark-btn.spy{border-color:#9b59b6;color:#9b59b6}
 .mark-btn.clear{grid-column:span 2;border-color:#666;color:#a89880}
 
-.rules-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:200;padding:14px}
+/* 模态弹窗统一 z-index:350，必须高于固定顶栏 #topBar 的 300：
+   否则窄屏两行模式下顶栏可高达 113~151px，而弹窗 85vh 垂直居中时顶部会伸进顶栏区域，
+   关闭按钮被顶栏盖住导致无法关闭（实测 elementFromPoint 命中 topBar/tb-right） */
+.rules-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:350;padding:14px}
 .rules-modal.show{display:flex}
 /* 分享对话框：二维码居中、白底圆角 */
 
@@ -731,7 +734,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--gold-dim)}
 /* 按钮区：宽屏靠右（margin-left:auto 推到用户芯片旁）；放不下时横向来回滚动（隐藏滚动条，触摸/滚轮均可滑动） */
-.tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;flex-wrap:nowrap;justify-content:flex-start;margin-left:auto;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 2px}
+.tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 2px}
 .tb-right::-webkit-scrollbar{display:none}
 /* 品牌 */
 .tb-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -750,17 +753,24 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--avatar-bg);box-shadow:0 0 10px rgba(245,197,66,.4);flex-shrink:0}
 .tb-user-meta{display:flex;flex-direction:column;line-height:1.15;min-width:0}
 .tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
-/* 按钮区左侧的等级 / 积分（含升级进度条） */
-.tb-stats{display:flex;align-items:center;gap:8px;white-space:nowrap;margin-top:1px}
+/* 等级 / 积分（含升级进度条）：宽屏由 margin-left:auto 推到右侧、紧贴按钮组左缘（即"按钮区左侧"）；
+   窄屏两行模式（tb-mode2）下移到第一行靠右显示 */
+.tb-stats{display:flex;align-items:center;gap:8px;white-space:nowrap;margin-top:1px;margin-left:auto;flex-shrink:0}
 .tb-stat{display:inline-flex;align-items:center;gap:2px;font-size:11px;color:var(--muted);font-weight:600}
 .tb-stat-ic{font-size:11px;line-height:1}
 .tb-stat #tbLevel, .tb-stat #tbScore{color:var(--gold-dim)}
 .tb-progress{display:inline-block;width:42px;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;vertical-align:middle;margin-left:3px}
 .tb-progress-bar{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#ffe9a8);transition:width .3s}
-/* 布局模式（JS 实测切换）：tb-mode2 = 窄屏两行：第一行仅品牌；第二行 按钮组(左)+用户信息(最右)，整组靠右，顺序与宽屏一行一致不调换 */
-#topBar.tb-mode2 .tb-brand{order:1;flex:0 0 100%}
-#topBar.tb-mode2 .tb-user-chip{order:3;margin-left:0}
-#topBar.tb-mode2 .tb-right{order:2;flex-basis:auto;flex-shrink:1;margin-left:auto;justify-content:flex-start;flex-wrap:wrap;overflow:visible}
+/* 布局模式（JS 实测切换）：tb-mode2 = 窄屏两行，恒定两行不出现第三行
+   第一行：品牌(左) + 等级积分(右)——品牌 flex-grow 撑满剩余，把积分顶到行末
+   第二行：按钮组(左，可横向滚动) + 用户信息(右，margin-left:auto)
+   注意 .tb-right 必须保持 nowrap + overflow-x:auto：一旦内部换行就会冒出第三行 */
+#topBar.tb-mode2 .tb-brand{order:1;flex:1 1 auto;flex-basis:auto}
+#topBar.tb-mode2 .tb-stats{order:2;flex:0 0 auto;margin-left:0}
+#topBar.tb-mode2 .tb-right{order:3;flex-basis:auto;flex-shrink:1;margin-left:0;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden}
+#topBar.tb-mode2 .tb-user-chip{order:4;margin-left:auto;flex:0 0 auto}
+/* 单行模式强制不换行：放不下时由按钮组横向滚动容纳，绝不出现第二/第三行 */
+#topBar:not(.tb-mode2){flex-wrap:nowrap}
 /* 游戏内状态条（牌桌上方，非顶栏） */
 .game-status-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);
   padding:5px 10px;margin-bottom:5px;background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:7px;position:relative;z-index:2}
@@ -788,6 +798,15 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 }
 @media (max-width:400px){
   .tb-title{font-size:13px;letter-spacing:1px}
+}
+/* 超窄屏（≤360px）：压缩品牌与等级积分宽度，保证第一行「品牌 + 等级积分」仍放得下、维持两行 */
+@media (max-width:360px){
+  .tb-logo{font-size:18px}
+  .tb-brand-text{gap:5px}
+  .tb-sub{font-size:7px}
+  .tb-stats{gap:5px}
+  .tb-stat{font-size:10px}
+  .tb-progress{width:30px}
 }
 
 /* ===== 首页：模式卡 + 成就网格 ===== */

@@ -125,14 +125,15 @@ window.openBankBrowser = openBankBrowser;
 window.closeBankBrowser = closeBankBrowser;
 
 /** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位；
- *  并实测三段宽度切换布局模式：单行放得下=单行(品牌左, 按钮+信息靠右)；
- *  放不下但「品牌+信息」可同行=两行(第一行 品牌+信息靠右, 第二行 按钮靠右)；否则回落单行(按钮区横向滚动) */
+ *  并实测三段宽度切换布局模式：单行放得下=单行(品牌左, 等级积分+按钮+信息靠右)；
+ *  放不下但两行各自都放得下=两行(第一行 品牌+等级积分, 第二行 按钮+信息)；否则回落单行(按钮区横向滚动) */
 function syncTopBarHeight(): void {
   const tb = document.getElementById('topBar');
   if (!tb) return;
   const brand = tb.querySelector<HTMLElement>('.tb-brand');
   const chip = tb.querySelector<HTMLElement>('.tb-user-chip');
   const right = tb.querySelector<HTMLElement>('.tb-right');
+  const stats = tb.querySelector<HTMLElement>('.tb-stats');
   const set = () => {
     document.documentElement.style.setProperty('--tb-h', tb.offsetHeight + 6 + 'px');
     if (!brand || !chip || !right) return;
@@ -141,10 +142,14 @@ function syncTopBarHeight(): void {
     const avail = tb.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const gap = parseFloat(cs.columnGap) || 10;
     const nat = (el: HTMLElement) => el.scrollWidth + (el.offsetWidth - el.clientWidth);
-    const allFit = nat(brand) + nat(chip) + nat(right) + gap * 2 <= avail;
-    // 两行模式：第一行放得下「品牌 + 用户信息」，第二行放按钮
-    const brandChipFit = nat(brand) + nat(chip) + gap <= avail;
-    const wantMode2 = !allFit && brandChipFit;
+    const wStats = stats ? nat(stats) : 0;
+    // 单行：品牌 + 等级积分 + 按钮组 + 用户信息 全部同行放得下
+    const allFit = nat(brand) + wStats + nat(right) + nat(chip) + gap * 3 <= avail;
+    // 两行：第一行「品牌 + 等级积分」与第二行「按钮组 + 用户信息」各自都放得下。
+    // 按钮组恒可横向滚动压缩（min-width:0 + overflow-x:auto），故第二行只需用户信息放得下
+    const row1Fit = nat(brand) + wStats + gap <= avail;
+    const row2Fit = nat(chip) + gap <= avail;
+    const wantMode2 = !allFit && row1Fit && row2Fit;
     if (wantMode2 !== tb.classList.contains('tb-mode2')) tb.classList.toggle('tb-mode2', wantMode2);
   };
   set();
