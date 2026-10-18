@@ -70,8 +70,6 @@ declare global {
     openBankBrowser: () => void;
     closeBankBrowser: () => void;
     copyInviteLink: () => void;
-    openShareDialog: () => void;
-    closeShareDialog: () => void;
     nativeShare: () => void;
     setNetMode: (net: 'host' | 'join') => void;
     backToLobby: () => void;

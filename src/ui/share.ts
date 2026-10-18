@@ -1,5 +1,4 @@
 /* ==================== 联机房主分享 ==================== */
-import QRCode from 'qrcode';
 
 /** 当前房间的邀请链接（?room= 形式），由房主创建房间时写入 */
 let currentLink = '';
@@ -26,13 +25,12 @@ function flashCopied(id: string): void {
   }, 1500);
 }
 
-/** 复制当前邀请链接到剪贴板（房主面板与分享对话框内的复制按钮共用） */
+/** 复制当前邀请链接到剪贴板（房主面板「复制」按钮） */
 export function copyInviteLink(): void {
   const text = currentLink;
   if (!text) return;
   const ok = () => {
     flashCopied('copyInviteBtn');
-    flashCopied('shareCopyBtn');
   };
   const fallback = () => {
     const ta = document.createElement('textarea');
@@ -56,37 +54,11 @@ export function copyInviteLink(): void {
   }
 }
 
-/** 打开分享对话框：生成二维码 + 展示链接 + 提供系统分享/复制 */
-export function openShareDialog(): void {
-  if (!currentLink) return;
-  const dlg = document.getElementById('shareDialog');
-  if (!dlg) return;
-  const linkEl = document.getElementById('shareLinkText');
-  if (linkEl) linkEl.textContent = currentLink;
-  const qrBox = document.getElementById('shareQr');
-  if (qrBox) {
-    qrBox.innerHTML = '';
-    QRCode.toString(currentLink, {
-      type: 'svg',
-      margin: 1,
-      width: 180,
-      color: { dark: '#1a1030', light: '#ffffff' },
-    })
-      .then((svg: string) => {
-        qrBox.innerHTML = svg;
-      })
-      .catch(() => {
-        qrBox.textContent = '二维码生成失败';
-      });
-  }
-  dlg.classList.add('show');
-}
-
-export function closeShareDialog(): void {
-  document.getElementById('shareDialog')?.classList.remove('show');
-}
-
-/** 系统原生分享（移动端可拉起微信/QQ 等）；不支持时降级为复制并关闭对话框 */
+/**
+ * 系统原生分享：移动端可拉起微信 / QQ 等系统分享面板。
+ * 浏览器不支持 navigator.share（如桌面 Chrome / Edge）时自动降级为复制邀请链接，
+ * 保证「分享」按钮在任何环境下都有可用行为。
+ */
 export function nativeShare(): void {
   const text = currentLink;
   if (!text) return;
@@ -97,6 +69,5 @@ export function nativeShare(): void {
     });
   } else {
     copyInviteLink();
-    closeShareDialog();
   }
 }

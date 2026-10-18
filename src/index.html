@@ -152,7 +152,7 @@
         <button class="btn btn-accent" onclick="createRoom()" id="createRoomBtn">📡 创建房间</button>
         <div id="inviteBox" style="display:none">
           <div style="display:flex;gap:6px">
-            <button class="btn btn-accent" onclick="openShareDialog()" id="shareBtn">📤 分享</button>
+            <button class="btn btn-accent" onclick="nativeShare()" id="shareBtn">📤 分享</button>
             <button class="btn" onclick="copyInviteLink()" id="copyInviteBtn">📋 复制</button>
           </div>
         </div>
@@ -354,21 +354,7 @@
   </div>
 </div>
 
-<!-- 分享对话框：二维码 + 链接 + 系统分享/复制 -->
-<div id="shareDialog" class="rules-modal">
-  <div class="rules-box" style="max-width:340px">
-    <div class="rules-header"><span>🔗 邀请好友加入房间</span><button onclick="closeShareDialog()" class="rules-close">✕</button></div>
-    <div class="rules-content" style="text-align:center">
-      <div id="shareQr" style="display:flex;justify-content:center;margin-bottom:12px"></div>
-      <div id="shareLinkText" style="font-size:12px;word-break:break-all;color:var(--muted);background:rgba(255,255,255,.06);padding:8px;border-radius:6px;margin-bottom:12px"></div>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-accent" onclick="nativeShare()">📲 系统分享</button>
-        <button class="btn" onclick="copyInviteLink()" id="shareCopyBtn">📋 复制链接</button>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:10px">扫码或点链接，对方自动进入加入房间</div>
-    </div>
-  </div>
-</div>
+
 
 <!-- 规则弹窗 -->
 <div id="rulesModal" class="rules-modal">
