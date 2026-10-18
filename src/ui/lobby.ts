@@ -297,15 +297,7 @@ export function renderAchievements(): void {
   }).join('');
 }
 
-export function openSettings(): void {
-  Sound.play('click');
-  renderTopBar();
-  document.getElementById('settingsDrawer')!.classList.add('show');
-}
 
-export function closeSettings(): void {
-  document.getElementById('settingsDrawer')!.classList.remove('show');
-}
 
 export function updateLobbyMode(): void {
   const hc = document.getElementById('hostConfig')!;

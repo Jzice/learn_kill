@@ -31,8 +31,6 @@ import {
   ensureCharValid,
   importQuestionBank,
   loadBankFromUrlInput,
-  openSettings,
-  closeSettings,
   renderAchievements,
   renderCharPicker,
   renderFactionPicker,
@@ -98,8 +96,6 @@ window.openPersonaMenu = openPersonaMenu;
 window.closePersonaMenu = closePersonaMenu;
 window.openBankMenu = openBankMenu;
 window.closeBankMenu = closeBankMenu;
-window.openSettings = openSettings;
-window.closeSettings = closeSettings;
 window.backToLobby = backToLobby;
 window.enterSetup = enterSetup;
 window.setNetMode = setNetMode;

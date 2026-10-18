@@ -94,15 +94,12 @@ check('模式选择（单机/创建/加入）', modeCount === 3, `${modeCount} �
 const summaryText = await page.textContent('#setupSummary');
 check('主界面配置摘要', !!summaryText && summaryText.includes('年级'), (summaryText || '').replace(/\s+/g, ' ').slice(0, 50));
 
-// 1.0 设置抽屉（替代原名片菜单入口）
-await page.click('#topBar button[title="设置"]');
-await page.waitForSelector('#settingsDrawer.show', { timeout: 3000 });
-check('设置抽屉打开', true);
-const drawerItems = await page.locator('#settingsDrawer .drawer-item').count();
-check('设置抽屉入口（档案/个性化/题库）', drawerItems === 3, `${drawerItems} 个`);
+// 1.0 顶栏直达入口（个人信息芯片=我的档案；🧑=个性化资料；⚙ 题库管理在题库浏览内）
+check('顶栏个人信息芯片可点（打开我的档案）', (await page.getAttribute('#topBar .tb-user-chip', 'onclick'))?.includes('openProfileMenu') === true);
+check('顶栏无设置/独立档案图标', (await page.locator('#topBar button[onclick="openSettings()"]').count()) === 0 && (await page.locator('#topBar .tb-icon[onclick="openProfileMenu()"]').count()) === 0);
 
-// 1.1 个性化资料（抽屉入口 → 二级菜单）
-await page.locator('#settingsDrawer .drawer-item', { hasText: '个性化资料' }).click();
+// 1.1 个性化资料（🧑 直达）
+await page.locator('#topBar button[onclick="openPersonaMenu()"]').click();
 await page.waitForSelector('#personaModal.show', { timeout: 3000 });
 check('个性化资料二级菜单打开', true);
 const pickItems = await page.locator('#profileEditor .pick-item').count();
@@ -121,19 +118,22 @@ const moodSaved = await page.evaluate(() =>
 );
 check('个性化资料已持久化到 localStorage', moodSaved === '今天也要元气满满', String(moodSaved));
 
-// 1.2 题库管理（设置抽屉入口）
-await page.locator('#settingsDrawer .drawer-item', { hasText: '题库管理' }).click();
+// 1.2 题库管理（题库浏览界面入口）
+await page.locator('#topBar button[onclick="openBankBrowser()"]').click();
+await page.waitForSelector('#screenBank.active', { timeout: 3000 });
+await page.locator('#screenBank .setup-top button', { hasText: '题库管理' }).click();
 await page.waitForSelector('#bankModal.show', { timeout: 3000 });
 const bankInfo = await page.textContent('#bankInfo');
 check('题库管理二级菜单（题库信息）', !!bankInfo && bankInfo.includes('内置'), bankInfo?.slice(0, 40));
 await page.click('#bankModal .menu-footer button');
+await page.click('#screenBank .setup-top button'); // 返回主界面
+await page.waitForSelector('#screenLobby.active', { timeout: 3000 });
 
-// 1.3 我的档案（设置抽屉入口）
-await page.locator('#settingsDrawer .drawer-item', { hasText: '我的档案' }).click();
+// 1.3 我的档案（点击个人信息芯片）
+await page.click('#topBar .tb-user-chip');
 await page.waitForSelector('#profileModal.show', { timeout: 3000 });
-check('我的档案二级菜单打开', true);
+check('我的档案二级菜单打开（点击个人信息芯片）', true);
 await page.click('#profileModal .rules-close');
-await page.click('#settingsDrawer .drawer-head button'); // 关闭抽屉
 await page.waitForTimeout(150);
 
 await page.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-lobby.png'), fullPage: true });

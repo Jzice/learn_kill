@@ -78,9 +78,7 @@ await guest.goto(url, { waitUntil: 'networkidle' });
 
 // 双方先设置个性化资料（昵称 / 头像 / 性别 / 心情）
 async function setupProfile(page, name, mood) {
-  await page.click('#topBar button[title="设置"]');
-  await page.waitForSelector('#settingsDrawer.show', { timeout: 3000 });
-  await page.locator('#settingsDrawer .drawer-item', { hasText: '个性化资料' }).click();
+  await page.locator('#topBar button[onclick="openPersonaMenu()"]').click();
   await page.waitForSelector('#personaModal.show', { timeout: 3000 });
   await page.fill('#profileNameInput', name);
   await page.fill('#moodInput', mood);
@@ -89,8 +87,6 @@ async function setupProfile(page, name, mood) {
   await page.locator('#moodIconGrid .pick-item').nth(4).click(); // 心情图标
   await page.click('#personaModal .menu-footer button');
   await page.waitForTimeout(200);
-  await page.click('#settingsDrawer .drawer-head button'); // 关闭设置抽屉
-  await page.waitForTimeout(150);
 }
 await setupProfile(host, '房主甲', '房主心情：稳住');
 await setupProfile(guest, '客人乙', '客人心情：冲呀');

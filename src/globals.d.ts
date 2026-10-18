@@ -48,8 +48,6 @@ declare global {
     closePersonaMenu: () => void;
     openBankMenu: () => void;
     closeBankMenu: () => void;
-    openSettings: () => void;
-    closeSettings: () => void;
     openBankBrowser: () => void;
     closeBankBrowser: () => void;
     setNetMode: (net: 'host' | 'join') => void;

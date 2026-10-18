@@ -527,7 +527,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-title{font-size:15px;color:var(--gold);font-weight:700;letter-spacing:3px}
 .tb-sub{font-size:9px;color:var(--gold-dim);letter-spacing:1px}
 /* 用户芯片 */
-.tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0;margin-left:auto}
+.tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0;margin-left:auto;background:none;border:none;font-family:inherit;padding:0;cursor:pointer;border-radius:12px}
+.tb-user-chip:hover .tb-uname{color:var(--gold)}
 .tb-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;background:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);box-shadow:0 0 10px rgba(245,197,66,.4);flex-shrink:0}
 .tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
 .tb-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:linear-gradient(160deg,#5a3a10,#3a1a06);border:1px solid var(--gold-dim);color:var(--gold);white-space:nowrap;flex-shrink:0}
@@ -580,18 +581,6 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .ach-item .ai{font-size:20px}.ach-item .an{font-size:9px;color:var(--muted);margin-top:2px}
 .ach-item .ap{font-size:8.5px;color:var(--gold-dim)}
 .ach-summary{font-size:10px;color:var(--muted);font-weight:400;margin-left:4px}
-
-/* ===== 设置抽屉 ===== */
-.drawer{position:fixed;top:0;right:0;width:min(300px,86vw);height:100vh;background:linear-gradient(200deg,#241610,#120906);
-  border-left:1px solid var(--gold);z-index:320;display:none;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.6)}
-.drawer.show{display:flex}
-.drawer-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--gold-dim);
-  color:var(--gold);font-size:13px;font-weight:700}
-.drawer-body{padding:10px;overflow:auto;display:flex;flex-direction:column;gap:6px}
-.drawer-item{display:flex;flex-direction:column;gap:2px;text-align:left;background:linear-gradient(160deg,#2a1a10,#160a06);
-  border:1px solid #3a2a1a;border-radius:7px;padding:9px 10px;cursor:pointer;font-family:inherit;color:#e8dcc0;font-size:12.5px}
-.drawer-item:hover{border-color:var(--gold-dim)}
-.drawer-item small{font-size:9.5px;color:var(--muted)}
 
 /* ===== 题库浏览 ===== */
 .bank-toolbar{display:flex;gap:6px;margin:8px 0}

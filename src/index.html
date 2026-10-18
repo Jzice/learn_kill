@@ -17,15 +17,14 @@
       <span class="tb-sub">九科争鸣 · 学科阵营</span>
     </span>
   </div>
-  <div class="tb-user-chip">
+  <button class="tb-user-chip" onclick="openProfileMenu()" title="查看我的档案">
     <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
     <span class="tb-uname" id="tbName">玩家</span>
     <span class="tb-badge" id="tbLevel">蒙童</span>
     <span class="tb-badge tb-score" id="tbScore">0 分</span>
-  </div>
+  </button>
   <div class="tb-right">
     <span class="tb-actions">
-      <button class="tb-icon" onclick="openProfileMenu()" title="我的档案">👤</button>
       <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
       <button class="tb-icon" onclick="openPersonaMenu()" title="个性化资料">🧑</button>
     </span>
@@ -33,7 +32,6 @@
       <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
       <button class="tb-icon tb-game-only" onclick="openRules()" title="规则说明">📖</button>
       <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
-      <button class="tb-icon" onclick="openSettings()" title="设置">⚙</button>
     </span>
   </div>
 </div>
@@ -153,6 +151,7 @@
   <div class="setup-top">
     <button class="btn btn-sm" onclick="closeBankBrowser()">‹ 返回</button>
     <span class="setup-title">📚 题库浏览</span>
+    <button class="btn btn-sm" onclick="openBankMenu()">⚙ 题库管理</button>
   </div>
   <div class="opt-row" id="bankGradePicker"></div>
   <div class="bank-toolbar">
@@ -160,18 +159,6 @@
     <select id="bankSubjectFilter"><option value="">全部科目</option></select>
   </div>
   <div class="bank-body" id="bankBody">加载中…</div>
-</div>
-
-<!-- 设置抽屉 -->
-<div id="settingsDrawer" class="drawer">
-  <div class="drawer-head"><span>⚙ 设置</span><button class="btn btn-sm" onclick="closeSettings()">✕</button></div>
-  <div class="drawer-body">
-    <div id="drawerProfile"></div>
-    <button class="drawer-item" onclick="openProfileMenu()">📇 我的档案<small>积分 · 段位 · 成就</small></button>
-    <button class="drawer-item" onclick="openPersonaMenu()">🎨 个性化资料<small>头像 · 性别 · 心情</small></button>
-    <button class="drawer-item" onclick="openBankMenu()">📚 题库管理<small id="bankEntryHint">—</small></button>
-    <button class="sound-switch" onclick="toggleSound()">🔊 音效：<b>开</b></button>
-  </div>
 </div>
 
 <!-- 游戏界面 -->
