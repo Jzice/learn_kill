@@ -121,6 +121,25 @@ function syncTopBarHeight(): void {
   }
 }
 
+/** 小屏(≤600px)时把战报面板移入出牌区（玩家列表下方滚动显示），宽屏还原到侧栏 */
+function bindPlayLogRelayout(): void {
+  const log = document.getElementById('playLogPanel');
+  const side = document.querySelector('.side-panel');
+  const zone = document.getElementById('playZoneCards');
+  if (!log || !side || !zone) return;
+  const mq = window.matchMedia('(max-width:600px)');
+  const apply = () => {
+    if (mq.matches) zone.appendChild(log);
+    else side.insertBefore(log, side.firstChild);
+  };
+  apply();
+  try {
+    mq.addEventListener('change', apply);
+  } catch (e) {
+    (mq as unknown as { addListener: (f: () => void) => void }).addListener(apply);
+  }
+}
+
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
   loadSoundPref();
@@ -145,6 +164,7 @@ function init(): void {
   renderAchievements();
   bindBankBrowser();
   syncTopBarHeight();
+  bindPlayLogRelayout();
 
   if (EXTERNAL_BANK_URLS.length) {
     Promise.all(EXTERNAL_BANK_URLS.map((u) => loadBankFromUrl(u, true))).then(() => {

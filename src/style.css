@@ -415,7 +415,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .side-panel{display:none!important}
   .table-area{display:flex;flex-direction:column;height:auto;border-radius:10px;border:none;background:none;box-shadow:none;overflow:visible;padding:0;gap:4px}
   .table-area::before{display:none}
-  .table-center{position:static;transform:none;left:auto;top:auto;width:100%;height:90px;order:-1;border-radius:8px;border:1px solid #4a5a30;background:linear-gradient(160deg,#2a3a1c,#0f1a0c);box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
+  .table-center{position:static;transform:none;left:auto;top:auto;width:100%;height:auto;border-radius:8px;border:1px solid #4a5a30;background:linear-gradient(160deg,#2a3a1c,#0f1a0c);box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
   .pile-label,.pile-count{font-size:8px}
   .pile-stack{width:28px;height:40px}
   .pile-stack .card-back-pile{width:24px;height:36px;font-size:9px}
@@ -425,7 +425,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .play-card .pcsuit{font-size:6px}
   .play-card .pcnum{font-size:5px}
   .play-card .pcowner{font-size:5px}
-  .play-zone{gap:3px}
+  .play-zone{gap:3px;height:auto;min-height:150px;padding:5px 4px}
+  /* 战报移入出牌区：占满牌下方整行滚动 */
+  .play-zone .play-log-panel{flex-basis:100%;height:92px;min-height:0;box-shadow:none}
+  .play-zone .play-log-list{font-size:9px}
   .play-zone-label{font-size:7px;padding:0 4px}
   .seat-ring{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:6px 4px;width:100%;-webkit-overflow-scrolling:touch}
   .seat{position:static !important;transform:none !important;left:auto !important;top:auto !important;transition:none !important;flex-shrink:0}
