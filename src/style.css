@@ -460,14 +460,18 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 
 /* ==================== 小屏联机聊天面板（固定底部，可折叠） ==================== */
 #netChatPanel{display:none}
+/* 顶部拖动条：调整小屏聊天区高度（折叠态隐藏） */
+.nchat-resize{height:11px;flex-shrink:0;cursor:ns-resize;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);touch-action:none}
+.nchat-resize::after{content:'';width:38px;height:3px;border-radius:2px;background:var(--gold-dim)}
+.nchat-resize:hover::after{background:var(--gold)}
 .nchat-head{display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:1px;background:rgba(0,0,0,.35);flex-shrink:0}
 .nchat-title{flex-shrink:0}
 .nchat-latest{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#d8c8a8;letter-spacing:0}
 .nchat-badge{flex-shrink:0;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;padding:0 4px;border-radius:8px;display:none;text-align:center}
 .nchat-badge.show{display:inline-block}
 .nchat-toggle{flex-shrink:0;color:var(--gold);font-size:12px}
-.nchat-body{display:flex;flex-direction:column;min-height:0}
-#netChatList{height:72px;overflow-y:auto;padding:4px 8px;font-size:11px;line-height:1.55;flex:none}
+.nchat-body{display:flex;flex-direction:column;flex:1;min-height:0}
+#netChatList{flex:1;min-height:0;overflow-y:auto;padding:4px 8px;font-size:11px;line-height:1.55}
 #netChatPanel .chat-input-row{flex-shrink:0}
 #netChatPanel .chat-input-row input{font-size:12px;padding:6px 8px}
 #netChatPanel .chat-input-row button{font-size:12px;padding:0 14px}
@@ -584,8 +588,9 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .panel h3{font-size:12px;margin-bottom:6px}
   .opt-btn{padding:6px 2px;font-size:11px}
   /* 联机聊天面板：仅窄屏联机对局显示（可见性由 netchat.ts 按 界面+联机+屏宽 控制） */
-  #netChatPanel.show{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:85;flex-direction:column;background:var(--surface);border-top:2px solid var(--gold-dim);box-shadow:0 -4px 16px rgba(0,0,0,.7)}
+  #netChatPanel.show{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:85;flex-direction:column;height:var(--chat-h,150px);background:var(--surface);border-top:2px solid var(--gold-dim);box-shadow:0 -4px 16px rgba(0,0,0,.7)}
   #netChatPanel.collapsed .nchat-body{display:none}
+  #netChatPanel.collapsed .nchat-resize{display:none}
   #netChatPanel.collapsed .nchat-latest{color:var(--gold)}
   .profile-avatar{width:44px;height:44px;font-size:20px}
 }

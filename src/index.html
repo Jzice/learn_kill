@@ -240,8 +240,9 @@
   <div class="hand-row" id="handRow"></div>
 </div>
 
-<!-- 小屏联机聊天面板（固定底部，可折叠：展开=列表+输入框，折叠=最新一行+未读数） -->
+<!-- 小屏联机聊天面板（固定底部，可折叠：展开=列表+输入框，折叠=最新一行+未读数；顶部可拖动调高） -->
 <div id="netChatPanel">
+  <div class="nchat-resize" id="netChatResize" title="拖动调整聊天区高度"></div>
   <div class="nchat-head" onclick="toggleNetChat()">
     <span class="nchat-title">💬 聊天</span>
     <span class="nchat-latest" id="netChatLatest"></span>

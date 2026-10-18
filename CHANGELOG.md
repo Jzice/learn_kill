@@ -2,6 +2,20 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.28] - 2026-10-18
+
+### 新增
+
+- **小屏联机聊天面板高度可拖动调整**：面板顶部新增拖动条（`.nchat-resize`），按住向上拖动即可调高聊天区，松开后高度记忆到 localStorage（`netChatH`），下次进入沿用
+  - `index.html`：面板顶部加 `#netChatResize` 手柄
+  - `src/style.css`：`#netChatPanel.show` 改按 `height:var(--chat-h,150px)` 显式高度；`.nchat-body` 加 `flex:1`、`#netChatList` 改为 `flex:1` 弹性填充；新增 `.nchat-resize` 手柄样式（折叠态隐藏）
+  - `src/ui/netchat.ts`：`applyHeight` 改用记忆高度 `userHeight`（默认 150，折叠 40）；新增 `initNetChatResize`（pointer 事件拖动改高、夹取 90px~70vh、写入 `--chat-h` 与面板高度并持久化）
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力零卡死
+- 实测（≤600px 强制显示面板）：手柄可见、初始高 150、向上拖 80px → 230、`--chat-h` 同步、列表填充 149px、高度写入 localStorage、折叠态手柄隐藏（8/8）
+
 ## [1.4.27] - 2026-10-18
 
 ### 修复

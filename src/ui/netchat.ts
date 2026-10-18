@@ -8,15 +8,50 @@ import { NET } from '../net/network';
 
 let collapsed = false;
 let unread = 0;
+let userHeight = Number(localStorage.getItem('netChatH')) || 0; // 用户拖拽设定的高度（0=默认150）
 const mq = window.matchMedia('(max-width:600px)');
 
 function applyHeight(): void {
-  const shown = !!document.getElementById('netChatPanel')?.classList.contains('show');
-  document.body.style.setProperty('--chat-h', shown ? (collapsed ? '40px' : '150px') : '0px');
+  const panel = document.getElementById('netChatPanel');
+  const shown = !!panel?.classList.contains('show');
+  const h = shown ? (collapsed ? 40 : userHeight || 150) : 0;
+  document.body.style.setProperty('--chat-h', h + 'px');
+  if (panel) panel.style.height = shown ? h + 'px' : '';
+}
+
+/** 顶部拖动条：调整聊天区高度，并记忆到 localStorage */
+function initNetChatResize(): void {
+  const handle = document.getElementById('netChatResize');
+  const panel = document.getElementById('netChatPanel');
+  if (!handle || !panel) return;
+  let startY = 0;
+  let startH = 0;
+  const onMove = (e: PointerEvent) => {
+    e.preventDefault();
+    let h = startH + (startY - e.clientY); // 向上拖动 → 增高
+    h = Math.max(90, Math.min(window.innerHeight * 0.7, h));
+    userHeight = Math.round(h);
+    document.body.style.setProperty('--chat-h', userHeight + 'px');
+    panel.style.height = userHeight + 'px';
+  };
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    try { localStorage.setItem('netChatH', String(userHeight)); } catch (_) {}
+  };
+  handle.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (collapsed) return;
+    e.preventDefault();
+    startY = e.clientY;
+    startH = panel.getBoundingClientRect().height;
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
 }
 
 /** 绑定屏宽切换（init 时调用一次） */
 export function bindNetChat(): void {
+  initNetChatResize();
   try {
     mq.addEventListener('change', updateNetChatVisible);
   } catch (e) {
