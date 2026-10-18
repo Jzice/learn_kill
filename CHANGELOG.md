@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### 变更
+
+- **移除历史基线文件 `docs/学堂杀.html` 的编译依赖**：该文件（原版单文件游戏）已完成历史使命，本次彻底移除依赖并删除文件本体
+  - 原内置基线题库（216 题 = 12 年级 × 9 科 × 2 题）一次性迁移为 `data/questions/<年级>/<科目>.tsv` 的各科**首段**，`data/questions/` 成为题库唯一数据源
+  - `scripts/build-banks.mjs`（题库生成）与 `scripts/audit-banks.mjs`（质量审计）改为纯 TSV 驱动，不再读取任何 HTML
+  - 删除三个过时一次性脚本：`extract.mjs`（早期样式/markup 提取）、`extract-bank.mjs`（已被 build-banks 取代的旧提取器）、`clean-questions.mjs`（依赖基线的旧清洗器）
+  - 同步更新 README、AGENTS.md、docs/架构设计.md、docs/游戏机制.md 中的相关描述
+  - **质量保证**：重建 `src/data/banks/` 后与原提交版做语义等价校验——12 个年级模块的题干多重集、选项集合、正确选项文本、科目/单元/知识点全部一致，总题量 **5724 = 5724**（选项重排算法会改变选项顺序与答案下标，属预期行为）；门禁 typecheck / build / verify:dist / audit（5724 题零异常）/ 单机冒烟 37-37 / 联机冒烟 16-16 全通过；全仓库已无对该文件的引用
+
 ## [1.7.3] - 2026-10-18
 
 ### 新增

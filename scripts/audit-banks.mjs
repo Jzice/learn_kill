@@ -1,6 +1,7 @@
-// 题库数据质量审计（临时脚本）：
-//   1) 基线 + TSV 源全量装载；2) 检查字段缺失/异常短、选项重复、同年级重复、跨年级重复、答案越界、
-//      知识点/单元缺失统计；3) 输出可修复清单
+// 题库数据质量审计：
+//   1) 全量装载 data/questions/<年级>/<科目>.tsv（原版基线题已迁移为各科 TSV 首段，见 CHANGELOG v1.7.4）；
+//   2) 检查字段缺失/异常短、选项重复、同年级重复、跨年级重复、答案越界、知识点/单元缺失统计；
+//   3) 输出可修复清单
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -8,10 +9,6 @@ const root = path.resolve(import.meta.dirname, '..');
 const srcDir = path.join(root, 'data', 'questions');
 const GRADE_ORDER = ['初一上','初一下','初二上','初二下','初三上','初三下','高一上','高一下','高二上','高二下','高三上','高三下'];
 const SUBJECTS = ['语文','数学','英语','物理','化学','生物','历史','地理','政治'];
-
-const html = fs.readFileSync(path.join(root, 'docs', '学堂杀.html'), 'utf8');
-const m = html.match(/const BUILTIN_QUESTION_BANK=(\{[\s\S]*?\n\});/);
-const baseline = new Function('return ' + m[1])();
 
 const issues = { shortQ: [], emptyKp: [], emptyUnit: [], dupInGrade: [], dupCross: [], badOpt: [], subjectKnown: [] };
 const globalSeen = new Map(); // 题干 → [年级…]
@@ -35,7 +32,6 @@ for (const grade of GRADE_ORDER) {
       globalSeen.get(q.q).push(grade);
     } else globalSeen.set(q.q, [grade]);
   };
-  for (const q of baseline[grade] || []) load(q, q.s, '基线');
   const dir = path.join(srcDir, grade);
   if (fs.existsSync(dir)) {
     for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.tsv')).sort()) {

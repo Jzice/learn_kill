@@ -9,7 +9,7 @@
 
 > 🎮 **[在线试玩](https://jzice.github.io/learn_kill/)** · 📦 **[Releases 下载](https://github.com/Jzice/learn_kill/releases/latest)**
 
-本项目由单文件 HTML 游戏（`docs/学堂杀.html`，保留为 1:1 复刻基线）工程化重构为 **TypeScript 模块化工程**，并可完整编译回**单一 HTML 文件**，双击即玩、零部署成本。
+本项目由单文件 HTML 游戏工程化重构为 **TypeScript 模块化工程**，并可完整编译回**单一 HTML 文件**，双击即玩、零部署成本。
 
 ## 功能特性
 
@@ -95,7 +95,7 @@ src/
 └── ui/                # render(单一重渲染入口) hand lobby modals dock playzone
 data/questions/        # 题库源：<年级>/<科目>.tsv（可手工维护，TSV 编辑器友好）
 scripts/               # build/dev 包装、题库生成与审计、冒烟测试、产物校验
-docs/学堂杀.html        # 原版单文件（1:1 复刻基线，请勿修改）
+docs/                    # 架构设计与游戏机制文档
 ```
 
 **题库数据流**：`data/questions/**/*.tsv` →（`npm run build:banks`）→ `src/data/banks/g01..g12.ts` + `manifest.ts` → 大厅只读 manifest 渲染题量，选年级时才 `import()` 对应模块。

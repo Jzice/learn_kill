@@ -2,6 +2,8 @@
 //   TSV 列：题干 \t 单元 \t 知识点 \t 选项A \t 选项B \t 选项C \t 选项D \t 正确序号(0-3)
 // 产物：src/data/banks/gNN.ts（每年级一个模块）+ src/data/banks/manifest.ts（年级清单、科目题数、动态加载器）
 // 选项重排：正确答案在 A/B/C/D 四个选项中均匀分布（见 redistributeOptions）
+// 说明：原版单文件的内置基线题库已于 v1.7.4 迁移为各科目 TSV 的首段（每科 2 题，单元/知识点记为「综合」），
+//       本脚本不再依赖任何历史文件，data/questions/ 即唯一题库数据源。
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -21,19 +23,6 @@ const GRADE_ORDER = [
 ];
 const SUBJECTS = ['语文','数学','英语','物理','化学','生物','历史','地理','政治'];
 
-// 基线：原版单文件游戏中的内置题库（1:1 保留，保证原内容不丢失）
-const html = fs.readFileSync(path.join(root, 'docs', '学堂杀.html'), 'utf8');
-const m = html.match(/const BUILTIN_QUESTION_BANK=(\{[\s\S]*?\n\});/);
-if (!m) throw new Error('BUILTIN_QUESTION_BANK literal not found in docs/学堂杀.html');
-const baseline = new Function('return ' + m[1])();
-
-// 读取：data/questions/<年级>/<科目>.tsv
-const grades = fs
-  .readdirSync(srcDir, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && GRADE_ORDER.includes(d.name))
-  .map((d) => d.name)
-  .sort((a, b) => GRADE_ORDER.indexOf(a) - GRADE_ORDER.indexOf(b));
-
 const result = [];
 const problems = [];
 const pending = [];
@@ -43,20 +32,15 @@ for (const grade of GRADE_ORDER) {
   const dir = path.join(srcDir, grade);
   const all = [];
   const perSubject = {};
-  // 1) 基线题（无单元信息，归入"综合"）
-  for (const q of baseline[grade] || []) {
-    all.push({ s: q.s, u: '综合', kp: q.kp || '综合', q: q.q, o: q.o.slice(), a: q.a });
-    perSubject[q.s] = (perSubject[q.s] || 0) + 1;
-  }
   if (!fs.existsSync(dir)) {
-    // 该年级尚无题源目录：仅保留基线题，标记为"待补充"
+    // 该年级尚无题源目录：标记为"待补充"
     pending.push(`${grade}（全部 9 科待补充题源）`);
     result.push({ grade, questions: all, perSubject });
     grandTotal += all.length;
     continue;
   }
-  // 2) 新增题（按科目分文件）
-  const seen = new Set(all.map((x) => x.q));
+  // 题库源：data/questions/<年级>/<科目>.tsv（含迁移进来的原版基线题）
+  const seen = new Set();
   for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.tsv')).sort()) {
     const subject = path.basename(file, '.tsv');
     const lines = fs

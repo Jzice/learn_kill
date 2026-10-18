@@ -4,7 +4,7 @@ This file provides guidance to agents when working with code in this repository.
 
 ## Repository Overview
 
-学堂杀 (Xuetangsha) is a browser-based, Sanguosha-like identity card game themed on school subjects. It was refactored from a single 2800-line HTML file (`docs/学堂杀.html`, kept as the 1:1 parity baseline, do not modify) into a modular TypeScript project that builds back to a **single self-contained HTML file**.
+学堂杀 (Xuetangsha) is a browser-based, Sanguosha-like identity card game themed on school subjects. It was refactored from a single-file HTML game into a modular TypeScript project that builds back to a **single self-contained HTML file**.
 
 Stack: TypeScript (strict) + Vite + `vite-plugin-singlefile` + esbuild. No runtime framework; the UI is string-templated `innerHTML` re-rendered from a single state object, exactly as in the original.
 
@@ -38,7 +38,7 @@ Detailed docs live in `docs/`: [docs/架构设计.md](docs/架构设计.md) (arc
 - `vite.config.ts` reads `VITE_PEERJS_MODE` (`cdn` | `bundled`, set by `scripts/build.mjs` / `scripts/dev.mjs`, no cross-env needed). It controls three things via small local plugins: (1) alias `#peer` to either `src/net/peer.cdn.ts` (reads global `window.Peer` from a CDN script tag injected into `index.html`) or `src/net/peer.bundled.ts` (`import Peer from 'peerjs'`); (2) `transformIndexHtml` injects the PeerJS CDN script tag in cdn mode only; (3) `closeBundle` renames `dist/index.html` to the mode-specific filename. `emptyOutDir:false` lets both artifacts coexist.
 - `vite.config.ts` sets `root: src/`, so `index.html` references `/main.ts` (not `/src/main.ts`).
 - `src/types/peerjs.d.ts` is a hand-written minimal declaration covering both the global `window.Peer` and `module 'peerjs'`. If you use more PeerJS APIs, extend it there (no @types/peerjs dependency).
-- Data that must stay byte-identical to the original (question bank) is generated: `src/data/banks/g01..g12.ts` + `src/data/banks/manifest.ts` are produced by `scripts/extract-bank.mjs` from `docs/学堂杀.html`. Regenerate after editing the original; never hand-edit generated data.
+- Question bank data is generated: `src/data/banks/g01..g12.ts` + `src/data/banks/manifest.ts` are produced by `scripts/build-banks.mjs` from `data/questions/<grade>/<subject>.tsv` — the single source of truth (the original single-file game's built-in bank was migrated into these TSVs in v1.7.4). Regenerate with `npm run build:banks` after editing TSVs; never hand-edit generated data.
 - **Question bank is lazy-loaded per grade**: `src/data/bankLoader.ts` dynamically `import()`s a grade module only when needed (game start / quiz fallback). The lobby renders grade counts from `GRADE_BANK_META` (manifest) without loading any questions. External imports (URL/file) merge into the runtime `QUESTION_BANK` and may create grades not in the manifest. In the single-file build dynamic chunks are inlined (same payload) but module factories still execute lazily; in dev mode loading is truly network-lazy.
 
 ## Source Layout (`src/`)
@@ -58,4 +58,4 @@ Detailed docs live in `docs/`: [docs/架构设计.md](docs/架构设计.md) (arc
 3. **Module cycles are intentional** (ui ↔ game ↔ net). They are safe ONLY because no module has top-level side effects except `main.ts`; all cross-module calls happen inside function bodies. Never add top-level code that touches another module's bindings.
 4. **Mutable shared state ownership**: `playLog` (log.ts), `chatMessages` (chat.ts), `ROLE_MARKS` (marks.ts), `SELECTED_*` (ui/lobby.ts), unread counters (ui/dock.ts) are `let`/objects owned by one module; other modules read via live bindings or call exported mutators (`resetPlayLog`, `bumpUnreadLog`, `clearRoleMarks`, ...). Do not assign to imported bindings.
 5. **Magic numbers are load-bearing**: 80ms sync debounce, 20s remote-quiz timeout, 1.5s quiz feedback delay, 100/60 log caps, deck composition (30 sha / 15 shan / 8 tao / 5 jiu / tricks / equips), `xts-` peer ID prefix, 6-digit room codes, AI probabilities (0.6/0.62/0.55), reward roll thresholds (0.30/0.55/0.72/0.88).
-6. `dist/学堂杀.html` must remain a drop-in replacement for `docs/学堂杀.html` — verify with `node scripts/verify-dist.mjs` (checks single-file inlining + CDN tag presence per mode) and the smoke scripts above after any change.
+6. `dist/学堂杀.html` must remain a drop-in single-file game — verify with `node scripts/verify-dist.mjs` (checks single-file inlining + CDN tag presence per mode) and the smoke scripts above after any change.
