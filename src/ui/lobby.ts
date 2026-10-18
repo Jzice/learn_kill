@@ -23,6 +23,7 @@ import {
   MOOD_ICON_OPTIONS,
   genderIcon,
   levelOf,
+  nextLevelOf,
   PROFILE,
   refreshProfileUI,
   ACHIEVEMENTS,
@@ -286,14 +287,28 @@ export function closeBankMenu(): void {
 /* ==================== 固定顶栏 / 个人成就 / 设置抽屉 ==================== */
 export function renderTopBar(): void {
   const lv = levelOf(PROFILE.score);
+  const nx = nextLevelOf(PROFILE.score);
   const av = document.getElementById('tbAvatar');
   const nm = document.getElementById('tbName');
   const lvEl = document.getElementById('tbLevel');
   const sc = document.getElementById('tbScore');
+  const pg = document.getElementById('tbProgress');
   if (av) av.textContent = PROFILE.avatar || DEFAULT_AVATAR;
   if (nm) nm.textContent = PROFILE.name || '玩家';
   if (lvEl) lvEl.textContent = lv.n;
   if (sc) sc.textContent = `${PROFILE.score} 分`;
+  if (pg) {
+    let pct = 100;
+    let tip = '已满级 · 巅峰段位';
+    if (nx) {
+      const span = Math.max(1, nx.min - lv.min);
+      pct = Math.max(0, Math.min(100, Math.round(((PROFILE.score - lv.min) / span) * 100)));
+      tip = `距「${nx.n}」还需 ${Math.max(0, nx.min - PROFILE.score)} 分`;
+    }
+    pg.style.width = `${pct}%`;
+    const prog = pg.parentElement as HTMLElement | null;
+    if (prog) prog.title = tip;
+  }
 }
 
 export function renderAchievements(): void {
