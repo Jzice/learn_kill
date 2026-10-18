@@ -234,6 +234,131 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
       if (t.hand.length > 0) stealHand(t, p);
       break;
     }
+    /* ---- 初中 / 高中扩展包：按学科定制的主题主动技 ---- */
+    case 'beisong': {
+      // 语文·初中：弃1摸2
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      drawCards(p, 2);
+      break;
+    }
+    case 'wenyan': {
+      // 语文·高中：弃2摸3
+      if (p.hand.length < 2) break;
+      discardCard(p, p.hand[0]);
+      discardCard(p, p.hand[0]);
+      drawCards(p, 3);
+      break;
+    }
+    case 'youlrshu': {
+      // 数学·初中：弃1，令目标判定，红色摸1、黑色弃1
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      const ti = await pickOther();
+      if (ti < 0) break;
+      const t = G.players[ti];
+      const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+      await FX.judge(ti, jc);
+      if (jc.suit === '♥' || jc.suit === '♦') drawCards(t, 1);
+      else if (t.hand.length > 0) discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
+      G.discard.push(jc);
+      break;
+    }
+    case 'daoshu': {
+      // 数学·高中：弃1，令目标弃2
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      const ti = await pickOther();
+      if (ti < 0) break;
+      const t = G.players[ti];
+      for (let i = 0; i < 2 && t.hand.length > 0; i++) {
+        discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
+      }
+      break;
+    }
+    case 'tingxie':
+    case 'zhexue': {
+      // 英语·初中「听写」/ 政治·高中「哲学」：弃1，取得一名角色一张手牌
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      const ti = await pickOtherWithHand();
+      if (ti < 0) break;
+      stealHand(G.players[ti], p);
+      break;
+    }
+    case 'yufa': {
+      // 英语·高中：展示牌堆顶3张，获得其中1张，其余弃掉
+      const top = [];
+      for (let i = 0; i < 3 && G.deck.length > 0; i++) top.push(G.deck.pop()!);
+      if (!top.length) break;
+      let pick = 0;
+      if (!p.isAI) {
+        const o: ChoiceOption[] = top.map((c, i) => ({ label: `${c.name} ${c.suit}${c.num}`, value: i }));
+        o.push({ label: '取消', value: -1 });
+        pick = (await waitChoice(idx, o, 'list')) as number;
+        if (pick < 0) {
+          G.discard.push(...top);
+          break;
+        }
+      }
+      top.forEach((c, i) => {
+        if (i === pick) p.hand.push(c);
+        else G.discard.push(c);
+      });
+      break;
+    }
+    case 'dianci': {
+      // 物理·高中：弃1，对一名角色造成1点伤害
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      const ti = await pickOther();
+      if (ti < 0) break;
+      await dealDamage(-1, ti, 1);
+      break;
+    }
+    case 'youji': {
+      // 化学·高中：弃2，回复1点体力并摸1张
+      if (p.hand.length < 2) break;
+      discardCard(p, p.hand[0]);
+      discardCard(p, p.hand[0]);
+      if (p.hp < p.maxHp) {
+        p.hp++;
+        FX.healGlow(idx);
+      }
+      drawCards(p, 1);
+      break;
+    }
+    case 'chaodai': {
+      // 历史·初中：弃1，令所有其他角色各弃1
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      for (let i = 0; i < G.players.length; i++) {
+        if (i === idx || !G.players[i].alive) continue;
+        const t = G.players[i];
+        if (t.hand.length > 0) discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
+      }
+      break;
+    }
+    case 'shiliao': {
+      // 历史·高中：弃1，所有存活角色各摸1
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      for (const q of G.players) if (q.alive) drawCards(q, 1);
+      break;
+    }
+    case 'fazhi': {
+      // 政治·初中：弃1，令一名角色回复1点体力（已满则改为摸1）
+      if (!p.hand.length) break;
+      discardCard(p, p.hand[0]);
+      const ti = await pickOther();
+      if (ti < 0) break;
+      const t = G.players[ti];
+      if (t.hp < t.maxHp) {
+        t.hp++;
+        FX.healGlow(ti);
+      } else drawCards(t, 1);
+      break;
+    }
   }
   render();
   if (NET.isHost) syncStateToClients();

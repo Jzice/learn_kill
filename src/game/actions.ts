@@ -105,8 +105,8 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
   addLog(`📘 玩法·【${card.name}】：${TRICK_DESC[card.sub] || '（暂无说明）'}`, 'explain');
   showPlayHint('锦囊', card.name, TRICK_DESC[card.sub] || '');
   showPlayCard(card, a.name, FACTIONS[a.faction].color);
-  if (hasSkill(a, 'shicheng') || hasSkill(a, 'jiaohua')) {
-    drawCards(a, 1);
+  if (hasSkill(a, 'shicheng') || hasSkill(a, 'jiaohua') || hasSkill(a, 'quwei')) {
+    drawCards(a, 1); // 「区位」地理·高中：使用锦囊牌时摸一张
   }
   render();
   // 锦囊释放特效与音效：按子类区分

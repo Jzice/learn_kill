@@ -37,7 +37,9 @@ import {
   renderFactionPicker,
   renderGradePicker,
   renderScopePicker,
+  renderPacketPicker,
   setQuizScopeMode,
+  setPacket,
   renderProfileEditor,
   pickSeatMember,
   randomizeSeats,
@@ -112,6 +114,8 @@ window.backToLobby = backToLobby;
 window.enterSetup = enterSetup;
 window.setNetMode = setNetMode;
 window.setQuizScopeMode = setQuizScopeMode;
+window.setPacket = setPacket;
+window.renderPacketPicker = renderPacketPicker;
 window.clearWrongBook = clearWrongBook;
 window.requestSeatMove = requestSeatMove;
 window.pickSeatMember = pickSeatMember;
@@ -216,6 +220,7 @@ function init(): void {
   ensureCharValid();
   renderGradePicker();
   renderScopePicker();
+  renderPacketPicker();
   renderFactionPicker();
   renderCharPicker();
   renderRolePicker();

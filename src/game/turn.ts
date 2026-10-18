@@ -31,7 +31,8 @@ export async function runTurn(idx: number): Promise<void> {
   render();
   await judgePhase(p);
   let drawN = 2;
-  if (hasSkill(p, 'youxuan')) drawN += 1;
+  // 「光合」生物·初中：摸牌阶段额外摸一张（「优选法」youxuan 原有逻辑不变：摸后需弃一张）
+  if (hasSkill(p, 'youxuan') || hasSkill(p, 'guanghe')) drawN += 1;
   drawCards(p, drawN);
   addLog(`${p.name} 摸 ${drawN} 张牌`);
   if (hasSkill(p, 'youxuan') && p.hand.length > 0) {

@@ -4,6 +4,8 @@ import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../data/characters';
+import { PACKETS, charPoolForPacket, packetName } from '../data/packets';
+import type { PacketId } from '../data/packets';
 import { NET } from '../net/network';
 import {
   EXTERNAL_STATS,
@@ -41,6 +43,8 @@ export let SELECTED_COUNT = 4;
 export let SELECTED_CHAR: Character | null = null;
 export let SELECTED_FACTION: FactionId = 'chinese';
 export let SELECTED_MODE: 'single' | 'host' | 'join' = 'single';
+/** 扩展包：决定可选角色的学段（初中/高中/全部），并为角色追加对应学科主题技能 */
+export let SELECTED_PACKET: PacketId = 'all';
 export let USER_CHOSEN = false;
 export let SELECTED_ROLE: Role | 'random' = 'random';
 
@@ -68,6 +72,45 @@ export function renderGradePicker(): void {
 export function updateSetupGradeHint(): void {
   const el = document.getElementById('setupGradeHint');
   if (el) el.textContent = `📚 当前年级 / 学期：${SELECTED_GRADE}（在首页修改，决定题库与可选角色）`;
+}
+
+/** 扩展包选择器（初中 / 高中 / 全部）：与年级独立，年级管题库、扩展包管角色学段与主题技能 */
+export function renderPacketPicker(): void {
+  const box = document.getElementById('packetPicker');
+  if (!box) return;
+  box.innerHTML = PACKETS.map((p) => {
+    const n = charPoolForPacket(SELECTED_GRADE, p.id).length;
+    return `<button class="opt-btn ${p.id === SELECTED_PACKET ? 'active' : ''}" data-packet="${p.id}" onclick="setPacket('${p.id}')">${p.icon} ${p.name}<small>${p.desc} · ${n}角色</small></button>`;
+  }).join('');
+  const hint = document.getElementById('packetHint');
+  if (hint) {
+    const n = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).length;
+    // 角色池仍按年级累加（扩展包只筛学段），低年级下高中包可能为 0，需明确引导
+    hint.textContent = n
+      ? `当前：${packetName(SELECTED_PACKET)}（${n} 名角色；只影响可选角色与主题技能，题目范围由年级决定）`
+      : `当前：${packetName(SELECTED_PACKET)} —— 本年级（${SELECTED_GRADE}）下暂无该学段角色，请到首页提高年级`;
+  }
+}
+
+export function setPacket(id: PacketId): void {
+  Sound.play('click');
+  SELECTED_PACKET = id;
+  renderPacketPicker();
+  // 切换扩展包后角色池变化：确保已选阵营/角色仍有效
+  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
+  if (!pool.length) {
+    renderFactionPicker();
+    renderCharPicker();
+    return;
+  }
+  if (!pool.some((c) => c.faction === SELECTED_FACTION)) {
+    USER_CHOSEN = false;
+    SELECTED_FACTION = pool[0].faction;
+  }
+  if (!SELECTED_CHAR || !pool.some((c) => c.id === SELECTED_CHAR!.id)) SELECTED_CHAR = null;
+  renderFactionPicker();
+  renderCharPicker();
+  pushGuestPref();
 }
 
 export function getAvailableRoles(count: number): Role[] {
@@ -118,7 +161,7 @@ export function setQuizScopeMode(s: QuizScope): void {
 export function renderFactionPicker(): void {
   const grid = document.getElementById('factionPicker');
   if (!grid) return;
-  const pool = charPoolForGrade(SELECTED_GRADE);
+  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
   const fset = new Set(pool.map((c) => c.faction));
   grid.innerHTML = Object.entries(FACTIONS)
     .map(([k, f]) => {
@@ -135,7 +178,7 @@ export function renderFactionPicker(): void {
 
 export function selectFaction(k: FactionId): void {
   Sound.play('click');
-  const pool = charPoolForGrade(SELECTED_GRADE).filter((c) => c.faction === k);
+  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === k);
   if (!pool.length) {
     alert('当前年级下该阵营暂无角色，请提高年级或导入题库');
     return;
@@ -151,9 +194,9 @@ export function selectFaction(k: FactionId): void {
 export function renderCharPicker(): void {
   const grid = document.getElementById('charGrid');
   if (!grid) return;
-  const pool = charPoolForGrade(SELECTED_GRADE).filter((c) => c.faction === SELECTED_FACTION);
+  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === SELECTED_FACTION);
   const hint = document.getElementById('charPoolHint');
-  if (hint) hint.textContent = `（当前可选角色池共 ${charPoolForGrade(SELECTED_GRADE).length} 名）`;
+  if (hint) hint.textContent = `（当前可选角色池共 ${charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).length} 名）`;
   if (!pool.length) {
     grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">该阵营在当前年级暂无角色</div>';
     return;
@@ -386,9 +429,9 @@ export function updateAIHint(): void {
 
 /** 保证当前选角在年级/阵营池内合法 */
 export function ensureCharValid(): void {
-  const pool = charPoolForGrade(SELECTED_GRADE).filter((c) => c.faction === SELECTED_FACTION);
+  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === SELECTED_FACTION);
   if (!pool.length) {
-    const allPool = charPoolForGrade(SELECTED_GRADE);
+    const allPool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
     if (allPool.length) {
       SELECTED_FACTION = allPool[0].faction;
       SELECTED_CHAR = allPool[0];
@@ -401,7 +444,7 @@ export function ensureCharValid(): void {
 /** 未手动选择时随机派发阵营与角色 */
 export function pickRandomCharIfNotChosen(): void {
   if (USER_CHOSEN) return;
-  const pool = charPoolForGrade(SELECTED_GRADE);
+  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
   if (!pool.length) return;
   const fset = [...new Set(pool.map((c) => c.faction))];
   SELECTED_FACTION = fset[Math.floor(Math.random() * fset.length)];

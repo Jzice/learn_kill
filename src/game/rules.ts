@@ -20,7 +20,8 @@ export function distBetween(fi: number, ti: number): number {
     to = G.players[ti];
   if (to.equip.horsePlus) d += 1;
   if (from.equip.horseMinus) d -= 1;
-  if (hasSkill(from, 'wanyou') || hasSkill(from, 'tanxian')) d -= 1;
+  // 「浮力」(生物?) 物理·初中 / 「经纬」地理·初中：计算距离-1（扩展包触发技）
+  if (hasSkill(from, 'wanyou') || hasSkill(from, 'tanxian') || hasSkill(from, 'fuli') || hasSkill(from, 'jingwei')) d -= 1;
   return Math.max(1, d);
 }
 
@@ -66,7 +67,9 @@ export function discardCard(p: Player, card: Card, toDiscard = true): void {
 export function handLimit(p: Player): number {
   let l = Math.max(p.hp, 0);
   if (hasSkill(p, 'zhuishu')) l += 2;
+  if (hasSkill(p, 'yichuan')) l += 2; // 生物·高中「遗传」
   if (hasSkill(p, 'yuansu')) l += 1;
+  if (hasSkill(p, 'fangchengshi')) l += 1; // 化学·初中「方程式」
   return l;
 }
 

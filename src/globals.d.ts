@@ -54,6 +54,9 @@ declare global {
     setPlayerCount: (n: number) => void;
     // 学习档案：出题范围 / 错题本
     setQuizScopeMode: (s: 'grade' | 'past' | 'junior' | 'senior') => void;
+    // 扩展包：决定可选角色的学段（初中 / 高中 / 全部）
+    setPacket: (id: 'all' | 'junior' | 'senior') => void;
+    renderPacketPicker: () => void;
     clearWrongBook: () => void;
     // 联机座位：自己换座 / 座主代他人换座 / 随机分配
     requestSeatMove: (toIndex: number) => void;

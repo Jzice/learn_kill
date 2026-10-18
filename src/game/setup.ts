@@ -2,7 +2,8 @@
 import type { Character, Player, PlayerIdentity, Role } from '../core/types';
 import { G, quizStats } from './state';
 import { FACTIONS } from '../data/factions';
-import { ROLES, ROLE_CONFIG, charPoolForGrade } from '../data/characters';
+import { ROLES, ROLE_CONFIG } from '../data/characters';
+import { charPoolForPacket } from '../data/packets';
 import { buildDeck, shuffle } from '../data/cards';
 import { loadGrade } from '../data/questionBank';
 import { drawCards } from './rules';
@@ -18,6 +19,7 @@ import {
   SELECTED_CHAR,
   SELECTED_COUNT,
   SELECTED_GRADE,
+  SELECTED_PACKET,
   SELECTED_ROLE,
   ensureCharValid,
   pickRandomCharIfNotChosen,
@@ -42,7 +44,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   rem.splice(rem.indexOf(myRole), 1);
   shuffle(rem); // 借用洗牌打乱剩余角色分配
   const roles: Role[] = [myRole, ...rem];
-  const pool = charPoolForGrade(SELECTED_GRADE);
+  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
   const aiChars = pool.filter((c) => c.id !== localChar.id);
   shuffle(aiChars);
   G.players = [];
