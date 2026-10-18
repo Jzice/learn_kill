@@ -2,6 +2,28 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.7.0] - 2026-10-18
+
+### 新增
+
+- **GitHub Actions 三条流水线**
+  - `ci.yml`：push/PR 到 main 自动执行 类型检查 → 题库生成物一致性校验（`build:banks` 后 `git diff` 为空）→ 构建双模式产物 → `verify-dist` 单文件校验 → `audit-banks` 题库审计 → 上传 dist 产物；同分支新提交自动取消旧任务
+  - `release.yml`：推送 `v*` 标签自动发布 GitHub Release——构建、产物校验、题库审计后以 **单机冒烟（36 项）+ 联机冒烟（16 项）为发布门禁**，通过则创建 Release 并上传 `学堂杀.html`（CDN 版）与 `学堂杀.bundled.html`（离线版），附带按上一版本标签范围自动生成的变更日志；已存在的同名 Release 走覆盖上传
+  - `pages.yml`：main 分支推送自动部署 GitHub Pages 试玩站点，站点 `index.html` 为 bundled 产物（自包含、离线可玩），同时提供 CDN 版下载
+- **npm 脚本入口补齐**：`build:banks`、`audit:banks`、`smoke`、`smoke:net`、`repro:net`、`verify:dist`、`verify:lazy`，本地与 CI 共用同一套命令
+- **package.json 版本号与 CHANGELOG 对齐机制**：版本更新至 1.7.0
+
+### 变更
+
+- **README 全面更新**：新增 CI/发布/Pages 徽章、在线试玩与 Releases 下载入口、自动化流水线说明与发版命令；题量由过时的「216 道」更正为 **5,700+ 道（12 年级 × 9 科懒加载）**；产物体积由过时的 150/235 KB 更正为约 1.2/1.3 MB；命令表、架构树（补充 `banks/` 懒加载与题库数据流）、文档链接（原 `CODEBUDDY.md` 已替换为 `AGENTS.md`）全部同步现状
+
+### 验证
+
+- 本地按 CI 顺序全流程通过：typecheck 零错误、双模式构建成功、`verify:dist` 通过、`audit:banks` 总题量 5724、`build:banks` 生成物与提交一致（git diff 为空）
+- 发布门禁复核：单机冒烟 36/36、联机冒烟 16/16
+- Pages 站点组装本地演练通过（`_site/index.html` 1.29 MB、`_site/学堂杀.html` 1.20 MB、`.nojekyll`）
+- 三份工作流 YAML 通过语法解析校验
+
 ## [1.6.1] - 2026-10-18
 
 ### 修复

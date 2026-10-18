@@ -1,0 +1,80 @@
+# 推送 v* 版本标签时自动发布 GitHub Release
+# 流程：类型检查 → 构建双模式产物 → 产物校验 → 无头浏览器冒烟（门禁）→ 创建 Release 并上传 HTML
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的标签（如 v1.6.1），留空则用当前分支名'
+        required: false
+        type: string
+
+permissions:
+  contents: write # 创建 Release
+
+# 同一标签的发布串行化，避免并发写 Release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: 构建并发布
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: TypeScript 严格模式检查
+        run: npm run typecheck
+
+      - name: 构建 CDN 与 bundled 双模式产物
+        run: npm run build
+
+      - name: 校验产物为自包含单文件
+        run: npm run verify:dist
+
+      - name: 题库质量审计
+        run: npm run audit:banks
+
+      - name: 安装无头 Chromium（冒烟测试用）
+        run: npx playwright install --with-deps chromium
+
+      - name: 单机冒烟测试（发布门禁）
+        run: npm run smoke
+
+      - name: 联机冒烟测试（发布门禁）
+        run: npm run smoke:net
+
+      - name: 产物清单
+        run: ls -lh dist/*.html
+
+      - name: 创建 Release 并上传产物
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG 已存在，上传产物覆盖同名文件"
+            gh release upload "$TAG" dist/*.html --clobber
+            exit 0
+          fi
+          # 上一版本标签用于限定自动生成日志的范围；首个版本没有则留空
+          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
+          if [ -n "$PREV_TAG" ]; then
+            gh release create "$TAG" dist/*.html --title "学堂杀 $TAG" \
+              --generate-notes --notes-start-tag "$PREV_TAG"
+          else
+            gh release create "$TAG" dist/*.html --title "学堂杀 $TAG" --generate-notes
+          fi

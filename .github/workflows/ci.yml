@@ -1,0 +1,62 @@
+# 持续集成：类型检查 → 构建双模式产物 → 校验单文件完整性 → 题库质量审计
+# 纯 Node 步骤，无需浏览器，可在每次 push / PR 秒级反馈
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一分支的新提交取消仍在运行的旧任务
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 类型检查 / 构建 / 校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: TypeScript 严格模式检查
+        run: npm run typecheck
+
+      - name: 题库生成物与 TSV 源保持一致
+        run: |
+          npm run build:banks
+          if ! git diff --quiet -- src/data/banks; then
+            echo "::error::src/data/banks 与 data/questions 不一致，请本地执行 npm run build:banks 后提交"
+            git --no-pager diff --stat -- src/data/banks
+            exit 1
+          fi
+
+      - name: 构建 CDN 与 bundled 双模式产物
+        run: npm run build
+
+      - name: 校验产物为自包含单文件
+        run: node scripts/verify-dist.mjs
+
+      - name: 题库质量审计（短题干 / 空选项 / 重复题）
+        run: node scripts/audit-banks.mjs
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*.html
+          retention-days: 7
+          if-no-files-found: error

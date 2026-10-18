@@ -3,6 +3,7 @@ node_modules/
 
 # 构建产物（npm run build 可重新生成）
 dist/
+_site/
 
 # 日志与系统文件
 *.log
