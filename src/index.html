@@ -20,40 +20,46 @@
 })();
 </script>
 
-<!-- 统一固定顶栏：品牌 / 图标与主功能 / 个人信息（最右侧，仅头像+昵称） -->
+<!-- 统一固定顶栏：品牌 / 图标与主功能 / 个人信息（最右侧，仅头像+昵称）
+     窄屏两行模式由 .tb-row 承载：第一行 品牌+等级积分，第二行 按钮组+个人信息；
+     宽屏下 .tb-row 为 display:contents（包装层透明，子元素直接参与单行 flex） -->
 <div id="topBar">
-  <div class="tb-brand">
-    <span class="tb-logo">🎓</span>
-    <span class="tb-brand-text">
-      <span class="tb-title">学堂杀<span class="tb-ver" id="tbVersion" title="当前版本"></span></span>
-      <span class="tb-sub">九科争鸣 · 学科阵营</span>
+  <div class="tb-row tb-row-top">
+    <div class="tb-brand">
+      <span class="tb-logo">🎓</span>
+      <span class="tb-brand-text">
+        <span class="tb-title">学堂杀<span class="tb-ver" id="tbVersion" title="当前版本"></span></span>
+        <span class="tb-sub">九科争鸣 · 学科阵营</span>
+      </span>
+    </div>
+    <span class="tb-stats">
+      <span class="tb-stat" title="段位等级"><span class="tb-stat-ic">🏅</span><span id="tbLevel">蒙童</span></span>
+      <span class="tb-stat" title="积分">
+        <span class="tb-stat-ic">⭐</span><span id="tbScore">0 分</span>
+        <span class="tb-progress"><span class="tb-progress-bar" id="tbProgress"></span></span>
+      </span>
     </span>
   </div>
-  <span class="tb-stats">
-    <span class="tb-stat" title="段位等级"><span class="tb-stat-ic">🏅</span><span id="tbLevel">蒙童</span></span>
-    <span class="tb-stat" title="积分">
-      <span class="tb-stat-ic">⭐</span><span id="tbScore">0 分</span>
-      <span class="tb-progress"><span class="tb-progress-bar" id="tbProgress"></span></span>
-    </span>
-  </span>
-  <div class="tb-right">
-    <span class="tb-actions">
-      <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
-      <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
-    </span>
-    <span class="tb-actions">
-      <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
-      <button class="tb-icon" onclick="openRules()" title="规则说明">📖</button>
-      <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
-      <button class="tb-icon tb-notify" onclick="toggleNotifyPanel()" title="消息通知">🔔<span class="notify-badge" id="notifyBadge"></span></button>
-    </span>
+  <div class="tb-row tb-row-main">
+    <div class="tb-right">
+      <span class="tb-actions">
+        <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
+        <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
+      </span>
+      <span class="tb-actions">
+        <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
+        <button class="tb-icon" onclick="openRules()" title="规则说明">📖</button>
+        <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
+        <button class="tb-icon tb-notify" onclick="toggleNotifyPanel()" title="消息通知">🔔<span class="notify-badge" id="notifyBadge"></span></button>
+      </span>
+    </div>
+    <button class="tb-user-chip" onclick="openProfileMenu()" title="查看我的档案">
+      <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
+      <span class="tb-user-meta">
+        <span class="tb-uname" id="tbName">玩家</span>
+      </span>
+    </button>
   </div>
-  <button class="tb-user-chip" onclick="openProfileMenu()" title="查看我的档案">
-    <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
-    <span class="tb-user-meta">
-      <span class="tb-uname" id="tbName">玩家</span>
-    </span>
-  </button>
 </div>
 
 <!-- 顶栏消息通知下拉（🔔：用户聊天 / 系统提示 / 联机事件） -->

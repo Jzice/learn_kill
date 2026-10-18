@@ -764,14 +764,23 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-stat #tbLevel, .tb-stat #tbScore{color:var(--gold-dim)}
 .tb-progress{display:inline-block;width:42px;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;vertical-align:middle;margin-left:3px}
 .tb-progress-bar{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#ffe9a8);transition:width .3s}
-/* 布局模式（JS 实测切换）：tb-mode2 = 窄屏两行，恒定两行不出现第三行
-   第一行：品牌(左) + 等级积分(右)——品牌 flex-grow 撑满剩余，把积分顶到行末
-   第二行：按钮组(左，可横向滚动) + 用户信息(右，margin-left:auto)
-   注意 .tb-right 必须保持 nowrap + overflow-x:auto：一旦内部换行就会冒出第三行 */
-#topBar.tb-mode2 .tb-brand{order:1;flex:1 1 auto;flex-basis:auto}
-#topBar.tb-mode2 .tb-stats{order:2;flex:0 0 auto;margin-left:0}
-#topBar.tb-mode2 .tb-right{order:3;flex-basis:auto;flex-shrink:1;margin-left:0;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden}
-#topBar.tb-mode2 .tb-user-chip{order:4;margin-left:auto;flex:0 0 auto}
+/* 行包装：宽屏（单行模式）下完全透明，子元素直接参与 #topBar 的单行 flex 布局 */
+.tb-row{display:contents}
+/* 布局模式（JS 实测切换）：tb-mode2 = 窄屏恒定两行，更窄时整栏横向滚动（含第一行），
+   绝不出现第三行、也不回落单行
+   第一行：标题+版本号+副标题(左) · 等级+积分+进度(右)
+   第二行：按钮组与个人信息相邻成一整组靠右 */
+#topBar.tb-mode2{flex-direction:column;align-items:stretch;row-gap:5px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#topBar.tb-mode2::-webkit-scrollbar{display:none}
+#topBar.tb-mode2 .tb-row{display:flex;align-items:center;width:max-content;min-width:100%}
+#topBar.tb-mode2 .tb-row-top{gap:10px}
+#topBar.tb-mode2 .tb-row-main{gap:10px}
+/* 第一行：品牌在左，等级积分被 auto margin 推到行末（行超宽时整体由 #topBar 横向滚动） */
+#topBar.tb-mode2 .tb-brand{flex:0 0 auto}
+#topBar.tb-mode2 .tb-stats{margin-left:auto;flex:0 0 auto}
+/* 第二行：按钮组+个人信息相邻，auto margin 将整组推到行末；flex-shrink:0 保证溢出交给外层滚动而非压缩 */
+#topBar.tb-mode2 .tb-right{margin-left:auto;flex:0 0 auto;overflow:visible}
+#topBar.tb-mode2 .tb-user-chip{margin-left:0;flex:0 0 auto}
 /* 单行模式强制不换行：放不下时由按钮组横向滚动容纳，绝不出现第二/第三行 */
 #topBar:not(.tb-mode2){flex-wrap:nowrap}
 /* 游戏内状态条（牌桌上方，非顶栏） */
