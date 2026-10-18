@@ -240,9 +240,13 @@ export function render(): void {
   hintEl.innerHTML = hintText;
   hintEl.className = 'action-hint ' + (hintClass || '');
   document.getElementById('actionBtns')!.innerHTML = btnHtml;
-  // 「中间的选择区域」仅在本地方有决策（有待选操作按钮）时显示，否则只呈现主游戏区
+  // 「中间的选择区域」在本地方有决策时显示：包括有待选按钮的（出牌/救援/出闪/选目标/通用），
+  // 也包括仅靠点牌/点座位交互的阶段（弃牌、选目标），避免提示被隐藏或被战报区遮挡
   const centerArea = document.getElementById('centerArea');
-  if (centerArea) centerArea.style.display = btnHtml.trim() ? 'block' : 'none';
+  if (centerArea) {
+    const localDecision = !!G.pendingOptions && G.pendingPlayer === G.myPlayerIdx;
+    centerArea.style.display = btnHtml.trim() || localDecision ? 'block' : 'none';
+  }
   document.getElementById('deckCount')!.textContent = String(G.deck.length || 0);
   document.getElementById('discardCount')!.textContent = String(G.discard.length || 0);
 
