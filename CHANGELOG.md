@@ -2,6 +2,19 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.11] - 2026-10-18
+
+### 变更
+
+- **移除小屏底部战报入口**：战报已在游戏区独立成块展示（v1.4.8），底部 dock 的「📋 战报」按钮冗余，予以移除
+- **聊天入口仅联机显示**：dock 只保留「💬 聊天」按钮，`render()` 依据 `screenGame.active && NET.mode !== 'single'` 切换 `net` 类；CSS 门控升级为 `#screenGame.active ~ .mobile-dock.net` / `.mobile-drawer.net.show`，与桌面端聊天面板（仅联机显示）行为一致
+- 底部让位改为按需：`body:has(#mobileDock.net){padding-bottom:70px}`，单机/大厅不再留 70px 空隙
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力回归零卡死
+- 380px 实测：单机对局 dock=`none`、底部让位 4px；联机对局双方 dock=`flex`+`net` 类，点击聊天按钮抽屉正常弹出
+
 ## [1.4.10] - 2026-10-18
 
 ### 变更

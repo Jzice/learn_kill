@@ -226,6 +226,11 @@ export function render(): void {
 
   const chatPanel = document.getElementById('chatPanel');
   if (chatPanel) chatPanel.style.display = NET.mode === 'single' ? 'none' : 'flex';
+  // 移动端聊天入口仅联机对局中显示（单机/大厅隐藏，战报已在游戏区独立展示）
+  const inGame = document.getElementById('screenGame')?.classList.contains('active') ?? false;
+  const online = inGame && NET.mode !== 'single';
+  document.getElementById('mobileDock')?.classList.toggle('net', online);
+  document.getElementById('mobileDrawer')?.classList.toggle('net', online);
 
   if (NET.isHost && NET.mode === 'host' && G.started) scheduleSync();
 }
