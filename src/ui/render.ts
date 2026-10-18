@@ -105,11 +105,31 @@ function seatPos(rel: number, total: number): { x: number; y: number } {
   return { x: 50 + 38 * Math.cos(rad), y: 50 + 36 * Math.sin(rad) };
 }
 
+/**
+ * 小屏横滚列表的显示顺序：以本人为中心向两侧展开，距离由近到远。
+ * 紧贴本人两侧的是上/下家，越往外座位距离越远；偶数局多出的「对家」落在右侧末端
+ * （与「从本人起顺时针数」的直觉一致）。这样左右两侧的人数即可直观反映距离。
+ * 例：6 人局本人=0 → [4, 5, 0, 1, 2, 3]；4 人局本人=0 → [3, 0, 1, 2]
+ */
+function centeredOrder(): number[] {
+  const n = G.players.length,
+    me = G.myPlayerIdx;
+  const left: number[] = [],
+    right: number[] = [];
+  for (let d = 1; d * 2 < n; d++) {
+    left.push((me - d + n) % n); // 逆时针：上家、上上家……
+    right.push((me + d) % n); // 顺时针：下家、下下家……
+  }
+  if (n % 2 === 0) right.push((me + n / 2) % n); // 偶数局对家放右侧末端
+  return [...left.reverse(), me, ...right];
+}
+
 function renderSeats(): void {
   const ring = document.getElementById('seatRing');
   if (!ring) return;
   const total = G.players.length;
-  const order = displayOrder(); // 本人第一
+  // 小屏横滚列表以本人居中（便于直观判断距离）；宽屏圆形布局保持「本人第一」（seatPos 置于底部中央）
+  const order = window.innerWidth <= 600 ? centeredOrder() : displayOrder();
   const targetValues = new Set<number>();
   if (G.targetSelectable && G.pendingOptions) {
     G.pendingOptions.forEach((o) => {
