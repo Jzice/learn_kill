@@ -508,8 +508,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 #topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap;
   padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--gold-dim)}
-.tb-left{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 auto;flex-wrap:nowrap}
-.tb-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
 /* 品牌 */
 .tb-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .tb-logo{font-size:22px;line-height:1}
@@ -539,16 +538,15 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .tb-sub{display:none}
 }
 @media (max-width:640px){
-  body{padding-top:96px}
+  body{padding-top:120px}
   #topBar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px}
-  .tb-left{flex-wrap:wrap;gap:10px}
-  .tb-right{flex-wrap:wrap;justify-content:flex-end}
+  .tb-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}
   .tb-icon{width:30px;height:30px;font-size:15px}
   .tb-uname{max-width:64px}
   .tb-status-area{gap:8px;font-size:10px}
 }
 @media (max-width:400px){
-  body{padding-top:120px}
+  body{padding-top:140px}
   .tb-title{font-size:13px;letter-spacing:1px}
   .tb-badge{font-size:9px;padding:2px 6px}
 }
