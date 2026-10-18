@@ -186,10 +186,12 @@ export async function trickCast(
   );
   card?.animate(
     [
-      { transform: 'translate(-50%,-50%) scale(.4) rotateY(0deg)', opacity: 0 },
-      { transform: 'translate(-50%,-50%) scale(1.05) rotateY(180deg)', opacity: 1, offset: 0.4 },
-      { transform: 'translate(-50%,-50%) scale(1.05) rotateY(180deg)', opacity: 1, offset: 0.7 },
-      { transform: 'translate(-50%,-50%) scale(.85) rotateY(180deg) translateY(-24px)', opacity: 0 },
+      /* 翻牌：可见停留阶段必须在 rotateY(360deg)（≡0°正向）。
+         此前停在 rotateY(180deg)，单层元素转到 180° 时正面内容左右镜像 */
+      { transform: 'translate(-50%,-50%) scale(.4) rotateY(180deg)', opacity: 0 },
+      { transform: 'translate(-50%,-50%) scale(1.05) rotateY(360deg)', opacity: 1, offset: 0.4 },
+      { transform: 'translate(-50%,-50%) scale(1.05) rotateY(360deg)', opacity: 1, offset: 0.7 },
+      { transform: 'translate(-50%,-50%) scale(.85) rotateY(360deg) translateY(-24px)', opacity: 0 },
     ],
     { duration: dur, easing: 'cubic-bezier(.3,1.4,.5,1)', fill: 'forwards' },
   );
