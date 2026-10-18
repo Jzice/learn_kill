@@ -121,15 +121,15 @@ function syncTopBarHeight(): void {
   }
 }
 
-/** 小屏(≤600px)时把战报面板移入出牌区（玩家列表下方滚动显示），宽屏还原到侧栏 */
+/** 小屏(≤600px)时把战报面板独立放到出牌区下方（上下放置），宽屏还原到侧栏 */
 function bindPlayLogRelayout(): void {
   const log = document.getElementById('playLogPanel');
   const side = document.querySelector('.side-panel');
-  const zone = document.getElementById('playZoneCards');
-  if (!log || !side || !zone) return;
+  const area = document.getElementById('tableArea');
+  if (!log || !side || !area) return;
   const mq = window.matchMedia('(max-width:600px)');
   const apply = () => {
-    if (mq.matches) zone.appendChild(log);
+    if (mq.matches) area.appendChild(log);
     else side.insertBefore(log, side.firstChild);
   };
   apply();
