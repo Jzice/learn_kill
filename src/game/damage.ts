@@ -5,7 +5,8 @@ import { Sound } from '../core/sound';
 import { localPlayerWin } from '../profile/profile';
 import { ROLES } from '../data/characters';
 import { addLog, addPlayLog } from './log';
-import { hasSkill, discardCard, drawCards, sameFaction } from './rules';
+import { hasSkill, discardCard, drawCards } from './rules';
+import { aiShouldSave, noteAttack, noteSave } from './aibrain';
 import { render } from '../ui/render';
 import { waitChoice } from './choice';
 import { maybeSettle } from '../profile/profile';
@@ -14,6 +15,8 @@ import { NET, scheduleSync } from '../net/network';
 export async function dealDamage(srcIdx: number, tgtIdx: number, amount: number, type = 'normal'): Promise<void> {
   const tgt = G.players[tgtIdx];
   if (!tgt || !tgt.alive) return;
+  // AI 信念事件：谁攻击了谁（所有存活 AI 观察，受害者记仇）
+  if (srcIdx >= 0) noteAttack(srcIdx, tgtIdx);
   let dmg = amount;
   while (dmg > 0 && (tgt.shield || 0) > 0) {
     tgt.shield--;
@@ -67,21 +70,21 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         continue;
       }
       let saved = false;
-      const sorted = [...G.players]
-        .map((q, i) => ({ q, i }))
-        .filter((x) => x.i !== idx && x.q.alive && x.q.isAI);
-      sorted.sort((a, b) => (sameFaction(b.q, p) ? 1 : 0) - (sameFaction(a.q, p) ? 1 : 0));
-      for (const { q, i } of sorted) {
-        if (shouldSave(q, p)) {
-          const t2 = q.hand.find((c) => c.sub === 'tao');
-          if (t2) {
-            discardCard(q, t2);
-            p.hp++;
-            addLog(`${q.name} 使用【桃】救 ${p.name}`, 'heal');
-            FX.healGlow(idx);
-            saved = true;
-            break;
-          }
+      // AI 博弈救援：按信念/身份策略计算各 AI 施救意愿（含欺骗性救援），按意愿排序尝试
+      const will = G.players
+        .map((q, i) => ({ q, i, w: q.alive && q.isAI && i !== idx ? aiShouldSave(i, idx) : 0 }))
+        .filter((x) => x.w > 0)
+        .sort((a, b) => b.w - a.w);
+      for (const { q, i } of will) {
+        const t2 = q.hand.find((c) => c.sub === 'tao');
+        if (t2) {
+          discardCard(q, t2);
+          p.hp++;
+          addLog(`${q.name} 使用【桃】救 ${p.name}`, 'heal');
+          FX.healGlow(idx);
+          noteSave(i, idx);
+          saved = true;
+          break;
         }
       }
       if (!saved) {
@@ -137,14 +140,6 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
     }
   }
   render();
-}
-
-export function shouldSave(healer: { role: string }, target: { role: string }): boolean {
-  const h = healer.role,
-    t = target.role;
-  if (h === 'lord' || h === 'loyal') return t === 'lord' || t === 'loyal';
-  if (h === 'rebel') return t === 'rebel';
-  return false;
 }
 
 export function revealDeadRole(p: (typeof G)['players'][number]): void {

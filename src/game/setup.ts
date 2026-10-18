@@ -140,12 +140,15 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     }
     G.players.push(newPlayer(i, name, char, roles[i], isAI, peerId, identity));
   }
+  resetBrain(); // 新对局：清空 AI 信念/恩怨
   G.players.forEach((p) => drawCards(p, 4));
   G.current = G.players.findIndex((p) => p.role === 'lord');
   if (G.current < 0) G.current = 0;
   G.myPlayerIdx = 0;
   G.started = true;
 }
+
+import { resetBrain } from './aibrain';
 
 function readNickname(fallback: string): string {
   // 昵称统一取档案（在顶栏「🧑 个性化资料」中编辑）

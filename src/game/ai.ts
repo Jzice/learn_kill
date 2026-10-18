@@ -7,26 +7,16 @@ import { equipFx } from '../core/fx';
 import { FACTIONS } from '../data/factions';
 import { addChat } from './chat';
 import { addLog, addPlayLog } from './log';
-import { discardCard, drawCards, inRange } from './rules';
+import { discardCard, drawCards } from './rules';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { useActiveSkill } from './skills';
 import { useTao, useTrick, useSha } from './actions';
 import { NET, syncStateToClients } from '../net/network';
+import { noteAiTurn, pickAiTarget } from './aibrain';
 
 export function aiQuiz(rate = 0.6): boolean {
   return Math.random() < rate;
-}
-
-export function isEnemy(a: Player, b: Player): boolean {
-  if (a.role === 'lord' || a.role === 'loyal') return b.role === 'rebel' || b.role === 'spy';
-  if (a.role === 'rebel') return b.role === 'lord' || b.role === 'loyal';
-  if (a.role === 'spy') {
-    const ra = G.players.filter((p) => p.alive && p.role === 'rebel').length;
-    if (ra > 0) return b.role === 'rebel';
-    return b.role === 'lord' || b.role === 'loyal';
-  }
-  return false;
 }
 
 export async function aiPlayPhase(idx: number): Promise<void> {
@@ -79,18 +69,16 @@ export async function aiPlayPhase(idx: number): Promise<void> {
   if (p.alive && !p.flags.noSha && (p.flags.shaUsed || 0) < 1) {
     const sha = p.hand.find((c) => c.sub === 'sha');
     if (sha) {
-      const ts: number[] = [];
-      for (let i = 0; i < G.players.length; i++) {
-        if (i === idx || !G.players[i].alive) continue;
-        if (inRange(idx, i) && isEnemy(p, G.players[i])) ts.push(i);
-      }
-      if (ts.length > 0) {
+      // 博弈式目标选择：基于信念推断与身份策略（可能观望/佯攻）
+      const ti = pickAiTarget(idx);
+      if (ti >= 0) {
         discardCard(p, sha);
-        await useSha(idx, ts[0]);
+        await useSha(idx, ti);
         await sleep(300);
       }
     }
   }
+  noteAiTurn();
   render();
 }
 

@@ -10,6 +10,7 @@ import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { aiQuiz, aiSpeak } from './ai';
+import { aiQuizRate } from './aibrain';
 import { dealDamage } from './damage';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
@@ -247,7 +248,7 @@ export async function requestShan(targetIdx: number, srcIdx: number): Promise<bo
       await FX.shield(targetIdx);
       return true;
     }
-    if (t.knowledge >= 1 && aiQuiz()) {
+    if (t.knowledge >= 1 && aiQuiz(aiQuizRate(t))) {
       t.knowledge--;
       addLog(`${t.name} 消耗学识当闪`);
       await FX.shield(targetIdx);
