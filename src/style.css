@@ -621,8 +621,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 #topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;
   padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--gold-dim)}
-/* 按钮区：放不下时横向来回滚动（隐藏滚动条，触摸/滚轮均可滑动） */
-.tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 2px}
+/* 按钮区：宽屏靠右（margin-left:auto 推到用户芯片旁）；放不下时横向来回滚动（隐藏滚动条，触摸/滚轮均可滑动） */
+.tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;flex-wrap:nowrap;justify-content:flex-start;margin-left:auto;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 2px}
 .tb-right::-webkit-scrollbar{display:none}
 /* 品牌 */
 .tb-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -630,8 +630,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-brand-text{display:flex;flex-direction:column;line-height:1.1}
 .tb-title{font-size:15px;color:var(--gold);font-weight:700;letter-spacing:3px}
 .tb-sub{font-size:9px;color:var(--gold-dim);letter-spacing:1px}
-/* 用户芯片 */
-.tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0;margin-left:auto;background:none;border:none;font-family:inherit;padding:0;cursor:pointer;border-radius:12px}
+/* 用户芯片（宽屏紧跟按钮区靠右；窄屏两行模式由 tb-mode2 恢复 margin-left:auto） */
+.tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0;margin-left:0;background:none;border:none;font-family:inherit;padding:0;cursor:pointer;border-radius:12px}
 .tb-user-chip:hover .tb-uname{color:var(--gold)}
 
 .tb-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--avatar-bg);box-shadow:0 0 10px rgba(245,197,66,.4);flex-shrink:0}

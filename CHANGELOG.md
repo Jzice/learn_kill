@@ -2,6 +2,19 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.36] - 2026-10-18
+
+### 优化
+
+- **顶栏按钮区宽屏靠右排列**：`.tb-right` 加 `margin-left:auto` 推到右侧（紧邻用户芯片），`.tb-user-chip` 宽屏改 `margin-left:0` 紧跟按钮区——宽屏布局变为「品牌居左 …… 按钮区+用户芯片靠右」
+  - 窄屏两行模式（`tb-mode2`）不受影响：芯片规则本就自带 `margin-left:auto`，按钮行 `justify-content:flex-end`
+  - `syncTopBarHeight` 的模式判定用 `scrollWidth/offsetWidth` 测量（不含 margin），自动切换逻辑不受干扰
+
+### 验证
+
+- 构建通过；单机冒烟 35/35、联机冒烟 16/16、联机压力零卡死
+- 实测：宽屏（1280px）按钮区紧贴用户芯片（间隙 10px）、品牌侧空隙 849px、芯片贴栏右缘；窄屏（360px）两行模式正常：第一行品牌+芯片靠右、第二行按钮靠右（9/9）
+
 ## [1.4.35] - 2026-10-18
 
 ### 平衡
