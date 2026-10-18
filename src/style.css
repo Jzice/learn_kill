@@ -1,11 +1,13 @@
-:root{--gold:var(--gold);--gold-dim:var(--gold-dim);--parch:#f7f0dd;--parch2:#e8dcc0;--ink:#2a1f0f;--red:#c0392b;--green:#27ae60;--text:#e8e0d0;--muted:#a89880;
-  /* 语义层：受 body[data-mode] / body[data-theme] 覆盖（默认=夜晚+鎏金） */
+:root{--gold:#f5c542;--gold-dim:#8a6d3b;--parch:#f7f0dd;--parch2:#e8dcc0;--ink:#2a1f0f;--red:#c0392b;--green:#27ae60;--text:#e8e0d0;--muted:#a89880;
+  /* 语义层：受 body[data-mode] / body[data-theme] 覆盖（默认=夜晚+鎏金）。
+     此处给出与默认主题一致的具体值兜底：避免整页重载（如退出重开）时模块 JS 生效前
+     首帧无主题变量导致「纯文字无主题」闪现，也让鎏金主题的 --gold 真正生效 */
   --bg1:#4a2218;--bg2:#2a1210;--bg3:#120604;
-  --surface:var(--surface);
-  --surface-2:var(--surface-2);
-  --surface-accent:var(--surface-accent);
-  --avatar-bg:var(--avatar-bg);
-  --border:var(--border);
+  --surface:linear-gradient(160deg,#2a1a10,#160a06);
+  --surface-2:linear-gradient(160deg,#3a2610,#1a1006);
+  --surface-accent:linear-gradient(160deg,#5a3a10,#3a1a06);
+  --avatar-bg:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);
+  --border:#3a2a1a;
   --accent-strong:#ffe0a0;
 }
 

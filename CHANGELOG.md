@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.37] - 2026-10-18
+
+### 修复
+
+- **退出重开时闪现「纯文字无主题」状态**
+  - 根因：`exitGame()` 通过整页跳转重载（`location.href = pathname?t=`）做完整状态重置；重载后首帧 HTML 先渲染，而主题变量依赖 deferred 大模块（~790KB 内联 JS）初始化时给 `body` 设置 `data-mode/data-theme`——模块解析期间首帧无主题属性
+  - 深层问题：`:root` 语义变量是**循环引用**（`--gold:var(--gold)`、`--surface:var(--surface)` 等），无任何具体兜底值——实测即使带主题属性，`--gold` 计算值也为空（鎏金主题的金色从未真正生效，一直回退奶白色）；无属性时 `--surface` 为空 → 面板透明纯文字
+  - 修复（三层兜底）：
+    1. `style.css`：`:root` 循环引用替换为夜+鎏金具体默认值（顺带修复鎏金 `--gold` 失效）
+    2. `index.html`：`<body data-mode="night" data-theme="gold">` 静态默认主题，首帧即主题化
+    3. `<body>` 开标签后新增同步内联脚本：任何渲染前从 `localStorage`（`xuetangsha_profile_v1`）恢复已保存主题（校验合法值、失败回退默认），非默认主题用户首帧也不闪；`applyTheme()` 随后正常接管
+
+### 验证
+
+- 构建保留静态属性与内联脚本；单机冒烟 35/35、联机冒烟 16/16、联机压力零卡死
+- 实测（7/7）：移除主题属性后 `--gold=#f5c542`、`--surface` 渐变、标题呈金色 `rgb(245,197,66)`；保存 day+blue 后重载，`domcontentloaded` 时刻属性即就位且 JS 接管后 `--gold=#4aa8ff` 一致；默认主题重载首帧 night/gold 就位
+
 ## [1.4.36] - 2026-10-18
 
 ### 优化

@@ -6,7 +6,19 @@
 <title>学堂杀 · 九科争鸣</title>
 <script type="module" src="/main.ts"></script>
 </head>
-<body>
+<body data-mode="night" data-theme="gold">
+<script>
+/* 首帧主题兜底（同步执行于任何渲染之前）：整页重载（退出重开等）时，
+   模块 JS 解析完成前 body 已带正确主题属性，避免闪现「纯文字无主题」状态 */
+(function () {
+  try {
+    var p = JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}');
+    var m = ['day', 'night', 'dusk'].indexOf(p.themeMode) >= 0 ? p.themeMode : 'night';
+    var s = ['gold', 'teal', 'red', 'purple', 'green', 'blue'].indexOf(p.themeStyle) >= 0 ? p.themeStyle : 'gold';
+    if (document.body) { document.body.setAttribute('data-mode', m); document.body.setAttribute('data-theme', s); }
+  } catch (e) { /* 解析失败保持 HTML 默认主题 */ }
+})();
+</script>
 
 <!-- 统一固定顶栏：品牌 / 图标与主功能 / 个人信息（最右侧，仅头像+昵称） -->
 <div id="topBar">
