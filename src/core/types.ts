@@ -288,6 +288,12 @@ export interface RoomMember {
   scope?: QuizScope;
 }
 
+/** 座位表条目（数组下标即座位号，缺位表示该座位由 AI 补齐） */
+export interface SeatSlot {
+  peerId: string;
+  name: string;
+}
+
 export interface QuizStats {
   total: number;
   correct: number;

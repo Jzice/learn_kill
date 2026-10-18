@@ -466,6 +466,7 @@ export function updateHostRoomInfo(state: RoomStateLike): void {
   sb!.style.display = 'block';
   cb!.style.display = 'inline-block';
   crb!.style.display = 'none';
+  renderSeatPanel();
 }
 
 export function updateGuestRoomInfo(state: RoomStateLike): void {
@@ -484,6 +485,82 @@ export function updateGuestRoomInfo(state: RoomStateLike): void {
   );
   lb!.style.display = 'inline-block';
   jb!.style.display = 'none';
+  renderSeatPanel();
+}
+
+/* ==================== 座位分配（默认随机 / 手动调整） ==================== */
+
+/** 座主代他人调整时选中的成员 peerId（null 表示未选中） */
+let seatPicking: string | null = null;
+
+/** 渲染座位表：下标即座位号，缺位由 AI 补齐 */
+export function renderSeatPanel(): void {
+  const box = document.getElementById(NET.isHost ? 'hostSeatList' : 'guestSeatList');
+  if (!box) return;
+  if (!NET.isHost && !NET.seats.length) return; // 客人尚未收到座位表
+  const total = Math.max(SELECTED_COUNT, NET.seats.length);
+  const myId = NET.myPeerId || '';
+  const isHost = NET.isHost;
+  const rows: string[] = [];
+  const filledCount = NET.seats.filter(Boolean).length;
+  for (let i = 0; i < total; i++) {
+    const s = NET.seats[i] || null;
+    const mine = !!s && s.peerId === myId;
+    const member = s ? NET.roomMembers.find((m) => m.peerId === s.peerId) : null;
+    const tag = s ? (member?.isHost ? '👑 房主' : '🎓 玩家') : '🤖 AI 补齐';
+    const av = member?.profile?.avatar || (s ? DEFAULT_AVATAR : '🤖');
+    const cls = s ? 'seat-slot filled' : 'seat-slot empty';
+    const mineTag = mine ? '<span class="seat-mine">我</span>' : '';
+    // 座主可为任意成员指定新座位（✥ = 调整此人）；未选中时点击行 = 自己换到该座位
+    const fix = isHost && s && s.peerId !== myId
+      ? `<button class="seat-fix ${seatPicking === s.peerId ? 'on' : ''}" onclick="event.stopPropagation();pickSeatMember('${s.peerId}')">✥</button>`
+      : '';
+    rows.push(
+      `<div class="${cls}" onclick="requestSeatMove(${i})"><span class="seat-no">${i + 1}</span><span class="seat-av">${av}</span>` +
+        `<span class="seat-name">${escapeHtml(s ? s.name : '空位')}${mineTag}</span><span class="seat-tag">${tag}</span>${fix}</div>`,
+    );
+  }
+  const hostTools = isHost
+    ? `<div class="seat-tools"><button class="btn btn-sm" onclick="randomizeSeats()">🎲 随机分配</button>` +
+      `<span class="seat-tip">${seatPicking ? '已选中成员，点击目标座位完成移动' : '点行=自己换座；点 ✥ 可帮其他成员换座'}</span></div>`
+    : `<div class="seat-tools"><span class="seat-tip">点击任意座位即可与该座位玩家互换；空位可直接落座</span></div>`;
+  box.innerHTML =
+    `<div class="seat-head">🪑 座位分配（真人 ${filledCount}/${total}）· 默认随机，可自行调整</div>` +
+    `<div class="seat-list">${rows.join('')}</div>` +
+    hostTools;
+}
+
+/** 座主：选中某成员，随后点击目标座位即可把 TA 移过去 */
+export function pickSeatMember(peerId: string): void {
+  if (!NET.isHost) return;
+  Sound.play('click');
+  seatPicking = seatPicking === peerId ? null : peerId;
+  renderSeatPanel();
+}
+
+/** 玩家请求换座：自己 ↔ 目标座位；座主若已选中某成员则改为移动该成员 */
+export function requestSeatMove(toIndex: number): void {
+  Sound.play('click');
+  if (NET.isHost) {
+    if (seatPicking) {
+      // 座主代他人调整
+      if (NET.moveSeat(seatPicking, toIndex)) seatPicking = '';
+    } else if (NET.myPeerId) {
+      NET.moveSeat(NET.myPeerId, toIndex);
+    }
+  } else {
+    NET.sendToHost({ type: 'seat_move_request', toIndex });
+  }
+  renderSeatPanel();
+}
+
+/** 座主：全部成员重新随机落座 */
+export function randomizeSeats(): void {
+  if (!NET.isHost) return;
+  Sound.play('click');
+  seatPicking = null;
+  NET.shuffleSeats();
+  renderSeatPanel();
 }
 
 export function viewMemberProfile(name: string, profile: PublicProfile | null): void {

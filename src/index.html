@@ -141,6 +141,7 @@
         <button class="btn" onclick="closeRoom()" id="closeRoomBtn" style="display:none;border-color:#e74c3c;color:#e74c3c">✕ 关闭房间</button>
       </div>
       <div id="roomInfo" style="margin-top:8px;font-size:12px;color:var(--gold);"></div>
+      <div id="hostSeatList" class="seat-panel"></div>
       <div id="hostMemberList" class="room-member-list" style="display:none"></div>
       <button class="btn btn-accent" style="width:100%;margin-top:8px;display:none" onclick="hostStartGame()" id="hostStartBtn">▶ 开始游戏（AI 补齐空位）</button>
     </div>
@@ -178,6 +179,7 @@
         <button class="btn" onclick="leaveRoom()" id="leaveRoomBtn" style="display:none;border-color:#e74c3c;color:#e74c3c">✕ 退出房间</button>
       </div>
       <div id="joinStatus" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+      <div id="guestSeatList" class="seat-panel"></div>
       <div id="guestMemberList" class="room-member-list" style="display:none"></div>
     </div>
   </div>

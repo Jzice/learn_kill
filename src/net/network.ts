@@ -1,5 +1,5 @@
 /* ==================== 网络层（房主权威） ==================== */
-import type { NetMode, Player, PublicProfile, Question, RoomMember } from '../core/types';
+import type { NetMode, Player, PublicProfile, Question, RoomMember, SeatSlot } from '../core/types';
 import type { NetMessage } from './protocol';
 import { getPeerCtor } from '#peer';
 import { G } from '../game/state';
@@ -7,7 +7,7 @@ import { addChat } from '../game/chat';
 import { addLog, appendPlayLog, playLog, setPlayLog } from '../game/log';
 import { render } from '../ui/render';
 import { clearPlayZone } from '../ui/playzone';
-import { SELECTED_COUNT, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
+import { SELECTED_COUNT, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
 import { onAskQuizRequest } from '../game/quiz';
 import { maybeSettle, publicProfile } from '../profile/profile';
 
@@ -34,18 +34,91 @@ export const NET = {
   playerConns: {} as Record<string, PeerJS.DataConnection>,
   pendingQuiz: null as PendingQuiz | null,
   roomMembers: [] as RoomMember[],
+  /** 座位表：定长（= 人数），下标即真实座位号，null 表示该座位由 AI 补齐；房主权威维护 */
+  seats: [] as (SeatSlot | null)[],
+
+  /* ---- 座位分配（默认随机，可由座主与加入者手动调整） ---- */
+
+  /** 广播座位表给全体成员（保留空位，下标即真实座位号） */
+  broadcastSeats(): void {
+    if (!this.isHost) return;
+    const total = Math.max(SELECTED_COUNT, this.seats.length, 1);
+    const arr: (SeatSlot | null)[] = [];
+    for (let i = 0; i < total; i++) arr.push(this.seats[i] ? { ...this.seats[i]! } : null);
+    this.broadcast({ type: 'seat_update', seats: arr, targetCount: total });
+    renderSeatPanel();
+  },
+  /** 成员入座：在空座位中随机落座（默认随机分配） */
+  addSeat(peerId: string, name: string): void {
+    if (this.seats.some((s) => s && s.peerId === peerId)) return;
+    const total = Math.max(SELECTED_COUNT, this.seats.length, 1);
+    const free: number[] = [];
+    for (let i = 0; i < total; i++) if (!this.seats[i]) free.push(i);
+    const idx = free.length ? free[Math.floor(Math.random() * free.length)] : this.seats.length;
+    this.seats[idx] = { peerId, name };
+    this.broadcastSeats();
+  },
+  /** 成员离座：座位留空（由 AI 补齐），其余成员座位号不变 */
+  removeSeat(peerId: string): void {
+    const i = this.seats.findIndex((s) => s && s.peerId === peerId);
+    if (i < 0) return;
+    this.seats[i] = null;
+    this.broadcastSeats();
+  },
+  /** 换座：与目标座位互换；目标为空位（AI）则直接落座 */
+  moveSeat(peerId: string, toIndex: number): boolean {
+    const from = this.seats.findIndex((s) => s && s.peerId === peerId);
+    if (from < 0) return false;
+    const total = Math.max(SELECTED_COUNT, this.seats.length);
+    const to = Math.max(0, Math.min(total - 1, Math.floor(toIndex)));
+    if (to === from) return false;
+    const self = this.seats[from];
+    this.seats[from] = this.seats[to] ?? null;
+    this.seats[to] = self;
+    this.broadcastSeats();
+    return true;
+  },
+  /** 全部成员重新随机落座（只在真人座位之间重排，AI 空位不变） */
+  shuffleSeats(): void {
+    const idxs: number[] = [];
+    const arr: SeatSlot[] = [];
+    this.seats.forEach((s, i) => {
+      if (s) {
+        idxs.push(i);
+        arr.push(s);
+      }
+    });
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    idxs.forEach((seatIdx, k) => (this.seats[seatIdx] = arr[k]));
+    this.broadcastSeats();
+  },
 
   addRoomMember(peerId: string, name: string, isHost: boolean, profile: PublicProfile | null): void {
     const ex = this.roomMembers.find((m) => m.peerId === peerId);
     if (ex) {
       ex.name = name;
       if (profile) ex.profile = profile;
+      this.renameSeat(peerId, name);
       return;
     }
     this.roomMembers.push({ peerId, name, isHost: !!isHost, profile: profile || null });
+    // 新成员默认随机入座（房主权威维护座位表并广播）
+    if (this.isHost) this.addSeat(peerId, name);
   },
   removeRoomMember(peerId: string): void {
     this.roomMembers = this.roomMembers.filter((m) => m.peerId !== peerId);
+    if (this.isHost) this.removeSeat(peerId);
+  },
+  /** 座位表内改名（成员改名/档案同步后保持一致） */
+  renameSeat(peerId: string, name: string): void {
+    const s = this.seats.find((x) => x && x.peerId === peerId);
+    if (s && s.name !== name) {
+      s.name = name;
+      this.broadcastSeats();
+    }
   },
   broadcastRoomState(): void {
     if (!this.isHost) return;
@@ -211,6 +284,9 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
       if (data.pref?.scope) m.scope = data.pref.scope;
       NET.broadcastRoomState();
     }
+  } else if (data.type === 'seat_move_request') {
+    // 房主权威：只允许请求者移动自己（无法代他人操作，避免越权改他人座位）
+    NET.moveSeat(conn.peer, data.toIndex);
   } else if (data.type === 'choose_response') {
     if (G.pendingPlayer != null && G.pendingResolve) {
       const r = G.pendingResolve;
@@ -246,7 +322,10 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
 }
 
 export function onClientData(data: NetMessage): void {
-  if (data.type === 'start_game') {
+  if (data.type === 'seat_update') {
+    NET.seats = (data.seats || []).map((s) => (s ? { peerId: s.peerId, name: s.name } : null));
+    renderSeatPanel();
+  } else if (data.type === 'start_game') {
     G.players = data.players;
     G.myPlayerIdx = data.myPlayerIdx;
     G.grade = data.grade;

@@ -12,6 +12,7 @@ import type {
   PublicProfile,
   Question,
   RoomMember,
+  SeatSlot,
 } from '../core/types';
 
 export interface RoomStateMsg {
@@ -30,6 +31,8 @@ export type NetMessage =
   | { type: 'choose_response'; value: string | number }
   | { type: 'quiz_response'; correct: boolean; quizId: number }
   | { type: 'leave_room'; name?: string }
+  /** 请求换座（仅能移动自己）：与目标座位占位者互换，空位则直接落座 */
+  | { type: 'seat_move_request'; toIndex: number }
   // ---- 房主 → 客户端 ----
   | { type: 'chat'; name: string; text: string; avatar?: string; moodIcon?: string; mood?: string }
   | { type: 'play_log'; entry: LogEntry }
@@ -61,6 +64,8 @@ export type NetMessage =
       choiceType: PendingType;
     }
   | { type: 'ask_quiz_request'; question: Question; isSkill: boolean; quizId: number }
+  /** 座位表更新（下标即座位号，null 由 AI 补齐） */
+  | { type: 'seat_update'; seats: (SeatSlot | null)[]; targetCount: number }
   | { type: 'host_closed' };
 
 /** 客户端加入时房主保存的成员信息（含 peerId，不广播） */

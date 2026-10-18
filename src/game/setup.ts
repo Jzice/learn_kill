@@ -103,48 +103,54 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     };
   };
 
-  G.players.push(
-    newPlayer(0, localName, localChar, roles[0], false, NET.isHost ? NET.myPeerId : null, localIdentity()),
-  );
-  const remoteIds = NET.isHost ? Object.keys(NET.playerConns) : [];
-  for (let i = 1; i < playerCount; i++) {
-    let name: string,
-      char: Character,
-      isAI: boolean,
-      peerId: string | null,
-      identity: PlayerIdentity | null = null;
-    if (i - 1 < remoteIds.length) {
-      const conn = NET.playerConns[remoteIds[i - 1]];
-      const rawName = conn?.metadata?.name;
-      peerId = remoteIds[i - 1];
-      // 远程玩家的个性化身份：优先用其同步来的档案
+  // 座位顺序：以房主权威的座位表为准（默认随机入座，座主与加入者均可手动调整）；
+  // 无座位表时退回「房主 + 连接顺序」
+  const myPeer = NET.isHost ? NET.myPeerId : null;
+  const seatPeers: (string | null)[] =
+    NET.isHost && NET.seats.length
+      ? NET.seats.map((s) => (s ? s.peerId : null))
+      : [myPeer, ...Object.keys(NET.playerConns)];
+  const hostSeat = NET.isHost && myPeer ? Math.max(0, seatPeers.indexOf(myPeer)) : 0;
+  // 身份分配：房主自选身份落到自己的座位上，其余随机
+  const roleAtSeat: Role[] = new Array(playerCount);
+  roleAtSeat[hostSeat] = myRole;
+  {
+    const others = [...rem];
+    for (let i = 0, k = 0; i < playerCount; i++) if (i !== hostSeat) roleAtSeat[i] = others[k++];
+  }
+  for (let i = 0; i < playerCount; i++) {
+    const peerId = i < seatPeers.length ? seatPeers[i] : null;
+    // 自己：房主按座位表定位；单机模式固定 0 号
+    const isSelf = NET.isHost ? !!myPeer && peerId === myPeer : i === 0;
+    if (isSelf) {
+      G.players.push(newPlayer(i, localName, localChar, roleAtSeat[i], false, NET.isHost ? peerId : null, localIdentity()));
+    } else if (peerId) {
+      const conn = NET.playerConns[peerId];
       const member = NET.roomMembers.find((m) => m.peerId === peerId);
-      identity =
+      const rawName = conn?.metadata?.name;
+      // 远程玩家的个性化身份：优先用其同步来的档案
+      const identity =
         identityFromProfile(member?.profile ?? null) ??
         (typeof rawName === 'string' && rawName ? { ...localIdentity(), name: rawName } : null);
-      name = identity?.name || (typeof rawName === 'string' && rawName) || '玩家' + i;
+      const name = identity?.name || member?.name || (typeof rawName === 'string' && rawName) || '玩家' + i;
       // 远程玩家：优先采用其在设置界面自选的阵营 / 角色偏好
-      const fallback = aiChars[(i - 1) % Math.max(1, aiChars.length)];
+      const fallback = aiChars.length ? aiChars[i % aiChars.length] : pool[0];
       const byFaction = member?.pref?.faction
         ? aiChars.find((c) => c.faction === member.pref!.faction) ?? fallback
         : fallback;
-      char =
-        (member?.pref?.charId && pool.find((c) => c.id === member.pref!.charId)) ||
-        byFaction;
-      isAI = false;
+      const char =
+        (member?.pref?.charId && pool.find((c) => c.id === member.pref!.charId)) || byFaction;
+      G.players.push(newPlayer(i, name, char, roleAtSeat[i], false, peerId, identity));
     } else {
-      name = 'AI·' + (aiChars.length ? aiChars[(i - 1) % aiChars.length].name : '同学');
-      char = aiChars.length ? aiChars[(i - 1) % aiChars.length] : pool[0];
-      isAI = true;
-      peerId = null;
+      const ch = aiChars.length ? aiChars[i % aiChars.length] : pool[0];
+      G.players.push(newPlayer(i, 'AI·' + (ch ? ch.name : '同学'), ch, roleAtSeat[i], true, null));
     }
-    G.players.push(newPlayer(i, name, char, roles[i], isAI, peerId, identity));
   }
   resetBrain(); // 新对局：清空 AI 信念/恩怨
   G.players.forEach((p) => drawCards(p, 4));
   G.current = G.players.findIndex((p) => p.role === 'lord');
   if (G.current < 0) G.current = 0;
-  G.myPlayerIdx = 0;
+  G.myPlayerIdx = hostSeat;
   G.started = true;
 }
 

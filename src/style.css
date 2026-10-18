@@ -311,6 +311,22 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .cfg-nick-hint{font-size:10.5px;color:var(--muted);text-align:center;padding:5px 4px 2px;letter-spacing:0}
 /* 出题范围选择器提示 */
 .scope-hint{font-size:10.5px;color:var(--gold);text-align:center;padding:6px 4px 0;letter-spacing:0}
+/* 联机座位分配（默认随机 + 手动调整） */
+.seat-panel{margin-top:8px}
+.seat-head{font-size:11px;color:var(--gold);margin-bottom:5px;letter-spacing:1px}
+.seat-list{display:flex;flex-direction:column;gap:4px;max-height:190px;overflow-y:auto}
+.seat-slot{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px;border:1px solid transparent;transition:background .15s,border-color .15s}
+.seat-slot:hover{background:rgba(0,0,0,.28);border-color:var(--gold-dim)}
+.seat-slot.empty{background:rgba(0,0,0,.2);border-style:dashed;border-color:rgba(245,197,66,.28);color:var(--muted)}
+.seat-no{flex:0 0 20px;text-align:center;color:var(--gold-dim);font-size:11px}
+.seat-av{font-size:15px}
+.seat-name{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat-mine{margin-left:5px;padding:0 5px;border-radius:8px;background:var(--gold);color:#2a1a06;font-size:10px;font-weight:700}
+.seat-tag{flex:0 0 auto;font-size:10px;color:var(--muted)}
+.seat-fix{flex:0 0 auto;background:transparent;border:1px solid var(--gold-dim);border-radius:4px;color:var(--gold);font-size:11px;padding:1px 5px;cursor:pointer}
+.seat-fix.on{background:var(--gold);color:#2a1a06}
+.seat-tools{display:flex;align-items:center;gap:8px;margin-top:6px}
+.seat-tip{font-size:10px;color:var(--muted);line-height:1.5}
 /* 错题本（我的档案内） */
 .wb-empty{font-size:11.5px;color:var(--muted);text-align:center;padding:14px 6px;background:rgba(0,0,0,.22);border-radius:6px}
 .wb-list{max-height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px}

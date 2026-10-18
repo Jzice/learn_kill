@@ -38,6 +38,9 @@ import {
   renderScopePicker,
   setQuizScopeMode,
   renderProfileEditor,
+  pickSeatMember,
+  randomizeSeats,
+  requestSeatMove,
   renderRolePicker,
   renderSetupSummary,
   renderTopBar,
@@ -108,6 +111,9 @@ window.enterSetup = enterSetup;
 window.setNetMode = setNetMode;
 window.setQuizScopeMode = setQuizScopeMode;
 window.clearWrongBook = clearWrongBook;
+window.requestSeatMove = requestSeatMove;
+window.pickSeatMember = pickSeatMember;
+window.randomizeSeats = randomizeSeats;
 window.selectFaction = (k: string) => selectFaction(k as FactionId);
 window.selectChar = selectChar;
 window.openBankBrowser = openBankBrowser;

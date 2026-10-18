@@ -52,6 +52,10 @@ declare global {
     // 学习档案：出题范围 / 错题本
     setQuizScopeMode: (s: 'grade' | 'past' | 'junior' | 'senior') => void;
     clearWrongBook: () => void;
+    // 联机座位：自己换座 / 座主代他人换座 / 随机分配
+    requestSeatMove: (toIndex: number) => void;
+    pickSeatMember: (peerId: string) => void;
+    randomizeSeats: () => void;
     // 二级菜单 / 对局设置子界面
     openProfileMenu: () => void;
     openBankMenu: () => void;
