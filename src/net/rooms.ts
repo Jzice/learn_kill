@@ -4,14 +4,7 @@ import { NET } from './network';
 import { updateHostRoomInfo } from '../ui/lobby';
 import { PROFILE, publicProfile, refreshProfileUI, saveProfile } from '../profile/profile';
 import { SELECTED_COUNT } from '../ui/lobby';
-
-/** 房主创建房间后，生成可分享的邀请链接（含房间号），对方点开即自动进入加入流程 */
-function showInviteLink(code: string): void {
-  const box = document.getElementById('inviteBox');
-  const inp = document.getElementById('inviteLink') as HTMLInputElement | null;
-  if (box) box.style.display = 'block';
-  if (inp) inp.value = `${location.origin}${location.pathname}?room=${code}`;
-}
+import { setInviteLink } from '../ui/share';
 
 export async function createRoom(): Promise<void> {
   // 昵称统一取档案（在顶栏「🧑 个性化资料」中编辑）
@@ -28,7 +21,7 @@ export async function createRoom(): Promise<void> {
       currentCount: 1,
       targetCount: SELECTED_COUNT,
     });
-    showInviteLink(code);
+    setInviteLink(`${location.origin}${location.pathname}?room=${code}`);
   } catch (e) {
     document.getElementById('roomInfo')!.innerHTML =
       '<span style="color:#e74c3c;">连接失败：' + (e as { type?: string }).type + '</span>';

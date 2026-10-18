@@ -150,9 +150,9 @@
       </div>
       <div id="roomInfo" style="margin-top:8px;font-size:12px;color:var(--gold);"></div>
       <div id="inviteBox" style="display:none;margin-top:8px">
-        <div class="cfg-nick-hint">🔗 邀请好友：分享下方链接，对方点开自动加入房间</div>
+        <div class="cfg-nick-hint">🔗 邀请好友：点「分享」生成二维码，或点「复制」直接复制链接</div>
         <div style="display:flex;gap:6px;margin-top:4px">
-          <input type="text" id="inviteLink" readonly style="flex:1;min-width:0">
+          <button class="btn btn-accent" onclick="openShareDialog()" id="shareBtn">📤 分享</button>
           <button class="btn" onclick="copyInviteLink()" id="copyInviteBtn">📋 复制</button>
         </div>
       </div>
@@ -350,6 +350,22 @@
       <input type="file" id="fileInput" class="file-input" accept=".json,.js" onchange="importQuestionBank(event)">
     </div>
     <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closeBankMenu()">完成</button></div>
+  </div>
+</div>
+
+<!-- 分享对话框：二维码 + 链接 + 系统分享/复制 -->
+<div id="shareDialog" class="rules-modal">
+  <div class="rules-box" style="max-width:340px">
+    <div class="rules-header"><span>🔗 邀请好友加入房间</span><button onclick="closeShareDialog()" class="rules-close">✕</button></div>
+    <div class="rules-content" style="text-align:center">
+      <div id="shareQr" style="display:flex;justify-content:center;margin-bottom:12px"></div>
+      <div id="shareLinkText" style="font-size:12px;word-break:break-all;color:var(--muted);background:rgba(255,255,255,.06);padding:8px;border-radius:6px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-accent" onclick="nativeShare()">📲 系统分享</button>
+        <button class="btn" onclick="copyInviteLink()" id="shareCopyBtn">📋 复制链接</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">扫码或点链接，对方自动进入加入房间</div>
+    </div>
   </div>
 </div>
 

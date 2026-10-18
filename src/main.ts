@@ -19,6 +19,7 @@ import { bindLogResize } from './ui/logresize';
 import { bindNotify, closeNotifyPanel, notifyJump, toggleNotifyPanel } from './ui/notify';
 import { applyTheme, closeThemePanel, openThemePanel, setThemeMode, setThemeStyle } from './ui/theme';
 import { closeRules, openRules, switchRulesTab } from './ui/modals';
+import { copyInviteLink, openShareDialog, closeShareDialog, nativeShare } from './ui/share';
 import {
   backToLobby,
   bindCountSlider,
@@ -157,32 +158,10 @@ function syncTopBarHeight(): void {
   }
 }
 
-/** 复制邀请链接到剪贴板（房主分享用），带降级方案 */
-function copyInviteLink(): void {
-  const inp = document.getElementById('inviteLink') as HTMLInputElement | null;
-  if (!inp) return;
-  const text = inp.value;
-  const btn = document.getElementById('copyInviteBtn');
-  const ok = () => {
-    if (btn) btn.textContent = '✅ 已复制';
-    setTimeout(() => { if (btn) btn.textContent = '📋 复制'; }, 1500);
-  };
-  const fallback = () => {
-    inp.select();
-    try {
-      document.execCommand('copy');
-      ok();
-    } catch {
-      /* ignore */
-    }
-  };
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(text).then(ok, fallback);
-  } else {
-    fallback();
-  }
-}
 window.copyInviteLink = copyInviteLink;
+window.openShareDialog = openShareDialog;
+window.closeShareDialog = closeShareDialog;
+window.nativeShare = nativeShare;
 
 /** 通过 ?room=XXXXXX 分享链接进入时，自动进入加入模式并预填房间号、发起加入 */
 function handleSharedRoom(): void {
