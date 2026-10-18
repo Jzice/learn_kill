@@ -513,7 +513,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 }
 
 /* ===== 统一固定顶栏：品牌 / 用户 / 操作图标 / 游戏状态 / 主功能 ===== */
-#topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap;
+#topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:nowrap;
   padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--gold-dim)}
 .tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
@@ -524,7 +524,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-title{font-size:15px;color:var(--gold);font-weight:700;letter-spacing:3px}
 .tb-sub{font-size:9px;color:var(--gold-dim);letter-spacing:1px}
 /* 用户芯片 */
-.tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0}
+.tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0;margin-left:auto}
 .tb-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;background:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);box-shadow:0 0 10px rgba(245,197,66,.4);flex-shrink:0}
 .tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
 .tb-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:linear-gradient(160deg,#5a3a10,#3a1a06);border:1px solid var(--gold-dim);color:var(--gold);white-space:nowrap;flex-shrink:0}
@@ -535,6 +535,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .game-status-bar #gsTurn{color:var(--gold);font-weight:700;white-space:nowrap}
 .game-status-bar #gsRole{white-space:nowrap}
 .game-status-bar #gsConn{margin-left:auto;white-space:nowrap;font-size:10px}
+.game-status-bar .gs-exit{flex-shrink:0;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.game-status-bar .gs-exit:hover{border-color:var(--gold);color:var(--gold);box-shadow:0 0 8px rgba(245,197,66,.3)}
 /* 操作图标 */
 .tb-actions{display:flex;gap:6px;flex-shrink:0}
 .tb-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;padding:0}
@@ -548,7 +550,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 }
 @media (max-width:640px){
   #topBar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px}
-  .tb-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}
+  .tb-right{flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-left:auto}
   .tb-icon{width:30px;height:30px;font-size:15px}
   .tb-uname{max-width:64px}
 }

@@ -8,7 +8,7 @@
 </head>
 <body>
 
-<!-- 统一固定顶栏：品牌(左) / 用户+状态+图标(右) -->
+<!-- 统一固定顶栏：品牌 / 用户信息 / 图标与主功能（小屏时品牌+用户信息第一行，图标第二行） -->
 <div id="topBar">
   <div class="tb-brand">
     <span class="tb-logo">🎓</span>
@@ -17,13 +17,13 @@
       <span class="tb-sub">九科争鸣 · 学科阵营</span>
     </span>
   </div>
+  <div class="tb-user-chip">
+    <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
+    <span class="tb-uname" id="tbName">玩家</span>
+    <span class="tb-badge" id="tbLevel">蒙童</span>
+    <span class="tb-badge tb-score" id="tbScore">0 分</span>
+  </div>
   <div class="tb-right">
-    <div class="tb-user-chip">
-      <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
-      <span class="tb-uname" id="tbName">玩家</span>
-      <span class="tb-badge" id="tbLevel">蒙童</span>
-      <span class="tb-badge tb-score" id="tbScore">0 分</span>
-    </div>
     <span class="tb-actions">
       <button class="tb-icon" onclick="openProfileMenu()" title="我的档案">👤</button>
       <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
@@ -180,6 +180,7 @@
     <span id="gsTurn">回合：—</span>
     <span id="gsRole"></span>
     <span id="gsConn"></span>
+    <button class="gs-exit" onclick="exitGame()" title="退出重开">⏏ 退出重开</button>
   </div>
   <div class="game-main">
     <div class="table-area" id="tableArea">
@@ -229,9 +230,6 @@
     <div class="action-btns" id="actionBtns"></div>
   </div>
   <div class="hand-row" id="handRow"></div>
-  <div style="text-align:center;margin-top:5px;position:relative;z-index:2">
-    <button class="btn btn-sm" onclick="exitGame()">退出重开</button>
-  </div>
 </div>
 
 <!-- 移动端 dock -->
