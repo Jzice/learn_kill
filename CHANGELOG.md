@@ -23,6 +23,12 @@
 - 发布门禁复核：单机冒烟 36/36、联机冒烟 16/16
 - Pages 站点组装本地演练通过（`_site/index.html` 1.29 MB、`_site/学堂杀.html` 1.20 MB、`.nojekyll`）
 - 三份工作流 YAML 通过语法解析校验
+- 首次线上发布：CI 与 Release 流水线在 GitHub 上执行成功，`v1.7.0` Release 已生成（双 HTML 产物）
+
+### 修复
+
+- **Pages 流水线组装步骤失败**：改用跨平台 Node 脚本 `scripts/build-pages.mjs`（`npm run build:pages`）替代 shell `cp`，按 `bundled` 标记识别站点入口、对产物名不再硬编码中文，并对 index.html 做标题与内联脚本自检，失败时输出 dist 实际产物清单
+- **`verify:dist` 由“只打印”改为真正的门禁**：只遍历 HTML 产物（此前会把 PNG 当文本读取）、内联脚本正则允许 `<script type="module" crossorigin>` 属性（此前恒为 false 属误报），并新增标题完整性、无外部样式、bundled 产物不得含 peerjs CDN 标签、CDN 产物必须含 CDN 标签等断言
 
 ## [1.6.1] - 2026-10-18
 

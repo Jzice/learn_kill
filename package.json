@@ -11,6 +11,7 @@
     "build:cdn": "node scripts/build.mjs cdn",
     "build:bundled": "node scripts/build.mjs bundled",
     "build:banks": "node scripts/build-banks.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
     "audit:banks": "node scripts/audit-banks.mjs",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",

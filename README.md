@@ -46,6 +46,7 @@ npm run build      # 构建两种模式到 dist/
 | `npm run build:cdn` / `npm run build:bundled` | 单独构建某一模式 |
 | `npm run typecheck` | TypeScript 严格模式检查（`tsc --noEmit`） |
 | `npm run build:banks` | 由 `data/questions/**/*.tsv` 重新生成 `src/data/banks/*.ts`（生成物，勿手改） |
+| `npm run build:pages` | 组装 GitHub Pages 站点目录到 `_site/`（本地预览将要发布的站点） |
 | `npm run audit:banks` | 题库质量审计：短题干 / 空选项 / 跨年级重复 / 学科枚举 |
 | `npm run smoke` / `npm run smoke:net` | 冒烟测试（无头 Chromium）：单机主流程 / 联机建房同步 |
 | `npm run repro:net` | 联机牌局压力回归（含死锁检测，退出码即结果） |

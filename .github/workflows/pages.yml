@@ -37,12 +37,7 @@ jobs:
         run: npm run build:bundled
 
       - name: 组装站点目录
-        run: |
-          mkdir -p _site
-          cp "dist/学堂杀.bundled.html" "_site/index.html"
-          cp "dist/学堂杀.html" "_site/学堂杀.html"
-          touch _site/.nojekyll
-          ls -lh _site
+        run: node scripts/build-pages.mjs
 
       - name: 配置 Pages
         uses: actions/configure-pages@v5
