@@ -485,6 +485,8 @@ export function updateHostRoomInfo(state: RoomStateLike): void {
   if (!info) return;
   info.innerHTML = `<div style="font-size:14px;letter-spacing:2px;margin-bottom:4px">房间号：<span style="font-size:20px;color:#f5c542;">${state.roomCode}</span></div>
     <div style="font-size:11px;color:#a89880">已加入：<b style="color:#f5c542">${state.currentCount}</b> / ${state.targetCount} 人</div>`;
+  // 建房成功：信息行从「居中（创建房间按钮）」切换为「房间号左 + 按钮组右」
+  info.parentElement?.classList.add('has-room');
   ml!.style.display = 'block';
   ml!.innerHTML = memberListHtml(state.members, state.currentCount, state.targetCount, '');
   sb!.style.display = 'block';

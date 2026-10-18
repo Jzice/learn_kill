@@ -150,12 +150,13 @@
     </div>
     <div class="panel" id="roomConfig" style="display:none;">
       <h3>◈ 联机配置 ◈</h3>
-      <!-- 房间信息与操作按钮同一行：信息在左（flex:1），按钮组右对齐。
-           建房前右侧为「创建房间」，建房后该位置就地替换为 分享 / 复制 / 关闭房间，行数恒定不变。
+      <!-- 房间信息与操作按钮同一行：未建房时（无 has-room）内容居中，roomInfo 空态不占位，
+           创建房间按钮居中显示；建房后 updateHostRoomInfo 加 has-room，房间号信息在左（flex:1），
+           分享 / 复制 / 关闭房间靠右，createRoomBtn 隐藏。行数恒定不变。
            注意：按钮必须是 #roomInfo 的兄弟节点——其内容由 updateHostRoomInfo 整体 innerHTML 重写 -->
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
-        <div id="roomInfo" style="flex:1;min-width:130px;font-size:12px;color:var(--gold);"></div>
-        <button class="btn btn-accent" onclick="createRoom()" id="createRoomBtn">📡 创建房间</button>
+      <div id="roomInfoRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <div id="roomInfo" style="min-width:130px;font-size:12px;color:var(--gold);"></div>
+        <button class="btn btn-accent btn-cta btn-cta-inline" onclick="createRoom()" id="createRoomBtn">📡 创建房间</button>
         <div id="inviteBox" style="display:none">
           <div style="display:flex;gap:6px">
             <button class="btn btn-accent" onclick="nativeShare()" id="shareBtn">📤 分享</button>
