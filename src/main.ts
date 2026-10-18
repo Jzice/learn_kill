@@ -25,10 +25,8 @@ import {
   bindLobbyEvents,
   clearExternalBank,
   closeBankMenu,
-  closePersonaMenu,
   enterSetup,
   openBankMenu,
-  openPersonaMenu,
   openProfileMenu,
   ensureCharValid,
   importQuestionBank,
@@ -100,8 +98,6 @@ window.setPlayerCount = setPlayerCount;
 window.selectRole = selectRole;
 // 二级菜单与子界面导航
 window.openProfileMenu = openProfileMenu;
-window.openPersonaMenu = openPersonaMenu;
-window.closePersonaMenu = closePersonaMenu;
 window.openBankMenu = openBankMenu;
 window.closeBankMenu = closeBankMenu;
 window.backToLobby = backToLobby;

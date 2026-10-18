@@ -32,7 +32,6 @@
   <div class="tb-right">
     <span class="tb-actions">
       <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
-      <button class="tb-icon" onclick="openPersonaMenu()" title="个性化资料">🧑</button>
       <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
     </span>
     <span class="tb-actions">
@@ -131,7 +130,7 @@
     </div>
     <div class="panel" id="roomConfig" style="display:none;">
       <h3>◈ 联机配置 ◈</h3>
-      <div class="cfg-nick-hint">👤 昵称：顶栏「🧑 个性化资料」中修改</div>
+      <div class="cfg-nick-hint">👤 昵称：点击右上角个人头像，在「我的档案」中修改</div>
       <div class="lobby-btns" style="justify-content:flex-start;margin-top:0">
         <button class="btn btn-accent" onclick="createRoom()" id="createRoomBtn">📡 创建房间</button>
         <button class="btn" onclick="closeRoom()" id="closeRoomBtn" style="display:none;border-color:#e74c3c;color:#e74c3c">✕ 关闭房间</button>
@@ -167,7 +166,7 @@
     </div>
     <div class="panel">
       <h3>◈ 加入房间 ◈</h3>
-      <div class="cfg-nick-hint">👤 昵称：顶栏「🧑 个性化资料」中修改</div>
+      <div class="cfg-nick-hint">👤 昵称：点击右上角个人头像，在「我的档案」中修改</div>
       <div class="input-row"><input type="text" id="joinCode" placeholder="6 位房间号" maxlength="6" inputmode="numeric"></div>
       <div class="lobby-btns" style="justify-content:flex-start;margin-top:0">
         <button class="btn btn-accent" onclick="joinRoom()" id="joinRoomBtn">🔌 加入房间</button>
@@ -301,18 +300,6 @@
   <div class="rules-box" style="max-width:540px">
     <div class="rules-header"><span id="profileModalTitle">我的档案</span><button onclick="closeProfileModal()" class="rules-close">✕</button></div>
     <div class="rules-content" id="profileModalBody"></div>
-  </div>
-</div>
-
-<!-- 个性化资料（二级菜单） -->
-<div id="personaModal" class="rules-modal">
-  <div class="rules-box" style="max-width:560px">
-    <div class="rules-header"><span>🎨 个性化资料</span><button onclick="closePersonaMenu()" class="rules-close">✕</button></div>
-    <div class="rules-content">
-      <div style="font-size:10.5px;color:var(--muted);margin-bottom:8px">设置后的信息会展示在主界面名片上，联机时其他玩家也能看到。</div>
-      <div id="profileEditor"></div>
-    </div>
-    <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closePersonaMenu()">完成</button></div>
   </div>
 </div>
 

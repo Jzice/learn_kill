@@ -51,8 +51,6 @@ declare global {
     setPlayerCount: (n: number) => void;
     // 二级菜单 / 对局设置子界面
     openProfileMenu: () => void;
-    openPersonaMenu: () => void;
-    closePersonaMenu: () => void;
     openBankMenu: () => void;
     closeBankMenu: () => void;
     openBankBrowser: () => void;

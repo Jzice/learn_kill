@@ -239,23 +239,11 @@ export function renderSetupSummary(): void {
     <div class="sum-tip">选择上方任一模式即进入设置界面修改</div>`;
 }
 
-/** 我的档案（复用成就弹窗） */
+/** 个人信息（点头像）：我的档案 + 个性化资料 合并弹窗 */
 export function openProfileMenu(): void {
   Sound.play('click');
-  showAchievements(PROFILE, '我的档案');
-}
-
-/** 个性化资料二级菜单 */
-export function openPersonaMenu(): void {
-  Sound.play('click');
-  renderProfileEditor();
-  document.getElementById('personaModal')!.classList.add('show');
-}
-
-export function closePersonaMenu(): void {
-  document.getElementById('personaModal')!.classList.remove('show');
-  refreshProfileUI();
-  renderSetupSummary();
+  showAchievements(PROFILE, '我的档案', { editor: true });
+  renderProfileEditor(); // 填充档案弹窗内的编辑器容器
 }
 
 /** 题库管理二级菜单 */

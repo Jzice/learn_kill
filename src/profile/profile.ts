@@ -267,8 +267,15 @@ export function refreshProfileUI(): void {
   }
 }
 
-export function showAchievements(p: Profile | PublicProfile, title: string): void {
-  document.getElementById('profileModalTitle')!.textContent = title || '成就';
+export function showAchievements(p: Profile | PublicProfile, title: string, opts?: { editor?: boolean }): void {
+  // 自我视图（editor）：标题栏附等级/积分徽章；他人档案仅标题
+  const titleEl = document.getElementById('profileModalTitle')!;
+  if (opts?.editor) {
+    const lv0 = levelOf(p.score || 0);
+    titleEl.innerHTML = `${escapeHtml(title || '成就')}<span class="pm-badge">Lv.${lv0.n}</span><span class="pm-badge">⭐ ${p.score || 0}</span>`;
+  } else {
+    titleEl.textContent = title || '成就';
+  }
   const lv = levelOf(p.score || 0);
   const avatar = (p as PublicProfile).avatar || DEFAULT_AVATAR;
   const gender = (p as PublicProfile).gender ?? 'hidden';
@@ -291,7 +298,8 @@ export function showAchievements(p: Profile | PublicProfile, title: string): voi
     </div>
     <div class="rule-section"><h4>🏅 成就（${achCount(p)}/${ACHIEVEMENTS.length}）</h4>
       <div class="ach-grid">${grid}</div>
-    </div>`;
+    </div>
+    ${opts?.editor ? `<div class="rule-section"><h4>🎨 个性化资料</h4><div style="font-size:10.5px;color:var(--muted);margin-bottom:8px">设置后的信息会展示在主界面名片上，联机时其他玩家也能看到。</div><div id="profileEditor"></div></div>` : ''}`;
   document.getElementById('profileModal')!.classList.add('show');
 }
 

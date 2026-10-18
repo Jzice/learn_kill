@@ -94,14 +94,15 @@ check('模式选择（单机/联机）', modeCount === 2, `${modeCount} 张`);
 const summaryText = await page.textContent('#setupSummary');
 check('主界面配置摘要', !!summaryText && summaryText.includes('年级'), (summaryText || '').replace(/\s+/g, ' ').slice(0, 50));
 
-// 1.0 顶栏直达入口（个人信息芯片=我的档案；🧑=个性化资料；⚙ 题库管理在题库浏览内）
+// 1.0 顶栏直达入口（个人信息芯片=我的档案+个性化资料合并弹窗；⚙ 题库管理在题库浏览内）
 check('顶栏个人信息芯片可点（打开我的档案）', (await page.getAttribute('#topBar .tb-user-chip', 'onclick'))?.includes('openProfileMenu') === true);
 check('顶栏无设置/独立档案图标', (await page.locator('#topBar button[onclick="openSettings()"]').count()) === 0 && (await page.locator('#topBar .tb-icon[onclick="openProfileMenu()"]').count()) === 0);
 
-// 1.1 个性化资料（🧑 直达）
-await page.locator('#topBar button[onclick="openPersonaMenu()"]').click();
-await page.waitForSelector('#personaModal.show', { timeout: 3000 });
-check('个性化资料二级菜单打开', true);
+// 1.1 个人信息合并弹窗（头像直达：档案 + 个性化资料）
+check('顶栏无个性化资料按钮', (await page.locator('#topBar button[onclick="openPersonaMenu()"]').count()) === 0);
+await page.locator('#topBar .tb-user-chip').click();
+await page.waitForSelector('#profileModal.show', { timeout: 3000 });
+check('合并弹窗打开且标题栏含等级/积分徽章', (await page.textContent('#profileModalTitle'))?.includes('Lv.') === true && (await page.textContent('#profileModalTitle'))?.includes('⭐') === true);
 const pickItems = await page.locator('#profileEditor .pick-item').count();
 check('个性化资料面板（头像+性别+心情图标）', pickItems >= 36, `${pickItems} 个可选项`);
 await page.fill('#profileNameInput', '小明同学');
@@ -109,7 +110,7 @@ await page.fill('#moodInput', '今天也要元气满满');
 await page.locator('#profileEditor .pick-item').nth(1).click(); // 头像
 await page.locator('#profileEditor .pick-grid-3 .pick-item').first().click(); // 性别：男生
 await page.locator('#moodIconGrid .pick-item').nth(2).click(); // 心情图标
-await page.click('#personaModal .menu-footer button');
+await page.click('#profileModal .rules-close');
 await page.waitForTimeout(200);
 const tbName1 = (await page.textContent('#tbName')) || '';
 check('顶栏昵称反映个性化设置', tbName1.includes('小明同学'), tbName1);
