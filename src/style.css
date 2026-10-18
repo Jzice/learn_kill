@@ -104,6 +104,13 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .input-row input{flex:1;background:#0a0402;border:1px solid var(--gold-dim);color:var(--text);border-radius:5px;padding:7px 10px;font-size:12px;font-family:inherit;min-width:0}
 .lobby-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
 .btn-lg{font-size:14px;padding:10px 24px}
+/* 界面主操作大按钮（开始单机对局 / 联机开始游戏）：全宽 + 大字号 + 金色光晕，悬停轻微放大。
+   用 .btn.btn-cta 双类选择器（特异度 0-2-0）确保覆盖 .btn / .btn-accent 的同名属性 */
+.btn.btn-cta{width:100%;min-height:54px;padding:14px 20px;font-size:16px;font-weight:800;letter-spacing:2px;border-radius:8px;
+  background:linear-gradient(160deg,#a8281c,#6e1408);border:2px solid #f5c542;color:#ffe8d8;text-shadow:0 1px 2px rgba(0,0,0,.6);
+  box-shadow:0 0 18px rgba(245,197,66,.35),0 4px 14px rgba(0,0,0,.5);transition:transform .15s,box-shadow .15s,border-color .15s}
+.btn.btn-cta:hover{transform:translateY(-2px) scale(1.01);border-color:#ffe9a8;box-shadow:0 0 30px rgba(245,197,66,.6),0 8px 20px rgba(0,0,0,.55)}
+.btn.btn-cta:active{transform:translateY(0) scale(.995)}
 .btn{background:var(--surface);color:#d8c8a8;border:1px solid var(--gold-dim);border-radius:5px;padding:6px 11px;font-size:11.5px;cursor:pointer;transition:all .15s;font-family:inherit}
 .btn:hover{border-color:var(--gold);color:var(--gold)}
 .btn-accent{background:linear-gradient(160deg,#8a2018,#5a1008);border-color:#e74c3c;color:#ffe0d0}
