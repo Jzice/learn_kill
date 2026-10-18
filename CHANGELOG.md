@@ -2,6 +2,19 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.10] - 2026-10-18
+
+### 变更
+
+- **顶栏按钮区支持横向来回滚动**：`.tb-right` 改为单行 `overflow-x:auto`（隐藏滚动条、触摸/滚轮可滑），屏幕过宽放不下时按钮不再被裁掉，可左右滑动查看；宽度足够时外观与之前完全一致
+- `.tb-icon` 增加 `flex-shrink:0`，按钮不再被 flex 压缩变形
+- 修复 flexbox 陷阱：滚动容器内 `justify-content:flex-end` 会让溢出内容从左侧裁掉且无法滚动到——改用 `flex-start`（条带自身靠 `margin-left:auto` 右置）
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力回归零卡死
+- 实测：1200/380px 内容自适应不滚动；260px 游戏界面 内容 252 > 容器 240，可滚动且 scrollLeft 可达最右(12px)
+
 ## [1.4.9] - 2026-10-18
 
 ### 变更

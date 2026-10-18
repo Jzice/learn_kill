@@ -516,7 +516,9 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 #topBar{position:fixed;top:0;left:0;right:0;width:100%;z-index:300;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:nowrap;
   padding:6px 14px;background:rgba(15,9,6,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--gold-dim)}
-.tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+/* 按钮区：放不下时横向来回滚动（隐藏滚动条，触摸/滚轮均可滑动） */
+.tb-right{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 2px}
+.tb-right::-webkit-scrollbar{display:none}
 /* 品牌 */
 .tb-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .tb-logo{font-size:22px;line-height:1}
@@ -539,7 +541,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .game-status-bar .gs-exit:hover{border-color:var(--gold);color:var(--gold);box-shadow:0 0 8px rgba(245,197,66,.3)}
 /* 操作图标 */
 .tb-actions{display:flex;gap:6px;flex-shrink:0}
-.tb-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;padding:0}
+.tb-icon{width:34px;height:34px;flex-shrink:0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;background:linear-gradient(160deg,#2a1a10,#160a06);border:1px solid var(--gold-dim);color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;padding:0}
 .tb-icon:hover{border-color:var(--gold);box-shadow:0 0 10px rgba(245,197,66,.3);transform:translateY(-1px)}
 .tb-icon.muted{opacity:.5;color:var(--muted)}
 .tb-game-only{display:none}
@@ -550,7 +552,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 }
 @media (max-width:640px){
   #topBar{flex-wrap:wrap;gap:6px 10px;padding:6px 10px}
-  .tb-right{flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-left:auto}
+  .tb-right{justify-content:flex-start;gap:8px;margin-left:auto}
   .tb-icon{width:30px;height:30px;font-size:15px}
   .tb-uname{max-width:64px}
 }
