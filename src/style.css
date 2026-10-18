@@ -212,6 +212,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .p-card{width:118px;border-radius:9px;padding:5px;position:relative;transition:all .25s;border:2px solid var(--faction-color,var(--gold-dim));background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%),linear-gradient(160deg,#2a1a10,#0e0603);box-shadow:inset 0 0 20px rgba(0,0,0,.6),0 3px 12px rgba(0,0,0,.5)}
 .p-card.turn{border-width:3px;box-shadow:0 0 24px var(--faction-color),0 0 46px var(--faction-color),inset 0 0 20px rgba(0,0,0,.6);transform:scale(1.06)}
 .p-card.dead{opacity:.28;filter:grayscale(1)}
+/* 玩家标记的身份（未公开）：虚线框 + 外环微光，区别于已确认的实线身份 */
+.p-card.role-marked{box-shadow:0 0 0 2px rgba(255,255,255,.14),inset 0 0 16px rgba(0,0,0,.45)}
 .p-card.dead .prole{opacity:1;font-weight:800}
 .p-card.is-self::before{content:'你';position:absolute;top:-8px;right:-6px;background:var(--gold);color:#1a0c08;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;z-index:5}
 .p-card .faction-icon{position:absolute;top:-10px;left:-8px;width:24px;height:24px;line-height:24px;text-align:center;font-size:13px;border-radius:50%;background:#0a0402;border:2px solid var(--faction-color);z-index:6}

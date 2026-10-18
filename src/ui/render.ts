@@ -27,7 +27,22 @@ const JUDGE_ICON: Record<string, string> = { lebu: '🎋', shandian: '⚡' };
 
 function buildPlayerCard(p: Player, i: number): string {
   const isTurn = i === G.current;
-  const roleColor = p.roleRevealed ? ROLES[p.role].color : '#5a4a3a';
+  const isSelf = i === G.myPlayerIdx;
+  const mark = ROLE_MARKS[i];
+  const isMarked = !!mark && !isSelf && !p.roleRevealed;
+  // 身份展示：自己/已公开 → 真实身份；被自己标记且未公开 → 标记身份（虚线框区分）；否则未知
+  let roleName: string;
+  let roleColor: string;
+  if (isSelf || p.roleRevealed) {
+    roleName = '【' + ROLES[p.role].name + '】';
+    roleColor = ROLES[p.role].color;
+  } else if (mark) {
+    roleName = '【' + ROLES[mark].name + '】';
+    roleColor = ROLES[mark].color;
+  } else {
+    roleName = '身份未知';
+    roleColor = '#5a4a3a';
+  }
   const faction = FACTIONS[p.faction];
   const fColor = faction.color;
   const hpGems = Array.from({ length: p.maxHp }, (_, k) => {
@@ -55,7 +70,6 @@ function buildPlayerCard(p: Player, i: number): string {
   const dispCount = Math.min(handCount, 4);
   const miniCards = Array.from({ length: dispCount }, () => '<div class="mini-card"></div>').join('');
   const judgeTags = p.judge.map((j) => `<span class="judge-tag">${JUDGE_ICON[j.judgeType || ''] || '❓'}${j.name}</span>`).join('');
-  const isSelf = i === G.myPlayerIdx;
   const aiTag = p.isAI ? '<span style="font-size:8px;color:#8a8070;">[AI]</span>' : '';
   // 个性化：真人玩家优先展示其自定义头像 / 性别 / 心情
   const idt = p.identity;
@@ -69,14 +83,11 @@ function buildPlayerCard(p: Player, i: number): string {
   if (!p.alive && p.roleRevealed) badges += `<span class="badge badge-reveal">☠ ${ROLES[p.role].name}</span>`;
   if ((p.shield || 0) > 0) badges += `<span class="badge badge-shield">🛡️${p.shield}</span>`;
   if ((p.combo || 0) >= 2) badges += `<span class="badge badge-combo">⚡${p.combo}</span>`;
-  const mark = ROLE_MARKS[i];
-  const markHtml = mark ? `<div class="p-mark-label" style="color:${ROLES[mark].color}">${ROLE_ICON[mark]} ${ROLES[mark].name}</div>` : '';
   const markBtn = isSelf || !p.alive ? '' : `<button class="p-mark-btn" title="标记身份" onclick="event.stopPropagation();openMarkMenu(${i})">🏷️</button>`;
-  return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''}" style="--faction-color:${fColor};">
+  return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''} ${isMarked ? 'role-marked' : ''}" style="--faction-color:${fColor};${isMarked ? 'border:2px dashed ' + roleColor + ';' : ''}">
     <div class="faction-icon" style="border-color:${fColor};color:${fColor};">${faction.icon}</div>
     ${markBtn}
-    ${markHtml}
-    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${p.name} ${genderIconHtml}${aiTag}</div><div class="prole" style="color:${roleColor}">${p.roleRevealed ? '【' + ROLES[p.role].name + '】' : '身份未知'} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
+    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${p.name} ${genderIconHtml}${aiTag}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
     <div class="pknow">🔮${p.knowledge}</div>
     <div class="php-bar">${hpGems}</div>
     <div class="pequip-slots">${equipSlots}</div>
