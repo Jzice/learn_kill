@@ -36,6 +36,7 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     return;
   }
   addPlayLog(p.name, 'skill', sk.name, '');
+  addLog(`📘 玩法·【${sk.name}】：${sk.desc || '（暂无说明）'}`, 'explain');
   showPlayHint('技能', sk.name, sk.desc || '');
   aiSpeak(p, 'skill');
   FX.skillWave(idx);

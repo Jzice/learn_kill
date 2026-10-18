@@ -69,6 +69,7 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
   const a = G.players[attackerIdx];
   const tn = targetIdx != null ? G.players[targetIdx].name : '';
   addPlayLog(a.name, 'use', card.name, tn);
+  addLog(`📘 玩法·【${card.name}】：${TRICK_DESC[card.sub] || '（暂无说明）'}`, 'explain');
   showPlayHint('锦囊', card.name, TRICK_DESC[card.sub] || '');
   showPlayCard(card, a.name, FACTIONS[a.faction].color);
   if (hasSkill(a, 'shicheng') || hasSkill(a, 'jiaohua')) {
