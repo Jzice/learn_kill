@@ -5,6 +5,7 @@
 import { G } from '../game/state';
 import { addChat, chatMessages, chatListHtml } from '../game/chat';
 import { NET } from '../net/network';
+import { PROFILE } from '../profile/profile';
 
 let collapsed = false;
 let unread = 0;
@@ -129,10 +130,14 @@ export function sendNetChat(): void {
   if (!text) return;
   const me = G.players[G.myPlayerIdx];
   if (!me) return;
-  addChat(me.name, text, 'self');
+  // 携带自己的头像/心情（即「一句话」），随消息广播让各端都能显示人物块
+  const avatar = PROFILE.avatar || me.avatar;
+  const moodIcon = PROFILE.moodIcon;
+  const mood = PROFILE.mood;
+  addChat(me.name, text, 'self', avatar, moodIcon, mood);
   if (input) input.value = '';
-  if (NET.isHost) NET.broadcast({ type: 'chat', name: me.name, text });
-  else if (NET.myConn) NET.myConn.send({ type: 'chat', name: me.name, text });
+  if (NET.isHost) NET.broadcast({ type: 'chat', name: me.name, text, avatar, moodIcon, mood });
+  else if (NET.myConn) NET.myConn.send({ type: 'chat', name: me.name, text, avatar, moodIcon, mood });
 }
 
 /** 新对局重置：默认展开、清空未读 */

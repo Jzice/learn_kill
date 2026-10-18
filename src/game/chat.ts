@@ -5,20 +5,38 @@ import { G } from './state';
 import { NET } from '../net/network';
 import { bumpNetChatUnread, renderNetChat } from '../ui/netchat';
 import { pushNotify } from '../ui/notify';
+import { PROFILE } from '../profile/profile';
 
 export let chatMessages: ChatMessage[] = [];
 
 export function chatListHtml(): string {
   return chatMessages
-    .map(
-      (m) =>
-        `<div class="chat-msg ${m.kind}"><span class="chat-name">${escapeHtml(m.name)}</span><span class="chat-text">${escapeHtml(m.text)}</span></div>`,
-    )
+    .map((m) => {
+      // 系统消息：居中气泡，无人物块
+      if (m.kind === 'sys') {
+        return `<div class="chat-msg sys"><div class="cm-bubble">${escapeHtml(m.text)}</div></div>`;
+      }
+      const who = `<div class="cm-who"><span class="cm-avatar">${escapeHtml(m.avatar || '🧑‍🎓')}</span><span class="cm-meta"><span class="cm-name">${escapeHtml(m.name)}</span>${m.mood ? `<span class="cm-mood">${escapeHtml(m.moodIcon || '🙂')} ${escapeHtml(m.mood)}</span>` : ''}</span></div>`;
+      return `<div class="chat-msg ${m.kind}">${who}<div class="cm-bubble">${escapeHtml(m.text)}</div></div>`;
+    })
     .join('');
 }
 
-export function addChat(name: string, text: string, kind: ChatKind = 'ai'): void {
-  chatMessages.push({ name, text, kind });
+export function addChat(
+  name: string,
+  text: string,
+  kind: ChatKind = 'ai',
+  avatar?: string,
+  moodIcon?: string,
+  mood?: string,
+): void {
+  // 未显式提供头像时，从在场玩家按昵称兜底（如 AI 角色头像）
+  let av = avatar;
+  if (!av) {
+    const pl = G.players.find((p) => p.name === name);
+    if (pl) av = pl.avatar;
+  }
+  chatMessages.push({ name, text, kind, avatar: av, moodIcon, mood });
   if (chatMessages.length > 100) chatMessages.shift();
   renderChat();
   // 小屏折叠态累计聊天未读
@@ -47,11 +65,15 @@ export function sendChat(): void {
   if (!text) return;
   const me = G.players[G.myPlayerIdx];
   if (!me) return;
-  addChat(me.name, text, 'self');
+  // 携带自己的头像/心情（即「一句话」），随消息广播让各端都能显示人物块
+  const avatar = PROFILE.avatar || me.avatar;
+  const moodIcon = PROFILE.moodIcon;
+  const mood = PROFILE.mood;
+  addChat(me.name, text, 'self', avatar, moodIcon, mood);
   const input = document.getElementById('chatInput') as HTMLInputElement | null;
   if (input) input.value = '';
-  if (NET.isHost) NET.broadcast({ type: 'chat', name: me.name, text });
-  else if (NET.myConn) NET.myConn.send({ type: 'chat', name: me.name, text });
+  if (NET.isHost) NET.broadcast({ type: 'chat', name: me.name, text, avatar, moodIcon, mood });
+  else if (NET.myConn) NET.myConn.send({ type: 'chat', name: me.name, text, avatar, moodIcon, mood });
 }
 
 export function resetChatMessages(): void {

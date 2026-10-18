@@ -226,7 +226,7 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
       pq.resolve(data.correct);
     }
   } else if (data.type === 'chat') {
-    addChat(data.name, data.text, 'ai');
+    addChat(data.name, data.text, 'ai', data.avatar, data.moodIcon, data.mood);
     NET.broadcast(data);
   } else if (data.type === 'leave_room') {
     const ln = data.name || NET_PLAYER_NAMES[conn.peer] || '玩家';
@@ -283,7 +283,7 @@ export function onClientData(data: NetMessage): void {
   } else if (data.type === 'ask_quiz_request') {
     onAskQuizRequest(data.question, data.isSkill, data.quizId);
   } else if (data.type === 'chat') {
-    addChat(data.name, data.text, 'ai');
+    addChat(data.name, data.text, 'ai', data.avatar, data.moodIcon, data.mood);
   } else if (data.type === 'play_log') {
     if (data.entry) {
       appendPlayLog(data.entry);

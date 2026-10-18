@@ -31,7 +31,7 @@ export type NetMessage =
   | { type: 'quiz_response'; correct: boolean; quizId: number }
   | { type: 'leave_room'; name?: string }
   // ---- 房主 → 客户端 ----
-  | { type: 'chat'; name: string; text: string }
+  | { type: 'chat'; name: string; text: string; avatar?: string; moodIcon?: string; mood?: string }
   | { type: 'play_log'; entry: LogEntry }
   | RoomStateMsg
   | {

@@ -305,14 +305,21 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .play-log-item.explain{margin-left:10px;border-left-color:#5fae8c;background:rgba(95,174,140,.07);color:#9fcab4;font-size:9px;line-height:1.4;opacity:.95}
 .chat-body{flex:1;display:flex;flex-direction:column;min-height:0}
 .chat-list{flex:1;overflow-y:auto;padding:5px 7px;font-size:10.5px;line-height:1.5}
-.chat-msg{margin-bottom:4px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.3);max-width:92%;animation:chatIn .3s ease-out;word-break:break-word}
+.chat-msg{display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;width:fit-content;max-width:100%;animation:chatIn .3s ease-out}
 @keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.chat-msg.self{margin-left:auto;background:linear-gradient(160deg,rgba(41,128,185,.35),rgba(41,128,185,.15));border:1px solid rgba(41,128,185,.4);text-align:right}
-.chat-msg.ai{margin-right:auto;border:1px solid rgba(138,109,59,.35)}
-.chat-msg.sys{margin-left:auto;margin-right:auto;text-align:center;background:rgba(245,197,66,.1);border:1px dashed var(--gold-dim);color:var(--gold)}
-.chat-msg .chat-name{font-size:8.5px;font-weight:600;color:var(--gold);display:block;margin-bottom:1px}
-.chat-msg.self .chat-name{color:#4af;text-align:right}
-.chat-msg .chat-text{color:#e0d4bc}
+/* 微信式：人物块（头像+名称+心情小字）与气泡同行；他人左、自己右 */
+.chat-msg .cm-who{display:flex;flex-direction:column;align-items:center;width:38px;flex-shrink:0}
+.chat-msg .cm-avatar{font-size:20px;line-height:1.1}
+.chat-msg .cm-meta{display:flex;flex-direction:column;align-items:center;max-width:54px;margin-top:1px}
+.chat-msg .cm-name{font-size:8.5px;font-weight:600;color:var(--gold);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
+.chat-msg.self .cm-name{color:#6cf}
+.chat-msg .cm-mood{font-size:7px;color:#c9b48a;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54px}
+.chat-msg .cm-bubble{font-size:10.5px;line-height:1.5;padding:5px 9px;border-radius:10px;max-width:min(64vw,240px);word-break:break-word;background:rgba(0,0,0,.32);border:1px solid rgba(138,109,59,.35);color:#e6d8bc}
+.chat-msg.self{margin-left:auto;flex-direction:row-reverse}
+.chat-msg.self .cm-bubble{background:linear-gradient(160deg,rgba(41,128,185,.4),rgba(41,128,185,.18));border-color:rgba(41,128,185,.45);color:#dcefff}
+.chat-msg.ai .cm-bubble{border-color:rgba(138,109,59,.4)}
+.chat-msg.sys{width:100%;justify-content:center;margin-bottom:5px}
+.chat-msg.sys .cm-bubble{background:rgba(245,197,66,.1);border:1px dashed var(--gold-dim);color:var(--gold);text-align:center;font-size:9.5px;max-width:92%}
 .chat-input-row{display:flex;gap:4px;padding:5px;background:rgba(0,0,0,.35);border-top:1px solid rgba(138,109,59,.4);flex-shrink:0}
 .chat-input-row input{flex:1;background:#0a0402;border:1px solid var(--gold-dim);color:var(--text);border-radius:4px;padding:4px 8px;font-size:10.5px;font-family:inherit;min-width:0}
 .chat-input-row button{background:linear-gradient(160deg,#3a2a10,#1a0e04);border:1px solid var(--gold-dim);color:var(--gold);border-radius:4px;padding:0 10px;font-size:10.5px;cursor:pointer;font-family:inherit;flex-shrink:0}

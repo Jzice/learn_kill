@@ -121,6 +121,6 @@ export function aiSpeak(p: Player, t: LineKind): void {
   const arr = l[t] || l.idle;
   if (!arr || !arr.length) return;
   const text = arr[Math.floor(Math.random() * arr.length)];
-  addChat(p.name, text, 'ai');
-  if (NET.isHost) NET.broadcast({ type: 'chat', name: p.name, text });
+  addChat(p.name, text, 'ai', p.avatar);
+  if (NET.isHost) NET.broadcast({ type: 'chat', name: p.name, text, avatar: p.avatar });
 }

@@ -191,6 +191,11 @@ export interface ChatMessage {
   name: string;
   text: string;
   kind: ChatKind;
+  /** 发送者头像（微信式气泡左侧/右侧人物块） */
+  avatar?: string;
+  /** 发送者心情图标 + 心情文案（即「一句话」） */
+  moodIcon?: string;
+  mood?: string;
 }
 
 export interface Level {
