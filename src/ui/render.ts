@@ -120,7 +120,7 @@ function renderSeats(): void {
   ring.innerHTML = html;
 }
 
-/* ---- 手牌排序：类型 → 大小 → 花色 ---- */
+/* ---- 手牌排序：类型 → 牌名(拼音) → 大小 → 花色 ---- */
 const HAND_TYPE_ORDER: Record<string, number> = { basic: 0, trick: 1, equip: 2 };
 const HAND_SUIT_ORDER: Record<string, number> = { '♠': 0, '♥': 1, '♣': 2, '♦': 3 };
 function handNumVal(num: string | number): number {
@@ -131,9 +131,6 @@ function handNumVal(num: string | number): number {
   if (s === 'K') return 13;
   const v = parseInt(s, 10);
   return isNaN(v) ? 99 : v;
-}
-function handSortKey(c: { type: string; suit: string; num: string | number }): number {
-  return (HAND_TYPE_ORDER[c.type] ?? 9) * 10000 + handNumVal(c.num);
 }
 function handSuitVal(suit: string): number {
   return HAND_SUIT_ORDER[suit] ?? 9;
@@ -220,7 +217,11 @@ export function render(): void {
   const hand = document.getElementById('handRow')!;
   hand.innerHTML =
     [...me.hand]
-      .sort((a, b) => handSortKey(a) - handSortKey(b) || handNumVal(a.num) - handNumVal(b.num) || handSuitVal(a.suit) - handSuitVal(b.suit))
+      .sort((a, b) =>
+        (HAND_TYPE_ORDER[a.type] ?? 9) - (HAND_TYPE_ORDER[b.type] ?? 9) ||
+        a.name.localeCompare(b.name, 'zh') ||
+        handNumVal(a.num) - handNumVal(b.num) ||
+        handSuitVal(a.suit) - handSuitVal(b.suit))
       .map((c) => {
         const color = c.suit === '♥' || c.suit === '♦' ? 'red' : 'black';
         let cardCls = '';
