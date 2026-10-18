@@ -778,8 +778,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 /* 第一行：品牌在左，等级积分被 auto margin 推到行末（行超宽时整体由 #topBar 横向滚动） */
 #topBar.tb-mode2 .tb-brand{flex:0 0 auto}
 #topBar.tb-mode2 .tb-stats{margin-left:auto;flex:0 0 auto}
-/* 第二行：按钮组+个人信息相邻，auto margin 将整组推到行末；flex-shrink:0 保证溢出交给外层滚动而非压缩 */
-#topBar.tb-mode2 .tb-right{margin-left:auto;flex:0 0 auto;overflow:visible}
+/* 第二行：按钮组+个人信息相邻成组，整体靠左（贴容器左缘）；flex-shrink:0 保证溢出交给外层滚动而非压缩 */
+#topBar.tb-mode2 .tb-right{margin-left:0;flex:0 0 auto;overflow:visible}
 #topBar.tb-mode2 .tb-user-chip{margin-left:0;flex:0 0 auto}
 /* 单行模式强制不换行：放不下时由按钮组横向滚动容纳，绝不出现第二/第三行 */
 #topBar:not(.tb-mode2){flex-wrap:nowrap}
