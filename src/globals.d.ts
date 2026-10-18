@@ -26,6 +26,11 @@ declare global {
     toggleNotifyPanel: () => void;
     closeNotifyPanel: () => void;
     notifyJump: (i: number) => void;
+    // 主题设置
+    openThemePanel: () => void;
+    closeThemePanel: () => void;
+    setThemeMode: (m: string) => void;
+    setThemeStyle: (s: string) => void;
     // 大厅
     startSingle: () => Promise<void>;
     createRoom: () => Promise<void>;

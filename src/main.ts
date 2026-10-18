@@ -16,6 +16,7 @@ import { closeProfileModal, refreshProfileUI, showAchievements } from './profile
 import { sendChat } from './game/chat';
 import { bindNetChat, sendNetChat, toggleNetChat } from './ui/netchat';
 import { bindNotify, closeNotifyPanel, notifyJump, toggleNotifyPanel } from './ui/notify';
+import { applyTheme, closeThemePanel, openThemePanel, setThemeMode, setThemeStyle } from './ui/theme';
 import { closeRules, openRules, switchRulesTab } from './ui/modals';
 import {
   backToLobby,
@@ -82,6 +83,10 @@ window.toggleNetChat = toggleNetChat;
 window.toggleNotifyPanel = toggleNotifyPanel;
 window.closeNotifyPanel = closeNotifyPanel;
 window.notifyJump = notifyJump;
+window.openThemePanel = openThemePanel;
+window.closeThemePanel = closeThemePanel;
+window.setThemeMode = setThemeMode;
+window.setThemeStyle = setThemeStyle;
 window.clickHandCard = clickHandCard;
 window.clickTargetSeat = clickTargetSeat;
 window.handleLocalChoice = handleLocalChoice;
@@ -165,6 +170,7 @@ function bindPlayLogRelayout(): void {
 
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
+  applyTheme();
   loadSoundPref();
   updateSoundButtons();
   refreshSoundSwitch();

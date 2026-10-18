@@ -21,6 +21,7 @@
     <span class="tb-actions">
       <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
       <button class="tb-icon" onclick="openPersonaMenu()" title="个性化资料">🧑</button>
+      <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
     </span>
     <span class="tb-actions">
       <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
@@ -39,6 +40,26 @@
 <div id="notifyPanel">
   <div class="notify-head">🔔 消息通知</div>
   <div class="notify-list" id="notifyList"></div>
+</div>
+
+<!-- 顶栏主题设置下拉（🎨：光线模式 × 内置配色风格） -->
+<div id="themePanel">
+  <div class="theme-head">🎨 主题设置 <span style="font-size:9px;color:var(--muted)">点击切换</span></div>
+  <div class="theme-sec-label">光线模式</div>
+  <div class="theme-modes">
+    <button class="opt-btn theme-mode" data-mode="day" onclick="setThemeMode('day')">☀️ 白天</button>
+    <button class="opt-btn theme-mode" data-mode="night" onclick="setThemeMode('night')">🌙 夜晚</button>
+    <button class="opt-btn theme-mode" data-mode="dusk" onclick="setThemeMode('dusk')">🌇 黄昏</button>
+  </div>
+  <div class="theme-sec-label">内置配色风格</div>
+  <div class="theme-styles">
+    <button class="opt-btn theme-style" data-style="gold" onclick="setThemeStyle('gold')"><i class="sw" style="--sw:#f5c542"></i>鎏金</button>
+    <button class="opt-btn theme-style" data-style="teal" onclick="setThemeStyle('teal')"><i class="sw" style="--sw:#2bbfa8"></i>墨青</button>
+    <button class="opt-btn theme-style" data-style="red" onclick="setThemeStyle('red')"><i class="sw" style="--sw:#ff6b4a"></i>赤焰</button>
+    <button class="opt-btn theme-style" data-style="purple" onclick="setThemeStyle('purple')"><i class="sw" style="--sw:#b07cff"></i>紫宸</button>
+    <button class="opt-btn theme-style" data-style="green" onclick="setThemeStyle('green')"><i class="sw" style="--sw:#5fd07a"></i>雪松</button>
+    <button class="opt-btn theme-style" data-style="blue" onclick="setThemeStyle('blue')"><i class="sw" style="--sw:#4aa8ff"></i>黛蓝</button>
+  </div>
 </div>
 
 <!-- 首页：个人成就 + 模式选择 -->

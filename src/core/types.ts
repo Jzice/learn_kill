@@ -222,6 +222,10 @@ export interface Profile {
   gender: Gender;
   mood: string;
   moodIcon: string;
+  /** 界面主题：光线模式（白天/夜晚/黄昏） */
+  themeMode: 'day' | 'night' | 'dusk';
+  /** 界面主题：内置配色风格 */
+  themeStyle: 'gold' | 'teal' | 'red' | 'purple' | 'green' | 'blue';
 }
 
 export interface PublicProfile extends PlayerIdentity {

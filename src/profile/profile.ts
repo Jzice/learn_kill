@@ -92,6 +92,8 @@ function defaultProfile(): Profile {
     gender: 'hidden',
     mood: '',
     moodIcon: DEFAULT_MOOD_ICON,
+    themeMode: 'night',
+    themeStyle: 'gold',
   };
 }
 

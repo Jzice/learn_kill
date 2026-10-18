@@ -2,6 +2,22 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.23] - 2026-10-18
+
+### 新增
+
+- **界面主题切换**：顶栏新增 🎨 主题按钮，弹出面板可组合「光线模式 × 内置配色风格」
+  - 光线模式：白天（冷调亮）、夜晚（默认深棕）、黄昏（暖棕）
+  - 内置配色风格：鎏金（默认）、墨青、赤焰、紫宸、雪松、黛蓝（覆盖强调色，头像/边框/标题/激活态等随之变化）
+  - 选择实时生效并写入 localStorage（`profile.themeMode` / `profile.themeStyle`），刷新后保持
+- **实现方式**：将主表面色、边框、强调色等提升为语义 CSS 变量（`--surface`/`--surface-2`/`--surface-accent`/`--avatar-bg`/`--border`/`--gold`/`--gold-dim`/`--accent-strong`/`--bg1..3`/`--text`/`--muted`），由 `body[data-mode]` 与 `body[data-theme]` 覆盖；仅切换属性、无需重渲染
+- 新增 `src/ui/theme.ts`（`applyTheme`/`setThemeMode`/`setThemeStyle`/`openThemePanel`），顶栏与主题面板在 `index.html` 中新增
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力零卡死
+- 实测：切换 白天+墨青 后 `--gold` 变为 `#2bbfa8`、表面渐变随模式切换、面板背景应用、选中态正确、刷新后保持（10/10）
+
 ## [1.4.22] - 2026-10-18
 
 ### 优化
