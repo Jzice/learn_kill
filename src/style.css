@@ -740,7 +740,9 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-logo{font-size:22px;line-height:1}
 .tb-brand-text{display:flex;align-items:baseline;gap:8px;line-height:1.1}
 .tb-title{position:relative;font-size:15px;color:var(--gold);font-weight:700;letter-spacing:3px}
-.tb-sub{font-size:10px;color:var(--gold-dim);letter-spacing:1px;white-space:nowrap}
+/* 副标题视觉下移 8px，避开主标题右上角的金色版本号角标（实测原重叠 37×5px）。
+   用 position:relative 而非 margin：元素仍占原位，顶栏总高度与内容让位 --tb-h 完全不变 */
+.tb-sub{position:relative;top:8px;font-size:10px;color:var(--gold-dim);letter-spacing:1px;white-space:nowrap}
 /* 用户芯片（宽屏紧跟按钮区靠右；窄屏两行模式由 tb-mode2 恢复 margin-left:auto） */
 .tb-user-chip{display:flex;align-items:center;gap:6px;min-width:0;margin-left:0;background:none;border:none;font-family:inherit;padding:0;cursor:pointer;border-radius:12px}
 .tb-user-chip:hover .tb-uname{color:var(--gold)}
