@@ -2,6 +2,19 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.31] - 2026-10-18
+
+### 新增
+
+- **聊天面板背景半透明毛玻璃**：桌面 `#chatPanel`（`.chat-panel`）与小屏 `#netChatPanel` 改为半透明背景 + `backdrop-filter: blur(10px)`，聊天区背后内容呈现模糊质感
+  - `src/style.css`：新增主题感知变量 `--surface-glass`（夜/黄昏/白昼三套半透明渐变，约 50% 不透明度）
+  - `.chat-panel` 与 `#netChatPanel.show` 改用 `var(--surface-glass)` + `backdrop-filter:blur(10px)`（含 `-webkit-` 前缀）；`.play-log-panel`（战报面板）保持原不透明 `--surface`，不受影响
+
+### 验证
+
+- 构建通过；单机冒烟 35/35、联机冒烟 16/16、联机压力零卡死
+- 实测：桌面/小屏聊天面板背景含 `rgba` 半透明渐变且 `backdrop-filter:blur(10px)`；战报面板仍不透明（6/6）
+
 ## [1.4.30] - 2026-10-18
 
 ### 修复

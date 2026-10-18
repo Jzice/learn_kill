@@ -13,6 +13,7 @@
 body[data-mode="night"]{
   --bg1:#4a2218;--bg2:#2a1210;--bg3:#120604;
   --surface:linear-gradient(160deg,#2a1a10,#160a06);
+  --surface-glass:linear-gradient(160deg,rgba(42,26,16,.5),rgba(22,10,6,.5));
   --surface-2:linear-gradient(160deg,#3a2610,#1a1006);
   --surface-accent:linear-gradient(160deg,#5a3a10,#3a1a06);
   --avatar-bg:radial-gradient(circle at 40% 35%,#5a3a10,#1a0c08);
@@ -22,6 +23,7 @@ body[data-mode="night"]{
 body[data-mode="dusk"]{
   --bg1:#5a3014;--bg2:#3a1c0a;--bg3:#1c0e04;
   --surface:linear-gradient(160deg,#3a2410,#1f1006);
+  --surface-glass:linear-gradient(160deg,rgba(58,36,16,.5),rgba(31,16,6,.5));
   --surface-2:linear-gradient(160deg,#52301a,#2a1408);
   --surface-accent:linear-gradient(160deg,#7a4a1a,#45280e);
   --avatar-bg:radial-gradient(circle at 40% 35%,#7a4a1a,#2a1408);
@@ -31,6 +33,7 @@ body[data-mode="dusk"]{
 body[data-mode="day"]{
   --bg1:#26323f;--bg2:#16202a;--bg3:#0a1016;
   --surface:linear-gradient(160deg,#223240,#101c26);
+  --surface-glass:linear-gradient(160deg,rgba(34,50,64,.5),rgba(16,28,38,.5));
   --surface-2:linear-gradient(160deg,#2c4252,#172a36);
   --surface-accent:linear-gradient(160deg,#3a5a6c,#1e3a48);
   --avatar-bg:radial-gradient(circle at 40% 35%,#3a5a6c,#172a36);
@@ -281,7 +284,9 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .play-card.fade-out{animation:playCardOut .4s ease-in forwards}
 @keyframes playCardOut{to{opacity:0;transform:translateY(-20px) scale(.5) rotate(10deg)}}
 .side-panel{width:230px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;height:540px}
-.play-log-panel,.chat-panel{background:var(--surface);border:1px solid var(--gold-dim);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
+.play-log-panel{background:var(--surface);border:1px solid var(--gold-dim);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
+/* 聊天面板：半透明毛玻璃（背景模糊），与战报面板区分 */
+.chat-panel{background:var(--surface-glass);border:1px solid var(--gold-dim);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .play-log-panel{flex:1;min-height:0}
 .chat-panel{flex:1.15;min-height:0}
 .panel-title{font-size:10.5px;color:var(--gold);padding:5px 10px;background:rgba(0,0,0,.35);border-bottom:1px solid rgba(138,109,59,.4);letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
@@ -597,7 +602,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .panel h3{font-size:12px;margin-bottom:6px}
   .opt-btn{padding:6px 2px;font-size:11px}
   /* 联机聊天面板：仅窄屏联机对局显示（可见性由 netchat.ts 按 界面+联机+屏宽 控制） */
-  #netChatPanel.show{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:85;flex-direction:column;height:var(--chat-h,150px);background:var(--surface);border-top:2px solid var(--gold-dim);box-shadow:0 -4px 16px rgba(0,0,0,.7)}
+  #netChatPanel.show{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:85;flex-direction:column;height:var(--chat-h,150px);background:var(--surface-glass);border-top:2px solid var(--gold-dim);box-shadow:0 -4px 16px rgba(0,0,0,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   #netChatPanel.collapsed .nchat-body{display:none}
   #netChatPanel.collapsed .nchat-resize{display:none}
   #netChatPanel.collapsed .nchat-latest{color:var(--gold)}
