@@ -323,13 +323,15 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .chat-input-row{display:flex;gap:4px;padding:5px;background:rgba(0,0,0,.35);border-top:1px solid rgba(138,109,59,.4);flex-shrink:0}
 .chat-input-row input{flex:1;background:#0a0402;border:1px solid var(--gold-dim);color:var(--text);border-radius:4px;padding:4px 8px;font-size:10.5px;font-family:inherit;min-width:0}
 .chat-input-row button{background:linear-gradient(160deg,#3a2a10,#1a0e04);border:1px solid var(--gold-dim);color:var(--gold);border-radius:4px;padding:0 10px;font-size:10.5px;cursor:pointer;font-family:inherit;flex-shrink:0}
-.center-area{display:none;background:rgba(12,6,3,.92);border:1px solid var(--border);border-radius:7px;padding:5px 8px;margin-bottom:5px;min-height:50px;position:sticky;bottom:6px;z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.55)}
+/* 操作提示区：始终保留固定高度（不再 display:none），避免手牌区随其显隐上下跳动；
+   有本地方决策时显示操作提示，否则显示其他角色的操作信息（内容由 render 决定） */
+.center-area{display:block;box-sizing:border-box;background:rgba(12,6,3,.92);border:1px solid var(--border);border-radius:7px;padding:5px 8px;margin-bottom:5px;height:92px;overflow:hidden;position:sticky;bottom:6px;z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.55)}
 .action-hint{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px;line-height:1.4}
 .action-hint.hint-play{color:var(--gold);font-weight:600}
 .action-hint.hint-target{color:#e74c3c;font-weight:600}
 .action-hint.hint-urgent{color:#ff9a5a;font-weight:600;animation:hintPulse 1s infinite}
 @keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.65}}
-.action-btns{display:flex;gap:4px;flex-wrap:wrap}
+.action-btns{display:flex;gap:4px;flex-wrap:wrap;max-height:54px;overflow-y:auto}
 .hand-row{display:flex;flex-wrap:wrap;gap:5px;padding:4px 2px 8px;min-height:98px;align-items:flex-end;position:relative;z-index:2;justify-content:center}
 .card{width:58px;height:84px;flex-shrink:0;border-radius:5px;background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.5),transparent 60%),linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);box-shadow:0 3px 9px rgba(0,0,0,.65);position:relative;cursor:default;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600}
 .card.clickable{cursor:pointer}
@@ -566,7 +568,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .badge{font-size:7px;line-height:10px;height:10px;padding:0 3px}
   .judge-tag{font-size:6px;padding:0 2px}
   .p-card.is-self::before{font-size:8px;padding:0 4px;top:-6px;right:-4px}
-  .center-area{padding:4px 6px;min-height:44px}
+  .center-area{padding:4px 6px;height:84px}
   .action-hint{font-size:10px;margin-bottom:3px}
   .action-btns .btn{font-size:10px;padding:4px 8px}
   .hand-row{min-height:78px;padding:2px 1px 4px;gap:3px}

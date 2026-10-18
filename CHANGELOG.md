@@ -2,6 +2,22 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范与语义化版本。
 
+## [1.4.30] - 2026-10-18
+
+### 修复
+
+- **操作提示区常驻、手牌区不再上下跳动**
+  - 根因：`render.ts` 原本按「有无操作按钮/是否本地决策」把 `#centerArea` 在 `display:block` 与 `display:none` 间切换，且每次回合在「有按钮（你的回合）」与「无按钮（他人回合）」间切换，占位高度 0↔~80px 变动，导致下方 `#handRow` 手牌区上下跳动
+  - 改动：
+    - `src/ui/render.ts`：移除显隐切换，`#centerArea` 始终 `display:block`
+    - `src/style.css`：`.center-area` 由 `display:none` + `min-height:50px` 改为**固定高度 `height:92px`**（小屏 `84px`），`box-sizing:border-box` + `overflow:hidden`；`.action-btns` 加 `max-height:54px;overflow-y:auto`，按钮过多时在内部滚动而非撑高
+  - 提示内容逻辑不变：本地方有决策时显示操作提示（出牌/弃牌/急救/出闪/选目标等），否则显示其他角色的操作信息（`等待 X 行动…` / `等待 X 选择中…`），始终常驻展示
+
+### 验证
+
+- typecheck 零错误；单机冒烟 35/35、联机冒烟 16/16、联机压力零卡死
+- 实测（单机对局轮询 70 帧）：提示区高度恒定 92px（波动 0）、手牌区顶部恒定 737px（波动 0，不再跳动）；提示文案在「等待 AI·爱因斯坦 行动…（他人操作）」与「请选择：（本地方提示）」间正常切换（5/5）
+
 ## [1.4.29] - 2026-10-18
 
 ### 新增
