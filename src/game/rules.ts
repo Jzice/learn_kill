@@ -18,8 +18,15 @@ export function genderOf(p: Player): Gender {
 }
 
 export function seatDist(a: number, b: number): number {
-  const n = G.players.length;
-  return Math.min(Math.abs(a - b), n - Math.abs(a - b));
+  // 官方规则：一名角色死亡则不再参与距离的计算，即其左右两边的角色就"挨近"了
+  // 因此把存活角色按座次压缩成环，在其相对位置上取顺时针 / 逆时针的最短路径
+  const alive: number[] = [];
+  for (let i = 0; i < G.players.length; i++) if (G.players[i].alive) alive.push(i);
+  const n = alive.length;
+  const ai = alive.indexOf(a);
+  const bi = alive.indexOf(b);
+  if (ai < 0 || bi < 0) return Infinity; // 调用方已过滤阵亡者，理论不可达
+  return Math.min(Math.abs(ai - bi), n - Math.abs(ai - bi));
 }
 
 export function distBetween(fi: number, ti: number): number {
