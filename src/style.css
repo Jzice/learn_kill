@@ -364,6 +364,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .study-cell span{font-size:9.5px;color:var(--muted)}
 .study-tip{font-size:10.5px;color:var(--muted);line-height:1.5;margin-bottom:8px}
 .study-sub{font-size:11.5px;color:var(--gold);font-weight:700;margin:8px 0 5px;padding-left:6px;border-left:3px solid var(--gold-dim)}
+.study-sub-row{display:flex;align-items:center;justify-content:space-between}
+.study-review-btn{margin-left:8px;flex-shrink:0}
+.si-actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.si-review{width:100%}
 .kp-list{display:flex;flex-direction:column;gap:5px;max-height:190px;overflow-y:auto;padding-right:2px}
 .kp-item{padding:5px 7px;background:rgba(0,0,0,.22);border-radius:6px}
 .kp-item.done{background:rgba(39,174,96,.12)}
@@ -492,16 +496,20 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
    有本地方决策时显示操作提示，否则显示其他角色的操作信息（内容由 render 决定）。
    flex 纵向布局：提示行不压缩，按钮区弹性填充剩余空间（超出内部滚动），高度收紧减少留白 */
 .center-area{display:flex;flex-direction:column;box-sizing:border-box;background:rgba(12,6,3,.92);border:1px solid var(--border);border-radius:7px;padding:5px 8px;margin-bottom:5px;height:70px;overflow:hidden;position:sticky;bottom:6px;z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.55)}
-.action-hint{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px;line-height:1.4;flex-shrink:0}
+.action-hint{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px;line-height:1.4;flex-shrink:0;padding-right:64px}
 .action-hint.hint-play{color:var(--gold);font-weight:600}
 .action-hint.hint-target{color:#e74c3c;font-weight:600}
 .action-hint.hint-urgent{color:#ff9a5a;font-weight:600;animation:hintPulse 1s infinite}
 @keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.65}}
 .action-btns{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-height:0;overflow-y:auto}
-/* 回合倒计时徽标：房主权威计时，随 state_sync 同步，房主端与客人端共用同一截止时间戳 */
-.timer-chip{flex-shrink:0;align-self:flex-end;margin-left:auto;font-size:12px;font-weight:700;color:#eee;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:1px 8px;background:rgba(0,0,0,.35);line-height:1.5;white-space:nowrap;min-height:0}
+/* 回合倒计时徽标：房主权威计时，随 state_sync 同步，房主端与客人端共用同一截止时间戳。
+   绝对定位在提示区右上角：不再作为 flex 子项参与布局（原先独占底部一行 ~22px，
+   与换行后的按钮行挤进同一水平带并绘制在上层，遮挡按钮/提示信息）。
+   pointer-events:none 不拦截点击；:empty（未开启限时）时整体隐藏 */
+.timer-chip{position:absolute;top:3px;right:8px;z-index:3;pointer-events:none;font-size:11px;font-weight:700;color:#eee;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:1px 7px;background:rgba(0,0,0,.35);line-height:1.3;white-space:nowrap}
+.timer-chip:empty{display:none}
 .timer-chip.urgent{color:#fff;background:#c0392b;border-color:#ff7b6b;animation:hintPulse .8s infinite}
-@media (max-width:560px){.timer-chip{font-size:10px;padding:1px 6px}}
+@media (max-width:560px){.timer-chip{font-size:10px;padding:1px 6px;top:2px;right:6px}}
 .hand-row{display:flex;flex-wrap:wrap;gap:5px;padding:4px 2px 8px;min-height:98px;align-items:flex-end;position:relative;z-index:2;justify-content:center}
 .card{width:58px;height:84px;flex-shrink:0;border-radius:5px;background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.5),transparent 60%),linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);box-shadow:0 3px 9px rgba(0,0,0,.65);position:relative;cursor:default;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600}
 .card.clickable{cursor:pointer}
@@ -522,8 +530,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 
 /* 弹窗 */
 /* 答题/标记弹窗：半透明遮罩，使牌桌与角色列表在等待选择时仍可见；仍拦截点击避免误触 */
-#quizModal,#markModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:350;padding:14px}
-#quizModal.show,#markModal.show{display:flex}
+#quizModal,#markModal,#reviewModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:350;padding:14px}
+#quizModal.show,#markModal.show,#reviewModal.show{display:flex}
 .quiz-box{width:100%;max-width:460px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold-dim);box-shadow:0 0 0 2px var(--gold),0 20px 60px rgba(0,0,0,.9);border-radius:10px;padding:16px;color:var(--ink);animation:cardIn .3s ease-out}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
 .quiz-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
@@ -750,7 +758,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
   .judge-tag{font-size:6px;padding:0 2px}
   .p-card.is-self::before{font-size:8px;padding:0 4px;top:-6px;right:-4px}
   .center-area{padding:4px 6px;height:62px}
-  .action-hint{font-size:10px;margin-bottom:3px}
+  .action-hint{font-size:10px;margin-bottom:3px;padding-right:56px}
   .action-btns .btn{font-size:10px;padding:4px 8px}
   .hand-row{min-height:78px;padding:2px 1px 4px;gap:3px}
   .card{width:46px;height:66px;border-radius:4px}

@@ -6,7 +6,7 @@
 import type { Question, QuizRec, QuizScope } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { GRADE_ORDER, gradeSortKey } from '../data/grades';
-import { QUESTION_BANK } from '../data/bankLoader';
+import { loadGrade, QUESTION_BANK } from '../data/bankLoader';
 import { PROFILE, saveProfile } from './profile';
 
 /** 连对达到该次数即掌握，后续不再抽到 */
@@ -191,6 +191,68 @@ export function kpStats(): KpStat[] {
 export function findQuestionByText(text: string, grade: string): Question | undefined {
   if (!grade) return undefined;
   return (QUESTION_BANK[grade] || []).find((q) => q.q === text);
+}
+
+/* ==================== 首页复习组题（纯查询，不写档案） ==================== */
+
+/** 把待复习错题按「学科|知识点」分组，供复习随机挑组出题 */
+export function wrongByKp(): { s: string; kp: string; recs: { key: string; rec: QuizRec }[] }[] {
+  const groups = new Map<string, { s: string; kp: string; recs: { key: string; rec: QuizRec }[] }>();
+  for (const { key, rec } of wrongList()) {
+    const s = rec.s || '综合';
+    const kp = rec.kp || '综合';
+    const k = `${s}|${kp}`;
+    let g = groups.get(k);
+    if (!g) {
+      g = { s, kp, recs: [] };
+      groups.set(k, g);
+    }
+    g.recs.push({ key, rec });
+  }
+  return [...groups.values()];
+}
+
+/**
+ * 组装某知识点的复习题组（异步、按需懒加载题库）：
+ * 1) 该组错题还原为完整题（保证「随机出现错题」）；2) 题库内同知识点题；
+ * 3) 同知识点不足 3 道时补充同科目题作为「相关」。
+ * 去重（按题干）→ 打乱顺序 → 截到 limit。纯查询，绝不调用 recordAnswer。
+ */
+export async function buildReviewSet(s: string, kp: string, opts?: { limit?: number }): Promise<Question[]> {
+  const limit = opts?.limit ?? 6;
+  const group = wrongByKp().find((g) => g.s === s && g.kp === kp);
+  const recs = group?.recs ?? [];
+  // 先确保该知识点涉及的年级题库已加载（保持懒加载不变式：点击时才加载）
+  const grades = [...new Set(recs.map((r) => r.rec.g).filter(Boolean))] as string[];
+  await Promise.all(grades.map((g) => loadGrade(g)));
+
+  const seen = new Set<string>();
+  const out: Question[] = [];
+  const push = (q: Question | undefined): void => {
+    if (q && q.o && q.o.length && !seen.has(q.q)) {
+      seen.add(q.q);
+      out.push(q);
+    }
+  };
+
+  // 1) 该组错题（优先，保证覆盖用户真正错的题）
+  for (const r of recs) push(findQuestionByText(r.rec.text, r.rec.g));
+  // 2) 同知识点题
+  for (const g of Object.keys(QUESTION_BANK)) {
+    for (const q of QUESTION_BANK[g] || []) if (q.kp === kp) push(q);
+  }
+  // 3) 同知识点不足 3 道时，补充同科目题作为「相关」
+  if (out.length < 3) {
+    for (const g of Object.keys(QUESTION_BANK)) {
+      for (const q of QUESTION_BANK[g] || []) if (q.s === s && q.kp !== kp) push(q);
+    }
+  }
+  // 打乱顺序（错题打散在同知识点/同科目题之间）
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out.slice(0, limit);
 }
 
 /** 标记复习一次：推进掌握进度（连对 +1），达到 MASTER_STREAK 即从待复习移入已攻克 */

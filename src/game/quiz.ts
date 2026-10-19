@@ -23,6 +23,7 @@ import {
 import { NET, isLocalPlayer, type PendingQuiz } from '../net/network';
 import { aiQuiz } from './ai';
 import { timerEnabled, timerSec } from './timer';
+import { shuffledIndices } from '../core/shuffle';
 
 let quizResolve: ((v: boolean) => void) | null = null;
 
@@ -105,8 +106,11 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
     document.getElementById('quizKP')!.textContent = '知识点：' + (q.kp || '综合');
     document.getElementById('quizQuestion')!.textContent = q.q;
     const opts = document.getElementById('quizOptions')!;
-    opts.innerHTML = q.o
-      .map((o, i) => `<button class="quiz-option" data-i="${i}"><span class="tag">${String.fromCharCode(65 + i)}</span>${escapeHtml(o)}</button>`)
+    // 随机打乱选项：每次出题顺序不同，但判定始终以原始正确下标 q.a 为准
+    const order = shuffledIndices(q.o.length); // 显示位置 i -> 原始下标
+    const correctPos = order.indexOf(q.a); // 正确项在当前显示顺序中的位置
+    opts.innerHTML = order
+      .map((oi, i) => `<button class="quiz-option" data-i="${i}"><span class="tag">${String.fromCharCode(65 + i)}</span>${escapeHtml(q.o[oi])}</button>`)
       .join('');
     document.getElementById('quizFeedback')!.textContent = '';
     // 回合限时：答题同样单独计时，超时按答错处理（AI 不计时）
@@ -126,9 +130,9 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
       const btns = opts.querySelectorAll('.quiz-option');
       btns.forEach((b) => {
         (b as HTMLButtonElement).disabled = true;
-        if (Number((b as HTMLElement).dataset.i) === q.a) b.classList.add('correct');
+        if (Number((b as HTMLElement).dataset.i) === correctPos) b.classList.add('correct');
       });
-      const correct = chosen === q.a;
+      const correct = chosen >= 0 && order[chosen] === q.a;
       if (chosen >= 0 && !correct) btns[chosen]?.classList.add('wrong');
       const timedOut = chosen < 0;
       const fb = document.getElementById('quizFeedback')!;
@@ -161,7 +165,7 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
             const rec = recordAnswer(q, false, q.g || G.grade);
             wrongNote = `<br><span style="font-size:10.5px;color:#a02020">📕 已记入错题本（累计错 ${rec.w} 次），将优先重复出现</span>`;
           }
-          fb.innerHTML = `${timedOut ? '⏱ 超时未作答，按答错处理<br>' : ''}✗ 正确答案是 ${String.fromCharCode(65 + q.a)}<br><span style="font-size:10.5px;">知识点【${q.kp || '综合'}】</span>${wrongNote}`;
+          fb.innerHTML = `${timedOut ? '⏱ 超时未作答，按答错处理<br>' : ''}✗ 正确答案是 ${String.fromCharCode(65 + correctPos)}<br><span style="font-size:10.5px;">知识点【${q.kp || '综合'}】</span>${wrongNote}`;
           fb.style.color = '#a02020';
           Sound.play('wrong');
         }

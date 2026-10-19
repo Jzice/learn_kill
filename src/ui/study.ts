@@ -8,21 +8,37 @@
 import type { Question, QuizRec } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { Sound } from '../core/sound';
+import { shuffledIndices } from '../core/shuffle';
+import { SUBJECT_ICON } from '../data/factions';
 import { PROFILE } from '../profile/profile';
 import {
   MASTER_STREAK,
+  buildReviewSet,
   findQuestionByText,
   kpStats,
   markReviewed,
   masteredCount,
   masteredWrongList,
   recByKey,
+  wrongByKp,
   wrongList,
 } from '../profile/quizbook';
 import { loadGrade } from '../data/bankLoader';
 
 /** 已展开解析的错题 key */
 const expanded = new Set<string>();
+/** 复习面板每题的洗牌顺序缓存：展开期间保持稳定便于对照，收起即清除 */
+const shuffleCache = new Map<string, number[]>();
+
+/** 取该错题当前的洗牌顺序（判断题/四选一均按原始下标排列）；收起后重开换新顺序 */
+function orderFor(key: string, n: number): number[] {
+  let o = shuffleCache.get(key);
+  if (!o || o.length !== n) {
+    o = shuffledIndices(n);
+    shuffleCache.set(key, o);
+  }
+  return o;
+}
 /** 解析缓存：value 为 null 表示题库中未找到 */
 const detail = new Map<string, Question | null>();
 /** 已攻克错题列表是否展开 */
@@ -90,17 +106,22 @@ function wrongItemHtml(key: string, rec: QuizRec, done: boolean): string {
     } else if (q === null) {
       body = `<div class="si-detail">⚠️ 当前题库中未找到该题（可能来自外部题库或题目已调整），仅可回顾题干与知识点</div>`;
     } else {
-      const opts = q.o
-        .map((t, i) => {
-          const ok = i === q.a;
-          return `<div class="si-opt ${ok ? 'ok' : ''}">${String.fromCharCode(65 + i)}. ${escapeHtml(t)}${ok ? ' ✅' : ''}</div>`;
+      const order = orderFor(key, q.o.length);
+      const correctPos = order.indexOf(q.a);
+      const opts = order
+        .map((oi, i) => {
+          const ok = i === correctPos;
+          return `<div class="si-opt ${ok ? 'ok' : ''}">${String.fromCharCode(65 + i)}. ${escapeHtml(q.o[oi])}${ok ? ' ✅' : ''}</div>`;
         })
         .join('');
       body = `<div class="si-detail">${opts}
-        <div class="si-ans">正确答案 <b>${String.fromCharCode(65 + q.a)}</b> ｜ 知识点 ${escapeHtml(q.kp || '综合')}${q.u ? ` ｜ 单元 ${escapeHtml(q.u)}` : ''}</div></div>`;
+        <div class="si-ans">正确答案 <b>${String.fromCharCode(65 + correctPos)}</b> ｜ 知识点 ${escapeHtml(q.kp || '综合')}${q.u ? ` ｜ 单元 ${escapeHtml(q.u)}` : ''}</div></div>`;
     }
     if (!done) {
-      body += `<button class="btn btn-sm si-mark" onclick="event.stopPropagation();markStudyReviewed('${key}')">✅ 我已复习（掌握 +1）</button>`;
+      body += `<div class="si-actions">
+        <button class="btn btn-sm si-mark" onclick="event.stopPropagation();markStudyReviewed('${key}')">✅ 我已复习（掌握 +1）</button>
+        <button class="btn btn-sm si-review" onclick="event.stopPropagation();startReviewByKey('${key}')">🔁 复习此知识点</button>
+      </div>`;
     }
   }
   return `<div class="si-item ${done ? 'done' : ''}" onclick="toggleStudyItem('${key}')">${head}${body}</div>`;
@@ -137,7 +158,9 @@ export function renderStudyPanel(): void {
     statsHtml(wrong.length) +
     tip +
     `<div class="study-sub">📚 知识点掌握</div>${kpHtml()}` +
-    `<div class="study-sub">📕 待复习错题（${wrong.length}）</div>${wrongBody}` +
+    `<div class="study-sub study-sub-row"><span>📕 待复习错题（${wrong.length}）</span>${
+      wrong.length ? '<button class="btn btn-sm study-review-btn" onclick="startReview()">📝 随机复习一组</button>' : ''
+    }</div>${wrongBody}` +
     `<div class="study-sub">🎓 已攻克错题</div>${masteredHtml()}`;
 }
 
@@ -146,6 +169,7 @@ export function toggleStudyItem(key: string): void {
   Sound.play('click');
   if (expanded.has(key)) {
     expanded.delete(key);
+    shuffleCache.delete(key); // 收起后重开换新顺序
     renderStudyPanel();
     return;
   }
@@ -178,6 +202,7 @@ export function markStudyReviewed(key: string): void {
   const r = markReviewed(key);
   if (!r) return;
   expanded.delete(key);
+  shuffleCache.delete(key);
   Sound.play('click');
   renderStudyPanel();
 }
@@ -185,7 +210,150 @@ export function markStudyReviewed(key: string): void {
 /** 学习档案被清空时同步重置展开状态 */
 export function resetStudyPanel(): void {
   expanded.clear();
+  shuffleCache.clear();
   detail.clear();
   showMastered = false;
   renderStudyPanel();
+}
+
+/* ==================== 首页复习模式（独立、仅练习不计入掌握度） ==================== */
+
+interface ReviewItem {
+  q: Question;
+  /** 显示位置 i -> 原始下标 */
+  order: number[];
+  /** 正确项在当前显示顺序中的位置 */
+  correctPos: number;
+}
+
+/** 复习队列与进度（模块级，关闭时重置） */
+let reviewQueue: ReviewItem[] = [];
+let reviewIdx = 0;
+let reviewCorrect = 0;
+
+/** 顶部「随机复习一组」：随机挑一个知识点的题组 */
+export function startReview(kp?: string, s?: string): void {
+  void runReview(kp, s);
+}
+
+/** 每条错题「复习此知识点」：由哈希 key 反查知识点后出题 */
+export function startReviewByKey(key: string): void {
+  const rec = recByKey(key);
+  if (!rec) return;
+  startReview(rec.kp || '综合', rec.s || '综合');
+}
+
+async function runReview(kp?: string, s?: string): Promise<void> {
+  const groups = wrongByKp();
+  if (!groups.length) {
+    flashReviewMsg('暂无可复习的错题，先去对局里答题吧～');
+    return;
+  }
+  const target = (kp && s && groups.find((g) => g.s === s && g.kp === kp)) || groups[Math.floor(Math.random() * groups.length)];
+  const set = await buildReviewSet(target.s, target.kp, { limit: 6 });
+  if (!set.length) {
+    flashReviewMsg('该知识点暂无可复习题目（可能来自外部题库且未导入）');
+    return;
+  }
+  reviewQueue = set.map((q) => {
+    const order = shuffledIndices(q.o.length);
+    return { q, order, correctPos: order.indexOf(q.a) };
+  });
+  reviewIdx = 0;
+  reviewCorrect = 0;
+  openReviewModal();
+  renderReviewQuestion();
+}
+
+/** 打开复习弹窗（复用 #reviewModal 结构） */
+function openReviewModal(): void {
+  document.getElementById('reviewModal')?.classList.add('show');
+}
+
+/** 关闭复习：隐藏弹窗并刷新首页面板（掌握度未变，仅重置展开/缓存） */
+export function closeReview(): void {
+  document.getElementById('reviewModal')?.classList.remove('show');
+  reviewQueue = [];
+  reviewIdx = 0;
+  reviewCorrect = 0;
+  renderStudyPanel();
+}
+
+/** 渲染当前复习题（选项随机打乱） */
+function renderReviewQuestion(): void {
+  const item = reviewQueue[reviewIdx];
+  if (!item) return;
+  const q = item.q;
+  const total = reviewQueue.length;
+  document.getElementById('reviewIcon')!.textContent = SUBJECT_ICON[q.s] || '📖';
+  document.getElementById('reviewSubject')!.textContent = `${q.s} · 知识点复习`;
+  document.getElementById('reviewProgress')!.textContent = `第 ${reviewIdx + 1} / ${total} 题 · 知识点 ${q.kp || '综合'}`;
+  document.getElementById('reviewKP')!.textContent = '知识点：' + (q.kp || '综合');
+  document.getElementById('reviewQuestion')!.textContent = q.q;
+  const opts = document.getElementById('reviewOptions')!;
+  opts.innerHTML = item.order
+    .map((oi, i) => `<button class="quiz-option" data-i="${i}" onclick="answerReview(${i})"><span class="tag">${String.fromCharCode(65 + i)}</span>${escapeHtml(q.o[oi])}</button>`)
+    .join('');
+  document.getElementById('reviewFeedback')!.textContent = '';
+}
+
+/** 作答：仅做展示判定（高亮正确答案 / 标记误选），不写入错题本与掌握度 */
+export function answerReview(pos: number): void {
+  const item = reviewQueue[reviewIdx];
+  if (!item) return;
+  const opts = document.getElementById('reviewOptions')!;
+  const btns = [...opts.querySelectorAll('.quiz-option')] as HTMLButtonElement[];
+  if (btns.every((b) => b.disabled)) return; // 已作答，避免重复
+  btns.forEach((b) => {
+    b.disabled = true;
+    if (Number(b.dataset.i) === item.correctPos) b.classList.add('correct');
+  });
+  const chosen = btns[pos];
+  const correct = pos >= 0 && item.order[pos] === item.q.a;
+  if (!correct && chosen) chosen.classList.add('wrong');
+  if (correct) reviewCorrect++;
+  const fb = document.getElementById('reviewFeedback')!;
+  fb.style.color = correct ? '#1e7a3a' : '#a02020';
+  fb.innerHTML = correct
+    ? '✓ 答对！巩固得不错'
+    : `✗ 正确答案 ${String.fromCharCode(65 + item.correctPos)}`;
+  setTimeout(() => reviewNext(), 1500);
+}
+
+/** 进入下一题或小结 */
+function reviewNext(): void {
+  if (reviewIdx < reviewQueue.length - 1) {
+    reviewIdx++;
+    renderReviewQuestion();
+  } else {
+    renderReviewSummary();
+  }
+}
+
+/** 题组答完后的小结 */
+function renderReviewSummary(): void {
+  const total = reviewQueue.length;
+  document.getElementById('reviewIcon')!.textContent = '🎓';
+  document.getElementById('reviewSubject')!.textContent = '复习完成';
+  document.getElementById('reviewProgress')!.textContent = '';
+  document.getElementById('reviewKP')!.textContent = '';
+  document.getElementById('reviewQuestion')!.textContent = `本次复习 ${total} 题，答对 ${reviewCorrect} 题`;
+  document.getElementById('reviewOptions')!.innerHTML = '';
+  document.getElementById('reviewFeedback')!.innerHTML =
+    `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">` +
+    `<button class="btn btn-sm" onclick="startReview()">📝 再来一组</button>` +
+    `<button class="btn btn-sm" onclick="closeReview()">关闭</button></div>`;
+}
+
+/** 无题组时直接在弹窗内给出友好提示 */
+function flashReviewMsg(text: string): void {
+  openReviewModal();
+  document.getElementById('reviewIcon')!.textContent = '📚';
+  document.getElementById('reviewSubject')!.textContent = '复习';
+  document.getElementById('reviewProgress')!.textContent = '';
+  document.getElementById('reviewKP')!.textContent = '';
+  document.getElementById('reviewQuestion')!.textContent = text;
+  document.getElementById('reviewOptions')!.innerHTML = '';
+  document.getElementById('reviewFeedback')!.innerHTML =
+    `<div style="text-align:center;margin-top:8px"><button class="btn btn-sm" onclick="closeReview()">关闭</button></div>`;
 }

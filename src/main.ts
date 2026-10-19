@@ -66,9 +66,13 @@ import {
 import { bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
 import { clearWrongBook } from './profile/quizbook';
 import {
+  answerReview,
+  closeReview,
   markStudyReviewed,
   renderStudyPanel,
   resetStudyPanel,
+  startReview,
+  startReviewByKey,
   toggleMasteredWrongs,
   toggleStudyItem,
 } from './ui/study';
@@ -137,6 +141,10 @@ window.clearWrongBook = () => {
 window.toggleStudyItem = toggleStudyItem;
 window.toggleMasteredWrongs = toggleMasteredWrongs;
 window.markStudyReviewed = markStudyReviewed;
+window.startReview = startReview;
+window.startReviewByKey = startReviewByKey;
+window.answerReview = answerReview;
+window.closeReview = closeReview;
 window.requestSeatMove = requestSeatMove;
 window.pickSeatMember = pickSeatMember;
 window.randomizeSeats = randomizeSeats;

@@ -61,10 +61,14 @@ declare global {
     setPacket: (id: 'all' | 'junior' | 'senior') => void;
     renderPacketPicker: () => void;
     clearWrongBook: () => void;
-    // 首页学习情况：展开错题解析 / 展开已攻克列表 / 标记已复习
+    // 首页学习情况：展开错题解析 / 展开已攻克列表 / 标记已复习 / 复习模式
     toggleStudyItem: (key: string) => void;
     toggleMasteredWrongs: () => void;
     markStudyReviewed: (key: string) => void;
+    startReview: (kp?: string, s?: string) => void;
+    startReviewByKey: (key: string) => void;
+    answerReview: (pos: number) => void;
+    closeReview: () => void;
     // 联机座位：自己换座 / 座主代他人换座 / 随机分配
     requestSeatMove: (toIndex: number) => void;
     pickSeatMember: (peerId: string) => void;
