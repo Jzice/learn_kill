@@ -75,6 +75,13 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     discardCard(from, c, false);
     to.hand.push(c);
   };
+  /**
+   * 主动技机会退还：玩家取消选择、场上无合法目标或费用不足时，
+   * 不消耗本回合主动技机会（答题失败仍然消耗，作为「知识不足」的惩罚）。
+   */
+  const noCost = (): void => {
+    p.flags.skillUsed = false;
+  };
 
   switch (skillId) {
     case 'shishu': {
@@ -83,26 +90,26 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'yishu': {
       const ti = await pickOtherWithHand();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       stealHand(G.players[ti], p);
       break;
     }
     case 'yinli': {
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       await dealDamage(idx, ti, 1);
       break;
     }
     case 'cuihua': {
       const ts = G.players.map((q, i) => ({ q, i })).filter((x) => x.q.alive);
-      if (!ts.length) break;
+      if (!ts.length) { noCost(); break; }
       let ti: number;
       if (p.isAI) ti = ts[0].i;
       else {
         const o: ChoiceOption[] = ts.map((x) => ({ label: x.q.name, value: x.i }));
         o.push({ label: '取消', value: -1 });
         ti = (await waitChoice(idx, o, 'target')) as number;
-        if (ti < 0) break;
+        if (ti < 0) { noCost(); break; }
       }
       const t = G.players[ti];
       if (t.hp < t.maxHp) {
@@ -111,14 +118,9 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
       } else drawCards(t, 1);
       break;
     }
-    case 'jinhua': {
-      drawCards(p, 2);
-      if (p.hand.length > 0) discardCard(p, p.hand[0]);
-      break;
-    }
     case 'mingjian': {
       const ti = await pickOtherWithHand();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
       break;
@@ -128,10 +130,10 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
       break;
     }
     case 'nah': {
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       if (t.hand.length > 0) discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
       else await dealDamage(-1, ti, 1);
@@ -144,10 +146,10 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'milv':
     case 'tuiyan': {
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
       await FX.judge(ti, jc);
@@ -157,26 +159,22 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
       break;
     }
     case 'tongchou': {
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       const c = p.hand[0];
       discardCard(p, c, false);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       t.hand.push(c);
       drawCards(p, 1);
       break;
     }
     case 'zhineng': {
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       await dealDamage(-1, ti, 1);
-      break;
-    }
-    case 'zhouqilv': {
-      for (const q of G.players) if (q.alive) drawCards(q, 1);
       break;
     }
     case 'jinhualun': {
@@ -194,7 +192,7 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'youji': {
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       if (t.hand.length > 0) discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
       else drawCards(p, 1);
@@ -202,14 +200,14 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'lunyu': {
       const ts = G.players.map((q, i) => ({ q, i })).filter((x) => x.q.alive);
-      if (!ts.length) break;
+      if (!ts.length) { noCost(); break; }
       let ti: number;
       if (p.isAI) ti = ts[0].i;
       else {
         const o: ChoiceOption[] = ts.map((x) => ({ label: x.q.name, value: x.i }));
         o.push({ label: '取消', value: -1 });
         ti = (await waitChoice(idx, o, 'target')) as number;
-        if (ti < 0) break;
+        if (ti < 0) { noCost(); break; }
       }
       const t = G.players[ti];
       if (t.hp < t.maxHp) {
@@ -221,41 +219,54 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'shisihang': {
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       if (t.hand.length > 0) stealHand(t, p);
       else await dealDamage(-1, ti, 1);
       break;
     }
     case 'xunjie': {
-      const ti = await pickOther();
-      if (ti < 0) break;
+      const ti = await pickOtherWithHand();
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
-      if (t.hand.length > 0) stealHand(t, p);
+      if (t.isAI) {
+        stealHand(t, p); // AI 直接交出
+      } else {
+        const ch = await waitChoice(
+          ti,
+          [
+            { label: `交给 ${p.name} 一张手牌`, value: 'give' },
+            { label: '弃置自己一张手牌', value: 'discard' },
+          ],
+          'list',
+        );
+        if (ch === 'give') stealHand(t, p);
+        else if (t.hand.length > 0) discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
+      }
       break;
     }
     /* ---- 初中 / 高中扩展包：按学科定制的主题主动技 ---- */
     case 'beisong': {
       // 语文·初中：弃1摸2
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       drawCards(p, 2);
       break;
     }
     case 'wenyan': {
       // 语文·高中：弃2摸3
-      if (p.hand.length < 2) break;
+      if (p.hand.length < 2) { noCost(); break; }
       discardCard(p, p.hand[0]);
       discardCard(p, p.hand[0]);
       drawCards(p, 3);
       break;
     }
-    case 'youlrshu': {
+    case 'youshu': {
       // 数学·初中：弃1，令目标判定，红色摸1、黑色弃1
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
       await FX.judge(ti, jc);
@@ -266,10 +277,10 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'daoshu': {
       // 数学·高中：弃1，令目标弃2
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       for (let i = 0; i < 2 && t.hand.length > 0; i++) {
         discardCard(t, t.hand[Math.floor(Math.random() * t.hand.length)]);
@@ -279,10 +290,10 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     case 'tingxie':
     case 'zhexue': {
       // 英语·初中「听写」/ 政治·高中「哲学」：弃1，取得一名角色一张手牌
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOtherWithHand();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       stealHand(G.players[ti], p);
       break;
     }
@@ -290,7 +301,7 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
       // 英语·高中：展示牌堆顶3张，获得其中1张，其余弃掉
       const top = [];
       for (let i = 0; i < 3 && G.deck.length > 0; i++) top.push(G.deck.pop()!);
-      if (!top.length) break;
+      if (!top.length) { noCost(); break; }
       let pick = 0;
       if (!p.isAI) {
         const o: ChoiceOption[] = top.map((c, i) => ({ label: `${c.name} ${c.suit}${c.num}`, value: i }));
@@ -298,6 +309,7 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
         pick = (await waitChoice(idx, o, 'list')) as number;
         if (pick < 0) {
           G.discard.push(...top);
+          noCost();
           break;
         }
       }
@@ -309,16 +321,16 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'dianci': {
       // 物理·高中：弃1，对一名角色造成1点伤害
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       await dealDamage(-1, ti, 1);
       break;
     }
-    case 'youji': {
+    case 'youjihuaxue': {
       // 化学·高中：弃2，回复1点体力并摸1张
-      if (p.hand.length < 2) break;
+      if (p.hand.length < 2) { noCost(); break; }
       discardCard(p, p.hand[0]);
       discardCard(p, p.hand[0]);
       if (p.hp < p.maxHp) {
@@ -330,7 +342,7 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'chaodai': {
       // 历史·初中：弃1，令所有其他角色各弃1
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       for (let i = 0; i < G.players.length; i++) {
         if (i === idx || !G.players[i].alive) continue;
@@ -341,17 +353,17 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     }
     case 'shiliao': {
       // 历史·高中：弃1，所有存活角色各摸1
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       for (const q of G.players) if (q.alive) drawCards(q, 1);
       break;
     }
     case 'fazhi': {
       // 政治·初中：弃1，令一名角色回复1点体力（已满则改为摸1）
-      if (!p.hand.length) break;
+      if (!p.hand.length) { noCost(); break; }
       discardCard(p, p.hand[0]);
       const ti = await pickOther();
-      if (ti < 0) break;
+      if (ti < 0) { noCost(); break; }
       const t = G.players[ti];
       if (t.hp < t.maxHp) {
         t.hp++;

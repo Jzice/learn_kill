@@ -49,7 +49,7 @@ Detailed docs live in `docs/`: [docs/架构设计.md](docs/架构设计.md) (arc
 - `profile/` — localStorage profile (`xuetangsha_profile_v1`): score/levels/achievements **plus personalization fields** (name/avatar/gender/mood/moodIcon, `AVATAR_OPTIONS`/`MOOD_ICON_OPTIONS`/`GENDER_OPTIONS`, `localIdentity()`/`identityFromProfile()`), settlement.
 - `game/` — engine: `state.ts` (the `G` object + `quizStats`), `rules.ts` (distance/hand-limit/skill primitives), `quiz.ts` (quiz modal + learning rewards), `damage.ts`, `actions.ts` (card resolution), `skills.ts` (the big `switch(skillId)`), `turn.ts` (runTurn phases), `ai.ts`, `loop.ts`, `choice.ts` (Promise bridge for local/remote choices), `marks.ts`, `log.ts`, `chat.ts`, `setup.ts` (player assembly + startSingle/hostStartGame/exitGame).
 - `net/` — `network.ts` (NET object, host-authoritative sync, onPeerData/onClientData), `protocol.ts` (typed message union — extend this first when adding networked features), `rooms.ts` (create/join/leave/close), `peer.cdn.ts` / `peer.bundled.ts`.
-- `ui/` — `render.ts` (single top-level `render()`), `hand.ts`, `lobby.ts` (pickers, SELECTED_* state, room member lists, bank management UI), `modals.ts` (rules), `dock.ts` (mobile), `playzone.ts`.
+- `ui/` — `render.ts` (single top-level `render()`), `hand.ts`, `lobby.ts` (pickers, SELECTED_* state, room member lists, bank management UI), `study.ts` (首页「我的学习情况」：知识点掌握聚合 + 错题复习，按需按年级加载题库解析), `modals.ts` (rules), `dock.ts` (mobile), `playzone.ts`.
 
 ## Critical Invariants (1:1 parity with the original)
 

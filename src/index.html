@@ -113,6 +113,10 @@
       </button>
     </div>
   </div>
+  <div class="panel">
+    <h3>◈ 我的学习情况 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（知识点掌握与错题复习，点击错题可展开解析）</span></h3>
+    <div id="studyPanel"></div>
+  </div>
 </div>
 
 <!-- 子界面：对局设置（选定模式后进入） -->
@@ -142,6 +146,11 @@
       <h3>◈ 出题范围 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（决定抽题覆盖的年级；错题会优先重复出现）</span></h3>
       <div class="opt-row" id="scopePicker"></div>
       <div class="scope-hint" id="scopeHint"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 回合限时 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（开启后每次决策单独计时，超时自动按默认处理）</span></h3>
+      <div class="opt-row" id="timerPicker"></div>
+      <div class="scope-hint" id="timerHint"></div>
     </div>
     <div class="panel">
       <h3>◈ 玩家总数 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（拖动滑块选择 2–8 人）</span></h3>
@@ -282,6 +291,7 @@
   <div class="center-area" id="centerArea">
     <div class="action-hint" id="actionHint"></div>
     <div class="action-btns" id="actionBtns"></div>
+    <span class="timer-chip" id="timerChip"></span>
   </div>
   <div class="hand-row" id="handRow"></div>
 </div>

@@ -21,6 +21,8 @@ import {
   SELECTED_GRADE,
   SELECTED_PACKET,
   SELECTED_ROLE,
+  SELECTED_TIMER_ON,
+  SELECTED_TIMER_SEC,
   ensureCharValid,
   pickRandomCharIfNotChosen,
 } from '../ui/lobby';
@@ -33,6 +35,13 @@ import {
   saveProfile,
 } from '../profile/profile';
 import { Sound } from '../core/sound';
+
+/** 应用开局选项：回合限时（开关 + 秒数），联机由房主下发给客人 */
+function applyTimerSetting(): void {
+  G.timerOn = SELECTED_TIMER_ON;
+  G.timerSec = SELECTED_TIMER_SEC;
+  G.timerEnd = null;
+}
 
 function setupPlayers(playerCount: number, localChar: Character, localName: string): void {
   const roleDeck = [...(ROLE_CONFIG[playerCount] || ROLE_CONFIG[4])];
@@ -101,7 +110,9 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       isAI,
       skills,
       peerId: peerId || null,
-      flags: { shaUsed: 0, skillUsed: false, extraDamage: 0, skipPlay: false, noSha: false },
+      flags: { shaUsed: 0, skillUsed: false, extraDamage: 0, skipPlay: false, noSha: false, jiuUsed: false },
+      chained: false,
+      turned: false,
     };
   };
 
@@ -178,6 +189,7 @@ export async function startSingle(): Promise<void> {
   NET.mode = 'single';
   NET.isHost = false;
   setupPlayers(SELECTED_COUNT, localChar, nickname);
+  applyTimerSetting();
   document.getElementById('screenLobby')!.classList.remove('active');
   document.getElementById('screenSetup')!.classList.remove('active');
   document.getElementById('screenGame')!.classList.add('active');
@@ -212,6 +224,7 @@ export async function hostStartGame(): Promise<void> {
   NET.mode = 'host';
   NET.isHost = true;
   setupPlayers(SELECTED_COUNT, localChar, nick);
+  applyTimerSetting();
   const remotePlayers = G.players.filter((p) => !p.isAI && p.peerId !== NET.myPeerId);
   remotePlayers.forEach((p) => {
     const idx = G.players.indexOf(p);
@@ -221,6 +234,8 @@ export async function hostStartGame(): Promise<void> {
       myPlayerIdx: idx,
       grade: G.grade,
       playerCount: SELECTED_COUNT,
+      timerOn: G.timerOn,
+      timerSec: G.timerSec,
     });
   });
   document.getElementById('screenLobby')!.classList.remove('active');

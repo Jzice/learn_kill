@@ -38,8 +38,11 @@ import {
   renderGradePicker,
   renderScopePicker,
   renderPacketPicker,
+  renderTimerPicker,
   setQuizScopeMode,
   setPacket,
+  setTimerOn,
+  setTimerSec,
   renderProfileEditor,
   pickSeatMember,
   randomizeSeats,
@@ -62,6 +65,14 @@ import {
 } from './ui/lobby';
 import { bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
 import { clearWrongBook } from './profile/quizbook';
+import {
+  markStudyReviewed,
+  renderStudyPanel,
+  resetStudyPanel,
+  toggleMasteredWrongs,
+  toggleStudyItem,
+} from './ui/study';
+import { initTimerTicker } from './ui/timer';
 import { closeSettle, requestRematch, startSingleGame } from './ui/settle';
 import { closeRoom, createRoom, joinRoom, leaveRoom } from './net/rooms';
 import { EXTERNAL_BANK_URLS, loadBankFromUrl } from './data/questionBank';
@@ -115,8 +126,17 @@ window.enterSetup = enterSetup;
 window.setNetMode = setNetMode;
 window.setQuizScopeMode = setQuizScopeMode;
 window.setPacket = setPacket;
+window.setTimerOn = setTimerOn;
+window.setTimerSec = setTimerSec;
 window.renderPacketPicker = renderPacketPicker;
-window.clearWrongBook = clearWrongBook;
+window.clearWrongBook = () => {
+  clearWrongBook();
+  resetStudyPanel(); // 清空后首页学习面板同步复位
+};
+// 首页学习情况面板（知识点掌握 / 错题复习）
+window.toggleStudyItem = toggleStudyItem;
+window.toggleMasteredWrongs = toggleMasteredWrongs;
+window.markStudyReviewed = markStudyReviewed;
 window.requestSeatMove = requestSeatMove;
 window.pickSeatMember = pickSeatMember;
 window.randomizeSeats = randomizeSeats;
@@ -129,8 +149,8 @@ window.openBankBrowser = openBankBrowser;
 window.closeBankBrowser = closeBankBrowser;
 
 /** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位；
- *  并实测切换布局模式：单行放得下=单行(品牌左, 等级积分+按钮+信息靠右)；
- *  放不下=恒定两行(第一行 品牌+等级积分, 第二行 按钮组+个人信息靠右)，更窄时整栏横向滚动 */
+ *  并实测切换布局模式：单行放得下=单行(品牌左, 等级积分+按钮+个人信息靠右)；
+ *  放不下=恒定两行(第一行 品牌左+个人信息右, 第二行 等级积分左+按钮组右)，更窄时整栏横向滚动 */
 function syncTopBarHeight(): void {
   const tb = document.getElementById('topBar');
   if (!tb) return;
@@ -152,14 +172,17 @@ function syncTopBarHeight(): void {
     const wantMode2 = !allFit;
     if (wantMode2 !== tb.classList.contains('tb-mode2')) tb.classList.toggle('tb-mode2', wantMode2);
   };
+  // 测量过程会临时移除 tb-mode2（回到单行）再切回，属于「回调内改布局」；
+  // 延到下一帧执行，避免 ResizeObserver 判定为 undelivered notifications 并报错
+  const setLater = () => requestAnimationFrame(set);
   set();
   try {
-    const ro = new ResizeObserver(set);
+    const ro = new ResizeObserver(setLater);
     ro.observe(tb);
     if (chip) ro.observe(chip);
     if (right) ro.observe(right);
   } catch (e) {
-    window.addEventListener('resize', set);
+    window.addEventListener('resize', setLater);
   }
 }
 
@@ -221,6 +244,7 @@ function init(): void {
   renderGradePicker();
   renderScopePicker();
   renderPacketPicker();
+  renderTimerPicker();
   renderFactionPicker();
   renderCharPicker();
   renderRolePicker();
@@ -233,6 +257,8 @@ function init(): void {
   const verEl = document.getElementById('tbVersion');
   if (verEl) verEl.textContent = `v${__APP_VERSION__}`;
   renderAchievements();
+  renderStudyPanel();
+  initTimerTicker(); // 回合倒计时刷新（房主与客人端共用 G.timerEnd）
   bindBankBrowser();
   syncTopBarHeight();
   bindPlayLogRelayout();

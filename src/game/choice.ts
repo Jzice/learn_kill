@@ -2,8 +2,21 @@
 import type { ChoiceOption, PendingType } from '../core/types';
 import { G } from './state';
 import { Sound } from '../core/sound';
+import { addLog } from './log';
 import { render } from '../ui/render';
 import { NET, isLocalPlayer, syncStateToClients } from '../net/network';
+import { defaultChoiceFor, timerActionText, timerEnabled, timerSec } from './timer';
+
+/** 当前决策环节的计时器（房主权威；本地单人即为自己） */
+let choiceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearChoiceTimer(): void {
+  if (choiceTimer) {
+    clearTimeout(choiceTimer);
+    choiceTimer = null;
+  }
+  if (G.timerEnd) G.timerEnd = null;
+}
 
 export function waitChoice(
   playerIdx: number,
@@ -20,6 +33,21 @@ export function waitChoice(
     G.pendingType = type;
     G.pendingPlayer = playerIdx;
     G.pendingResolve = resolve;
+    // 回合限时：真人玩家的每个决策环节独立计时，超时按默认规则自动处理并跳到下一步
+    //（AI 不计时；联机由房主为所有真人玩家计时，倒计时随 state_sync 下发到客人端）
+    if (timerEnabled() && !p.isAI) {
+      const ms = timerSec() * 1000;
+      G.timerEnd = Date.now() + ms;
+      choiceTimer = setTimeout(() => {
+        choiceTimer = null;
+        G.timerEnd = null;
+        if (G.pendingResolve !== resolve) return;
+        const v = defaultChoiceFor(type, options);
+        const who = G.players[playerIdx]?.name || '玩家';
+        addLog(`⏱ ${who} 超时未决策，自动${timerActionText(type)}`, 'sys');
+        resolveChoice(v);
+      }, ms);
+    }
     if (isLocalPlayer(playerIdx)) {
       render();
     } else if (NET.isHost) {
@@ -50,6 +78,7 @@ export function waitChoice(
 
 export function resolveChoice(v: string | number): void {
   Sound.play('click');
+  clearChoiceTimer();
   if (!G.pendingResolve) return;
   const r = G.pendingResolve;
   G.pendingResolve = null;

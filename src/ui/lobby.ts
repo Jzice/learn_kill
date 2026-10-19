@@ -36,6 +36,8 @@ import {
 import { startSingle } from '../game/setup';
 import type { QuizScope } from '../core/types';
 import { SCOPES, quizScope, setQuizScope, scopeDesc, scopeLabel, renderWrongBook } from '../profile/quizbook';
+import { renderStudyPanel } from './study';
+import { DEFAULT_TIMER_SEC, TIMER_OPTIONS } from '../game/timer';
 
 /* ---- 大厅选择状态（原版全局变量，仅本模块写入，其他模块只读） ---- */
 export let SELECTED_GRADE = '初二上';
@@ -47,6 +49,9 @@ export let SELECTED_MODE: 'single' | 'host' | 'join' = 'single';
 export let SELECTED_PACKET: PacketId = 'all';
 export let USER_CHOSEN = false;
 export let SELECTED_ROLE: Role | 'random' = 'random';
+/** 回合限时：开关 + 档位（10 / 20 / 30 秒），默认关闭 */
+export let SELECTED_TIMER_ON = false;
+export let SELECTED_TIMER_SEC: number = DEFAULT_TIMER_SEC;
 
 export function renderGradePicker(): void {
   const grid = document.getElementById('gradePicker');
@@ -90,6 +95,39 @@ export function renderPacketPicker(): void {
       ? `当前：${packetName(SELECTED_PACKET)}（${n} 名角色；只影响可选角色与主题技能，题目范围由年级决定）`
       : `当前：${packetName(SELECTED_PACKET)} —— 本年级（${SELECTED_GRADE}）下暂无该学段角色，请到首页提高年级`;
   }
+}
+
+/** 回合限时选择器：不限时 / 10 / 20 / 30 秒 */
+export function renderTimerPicker(): void {
+  const box = document.getElementById('timerPicker');
+  if (!box) return;
+  const off = `<button class="opt-btn ${SELECTED_TIMER_ON ? '' : 'active'}" onclick="setTimerOn(false)">♾️ 不限时<small>传统节奏，慢慢思考</small></button>`;
+  const secs = TIMER_OPTIONS.map(
+    (o) =>
+      `<button class="opt-btn ${SELECTED_TIMER_ON && SELECTED_TIMER_SEC === o.sec ? 'active' : ''}" onclick="setTimerSec(${o.sec})">⏱ ${o.label}<small>每次决策限时 ${o.sec} 秒</small></button>`,
+  ).join('');
+  box.innerHTML = off + secs;
+  const hint = document.getElementById('timerHint');
+  if (hint) {
+    hint.textContent = SELECTED_TIMER_ON
+      ? `当前：每次决策限时 ${SELECTED_TIMER_SEC} 秒 —— 出牌超时自动结束出牌，出闪超时承受伤害，濒死超时放弃，答题超时算答错`
+      : '当前：不限时（AI 回合不计时，仅对真人玩家的决策计时）';
+  }
+}
+
+export function setTimerOn(on: boolean): void {
+  Sound.play('click');
+  SELECTED_TIMER_ON = on;
+  renderTimerPicker();
+  renderSetupSummary();
+}
+
+export function setTimerSec(sec: number): void {
+  Sound.play('click');
+  SELECTED_TIMER_SEC = sec;
+  SELECTED_TIMER_ON = true;
+  renderTimerPicker();
+  renderSetupSummary();
 }
 
 export function setPacket(id: PacketId): void {
@@ -482,6 +520,7 @@ export function bindLobbyEvents(): void {
   window.addEventListener('profile-updated', () => {
     renderTopBar();
     renderAchievements();
+    renderStudyPanel();
   });
 }
 

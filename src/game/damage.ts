@@ -1,4 +1,5 @@
 /* ==================== 伤害 & 濒死 ==================== */
+import type { Card, DamageType, Player } from '../core/types';
 import { G } from './state';
 import { FX, floatTextFx, resultBanner } from '../core/fx';
 import { Sound } from '../core/sound';
@@ -12,12 +13,45 @@ import { waitChoice } from './choice';
 import { maybeSettle } from '../profile/profile';
 import { NET, scheduleSync } from '../net/network';
 
-export async function dealDamage(srcIdx: number, tgtIdx: number, amount: number, type = 'normal'): Promise<void> {
+export async function dealDamage(
+  srcIdx: number,
+  tgtIdx: number,
+  amount: number,
+  type: DamageType = 'normal',
+): Promise<void> {
   const tgt = G.players[tgtIdx];
   if (!tgt || !tgt.alive) return;
   // AI 信念事件：谁攻击了谁（所有存活 AI 观察，受害者记仇）
   if (srcIdx >= 0) noteAttack(srcIdx, tgtIdx);
+  await applyDamage(tgtIdx, amount, type, true, srcIdx);
+  render();
+  checkWin();
+}
+
+/**
+ * 实际扣血结算：防具修正 → 护盾/学识吸收 → 扣血 → 铁索连环传导。
+ * allowChain=false 用于传导伤害本身，避免连环互相触发形成死循环。
+ */
+async function applyDamage(
+  tgtIdx: number,
+  amount: number,
+  type: DamageType,
+  allowChain: boolean,
+  srcIdx: number,
+): Promise<void> {
+  const tgt = G.players[tgtIdx];
+  if (!tgt || !tgt.alive) return;
   let dmg = amount;
+  // 防具修正：白银狮子（每次受到的伤害最多 1 点）/ 藤甲（火焰伤害 +1）
+  const armor = tgt.equip.armor?.skill;
+  if (armor === 'baiyin' && dmg > 1) {
+    addLog(`【白银狮子】${tgt.name} 受到的伤害限制为 1 点`, 'heal');
+    dmg = 1;
+  }
+  if (armor === 'tengjia' && type === 'fire') {
+    dmg += 1;
+    addLog(`【藤甲】${tgt.name} 受到火焰伤害 +1`, 'dmg');
+  }
   while (dmg > 0 && (tgt.shield || 0) > 0) {
     tgt.shield--;
     dmg--;
@@ -53,7 +87,35 @@ export async function dealDamage(srcIdx: number, tgtIdx: number, amount: number,
     if (tgt.hp <= 0) await dyingPhase(tgtIdx, srcIdx);
   }
   render();
-  checkWin();
+  // 铁索连环：属性伤害命中连环角色 → 传导给所有连环角色并各自重置
+  if (allowChain && type !== 'normal' && tgt.chained) {
+    await propagateChain(tgtIdx, amount, type);
+  }
+}
+
+/** 连环传导：所有横置角色（含最初受击者）解除连环，其余各承受一次同属性同数值伤害 */
+async function propagateChain(originIdx: number, amount: number, type: DamageType): Promise<void> {
+  const chained = G.players.map((p, i) => ({ p, i })).filter((x) => x.p.chained);
+  if (!chained.length) return;
+  addLog(`【铁索连环】属性伤害传导（${chained.length} 名连环角色）`, 'hl');
+  chained.forEach((x) => {
+    x.p.chained = false;
+  });
+  for (const { p, i } of chained) {
+    if (i === originIdx || !p.alive) continue;
+    floatTextFx(i, '连环', '#f39c12');
+    await applyDamage(i, amount, type, false, -1);
+  }
+  render();
+}
+
+/** 失去【白银狮子】时回复 1 点体力（装备被替换 / 拆除 / 顺手时调用） */
+export function onLoseArmor(p: Player, card: Card | null): void {
+  if (!card || card.skill !== 'baiyin' || !p.alive) return;
+  if (p.hp >= p.maxHp) return;
+  p.hp++;
+  addLog(`【白银狮子】${p.name} 失去装备，回复 1 点体力`, 'heal');
+  FX.healGlow(G.players.indexOf(p));
 }
 
 export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
@@ -164,7 +226,15 @@ export function checkWin(): void {
   const finish = (text: string): void => {
     G.gameOver = true;
     G.winnerText = text;
+    // 对局结束：揭示全部角色身份（含仍存活者），座位列表与结算面板统一公开
+    G.players.forEach((q) => {
+      q.roleRevealed = true;
+    });
     addLog('⚑ ' + text, 'hl');
+    addLog(
+      `🎭 身份揭晓：${G.players.map((q) => `${q.name}=${ROLES[q.role].name}`).join('、')}`,
+      'hl',
+    );
     if (!bannerShown) {
       bannerShown = true;
       const win = localPlayerWin();
@@ -172,6 +242,8 @@ export function checkWin(): void {
       void resultBanner(text, win);
     }
     maybeSettle();
+    render();
+    if (NET.isHost && NET.mode === 'host') scheduleSync();
   };
   if (!lord?.alive) {
     if (!rebelsAlive && spiesAlive && alive.length === 1 && alive[0].role === 'spy') finish('内奸获胜');

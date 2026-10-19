@@ -22,6 +22,7 @@ import {
 } from '../profile/quizbook';
 import { NET, isLocalPlayer, type PendingQuiz } from '../net/network';
 import { aiQuiz } from './ai';
+import { timerEnabled, timerSec } from './timer';
 
 let quizResolve: ((v: boolean) => void) | null = null;
 
@@ -108,18 +109,31 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
       .map((o, i) => `<button class="quiz-option" data-i="${i}"><span class="tag">${String.fromCharCode(65 + i)}</span>${escapeHtml(o)}</button>`)
       .join('');
     document.getElementById('quizFeedback')!.textContent = '';
-    opts.querySelectorAll('.quiz-option').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const i = Number((btn as HTMLElement).dataset.i);
-        const correct = i === q.a;
-        opts.querySelectorAll('.quiz-option').forEach((b) => {
-          (b as HTMLButtonElement).disabled = true;
-          if (Number((b as HTMLElement).dataset.i) === q.a) b.classList.add('correct');
-        });
-        if (!correct) btn.classList.add('wrong');
-        const fb = document.getElementById('quizFeedback')!;
-        quizStats.total++;
-        if (correct) {
+    // 回合限时：答题同样单独计时，超时按答错处理（AI 不计时）
+    let settled = false;
+    let quizTimer: ReturnType<typeof setTimeout> | null = null;
+    const clearQuizTimer = (): void => {
+      if (quizTimer) {
+        clearTimeout(quizTimer);
+        quizTimer = null;
+      }
+      if (G.timerEnd) G.timerEnd = null;
+    };
+    const finish = (chosen: number): void => {
+      if (settled) return;
+      settled = true;
+      clearQuizTimer();
+      const btns = opts.querySelectorAll('.quiz-option');
+      btns.forEach((b) => {
+        (b as HTMLButtonElement).disabled = true;
+        if (Number((b as HTMLElement).dataset.i) === q.a) b.classList.add('correct');
+      });
+      const correct = chosen === q.a;
+      if (chosen >= 0 && !correct) btns[chosen]?.classList.add('wrong');
+      const timedOut = chosen < 0;
+      const fb = document.getElementById('quizFeedback')!;
+      quizStats.total++;
+      if (correct) {
           quizStats.correct++;
           if (player) player.knowledge += 1;
           // 记录本地玩家科目正确数 + 个人错题本/掌握度
@@ -147,7 +161,7 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
             const rec = recordAnswer(q, false, q.g || G.grade);
             wrongNote = `<br><span style="font-size:10.5px;color:#a02020">📕 已记入错题本（累计错 ${rec.w} 次），将优先重复出现</span>`;
           }
-          fb.innerHTML = `✗ 正确答案是 ${String.fromCharCode(65 + q.a)}<br><span style="font-size:10.5px;">知识点【${q.kp || '综合'}】</span>${wrongNote}`;
+          fb.innerHTML = `${timedOut ? '⏱ 超时未作答，按答错处理<br>' : ''}✗ 正确答案是 ${String.fromCharCode(65 + q.a)}<br><span style="font-size:10.5px;">知识点【${q.kp || '综合'}】</span>${wrongNote}`;
           fb.style.color = '#a02020';
           Sound.play('wrong');
         }
@@ -159,8 +173,15 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
             r(correct);
           }
         }, 1500);
-      });
+    };
+    opts.querySelectorAll('.quiz-option').forEach((btn) => {
+      btn.addEventListener('click', () => finish(Number((btn as HTMLElement).dataset.i)));
     });
+    if (timerEnabled()) {
+      const ms = timerSec() * 1000;
+      G.timerEnd = Date.now() + ms;
+      quizTimer = setTimeout(() => finish(-1), ms);
+    }
     document.getElementById('quizModal')!.classList.add('show');
   });
 }
@@ -181,13 +202,16 @@ async function askQuizRemote(player: Player, isSkill: boolean): Promise<boolean>
   return new Promise((resolve) => {
     const quizId = ++quizSeq;
     const entry: PendingQuiz = { resolve, player, q, quizId, timer: null };
+    const ms = timerEnabled() ? timerSec() * 1000 : 20000;
+    if (timerEnabled()) G.timerEnd = Date.now() + ms;
     entry.timer = setTimeout(() => {
       // 仅清理仍属于本题的挂起项；已被响应或已被新题替换则不动
       if (NET.pendingQuiz === entry) {
         NET.pendingQuiz = null;
+        if (G.timerEnd) G.timerEnd = null;
         resolve(false);
       }
-    }, 20000);
+    }, ms);
     NET.pendingQuiz = entry;
     conn.send({ type: 'ask_quiz_request', question: q, isSkill, quizId });
   });

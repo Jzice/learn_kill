@@ -54,10 +54,17 @@ declare global {
     setPlayerCount: (n: number) => void;
     // 学习档案：出题范围 / 错题本
     setQuizScopeMode: (s: 'grade' | 'past' | 'junior' | 'senior') => void;
+    // 回合限时：关闭 / 选择档位（10 / 20 / 30 秒）
+    setTimerOn: (on: boolean) => void;
+    setTimerSec: (sec: number) => void;
     // 扩展包：决定可选角色的学段（初中 / 高中 / 全部）
     setPacket: (id: 'all' | 'junior' | 'senior') => void;
     renderPacketPicker: () => void;
     clearWrongBook: () => void;
+    // 首页学习情况：展开错题解析 / 展开已攻克列表 / 标记已复习
+    toggleStudyItem: (key: string) => void;
+    toggleMasteredWrongs: () => void;
+    markStudyReviewed: (key: string) => void;
     // 联机座位：自己换座 / 座主代他人换座 / 随机分配
     requestSeatMove: (toIndex: number) => void;
     pickSeatMember: (peerId: string) => void;

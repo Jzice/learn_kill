@@ -337,6 +337,9 @@ export function onClientData(data: NetMessage): void {
     G.myPlayerIdx = data.myPlayerIdx;
     G.grade = data.grade;
     G.playerCount = data.playerCount;
+    G.timerOn = data.timerOn ?? false;
+    G.timerSec = data.timerSec ?? 20;
+    G.timerEnd = null;
     G.started = true;
     G.deck = [];
     G.discard = [];
@@ -358,6 +361,9 @@ export function onClientData(data: NetMessage): void {
     G.pendingOptions = data.pendingOptions;
     G.pendingPlayer = data.pendingPlayer;
     G.pendingType = data.pendingType || 'list';
+    G.timerOn = data.timerOn ?? G.timerOn;
+    G.timerSec = data.timerSec ?? G.timerSec;
+    G.timerEnd = data.timerEnd ?? null;
     if (data.playLog) {
       setPlayLog(data.playLog);
     }
@@ -405,6 +411,9 @@ export function syncStateToClients(): void {
     pendingType: G.pendingType,
     pendingPlayer: G.pendingPlayer,
     playLog: playLog.slice(-60),
+    timerOn: G.timerOn,
+    timerSec: G.timerSec,
+    timerEnd: G.timerEnd ?? null,
   });
 }
 

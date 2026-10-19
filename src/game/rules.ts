@@ -1,12 +1,20 @@
 /* ==================== 规则原语（距离/手牌/技能判定） ==================== */
-import type { Card, Player } from '../core/types';
+import type { Card, Gender, Player } from '../core/types';
 import { G } from './state';
 import { shuffle } from '../data/cards';
+import { CHAR_GENDER } from '../data/characters';
 import { Sound } from '../core/sound';
 import { discardFx, drawFx } from '../core/fx';
 
 export function hasSkill(p: Player, id: string): boolean {
   return !!p.skills && p.skills.some((s) => s.id === id);
+}
+
+/** 角色性别：真人取个性化设置（隐藏则回退角色表），AI 取角色表；用于【雌雄双股剑】异性判定 */
+export function genderOf(p: Player): Gender {
+  const g = p.identity?.gender;
+  if (g && g !== 'hidden') return g;
+  return CHAR_GENDER[p.charId] || 'male';
 }
 
 export function seatDist(a: number, b: number): number {

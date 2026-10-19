@@ -84,6 +84,8 @@ function buildPlayerCard(p: Player, i: number): string {
   if (!p.alive && p.roleRevealed) badges += `<span class="badge badge-reveal">☠ ${ROLES[p.role].name}</span>`;
   if ((p.shield || 0) > 0) badges += `<span class="badge badge-shield">🛡️${p.shield}</span>`;
   if ((p.combo || 0) >= 2) badges += `<span class="badge badge-combo">⚡${p.combo}</span>`;
+  if (p.chained) badges += `<span class="badge badge-chain" title="铁索连环·横置：受属性伤害时传导">🔗连环</span>`;
+  if (p.turned) badges += `<span class="badge badge-turned" title="翻面：跳过下一个回合">🔄翻面</span>`;
   const markBtn = isSelf || !p.alive ? '' : `<button class="p-mark-btn" title="标记身份" onclick="event.stopPropagation();openMarkMenu(${i})">🏷️</button>`;
   return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''} ${isMarked ? 'role-marked' : ''}" style="--faction-color:${fColor};${isMarked ? 'border:2px dashed ' + roleColor + ';' : ''}">
     <div class="faction-icon" style="border-color:${fColor};color:${fColor};">${faction.icon}</div>

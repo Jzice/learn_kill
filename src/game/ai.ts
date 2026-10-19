@@ -1,5 +1,5 @@
 /* ==================== AI ==================== */
-import type { Player } from '../core/types';
+import type { Card, Player } from '../core/types';
 import { G } from './state';
 import { sleep } from '../core/dom';
 import { Sound } from '../core/sound';
@@ -7,24 +7,41 @@ import { equipFx } from '../core/fx';
 import { FACTIONS } from '../data/factions';
 import { addChat } from './chat';
 import { addLog, addPlayLog } from './log';
-import { discardCard, drawCards } from './rules';
+import { discardCard, drawCards, inRange, sameFaction } from './rules';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { useActiveSkill } from './skills';
-import { useTao, useTrick, useSha } from './actions';
+import { useTao, useTrick, useSha, useJiu } from './actions';
+import { onLoseArmor } from './damage';
 import { NET, syncStateToClients } from '../net/network';
 import { noteAiTurn, pickAiTarget } from './aibrain';
+import { SHA_SUBS } from '../data/cards';
 
 export function aiQuiz(rate = 0.6): boolean {
   return Math.random() < rate;
 }
 
+/** AI 主动技可用性：判断该技能的费用（手牌数门槛）当前能否支付 */
+export function aiSkillUsable(p: Player, id: string): boolean {
+  const need2 = id === 'wenyan' || id === 'youjihuaxue';
+  const need1 = ['beisong', 'daoshu', 'tingxie', 'zhexue', 'dianci', 'chaodai', 'shiliao', 'fazhi', 'youshu'].includes(id);
+  if (need2) return p.hand.length >= 2;
+  if (need1) return p.hand.length >= 1;
+  return true;
+}
+
 export async function aiPlayPhase(idx: number): Promise<void> {
   const p = G.players[idx];
-  if (!p.flags.skillUsed && p.skills.some((s) => s.type === 'active') && Math.random() < 0.5) {
-    const act = p.skills.find((s) => s.type === 'active')!;
-    await useActiveSkill(idx, act.id);
-    await sleep(400);
+  if (!p.flags.skillUsed && p.alive) {
+    const acts = p.skills.filter((s) => s.type === 'active');
+    if (acts.length && Math.random() < 0.5) {
+      // 基础技与扩展包主题技一视同仁：优先挑当前可执行的（付得起费用的），否则任选一个
+      const usable = acts.filter((s) => aiSkillUsable(p, s.id));
+      const pool = usable.length ? usable : acts;
+      const act = pool[Math.floor(Math.random() * pool.length)];
+      await useActiveSkill(idx, act.id);
+      await sleep(400);
+    }
   }
   let equipChanged = false;
   for (const c of [...p.hand]) {
@@ -36,7 +53,10 @@ export async function aiPlayPhase(idx: number): Promise<void> {
         if (p.equip.weapon) G.discard.push(p.equip.weapon);
         p.equip.weapon = c;
       } else if (c.sub === 'armor') {
-        if (p.equip.armor) G.discard.push(p.equip.armor);
+        if (p.equip.armor) {
+          onLoseArmor(p, p.equip.armor);
+          G.discard.push(p.equip.armor);
+        }
         p.equip.armor = c;
       } else if (c.sub === 'horse+') {
         if (p.equip.horsePlus) G.discard.push(p.equip.horsePlus);
@@ -66,14 +86,173 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     await useTrick(idx, wz, null);
     await sleep(300);
   }
+  // 五谷丰登：直接铺牌
+  const wugu = p.hand.find((c) => c.sub === 'wugu');
+  if (wugu && p.alive) {
+    discardCard(p, wugu);
+    await useTrick(idx, wugu, null);
+    await sleep(300);
+  }
+  // 铁索连环：优先横置一名敌方目标，无可乘之机则重铸
+  const tiesuo = p.hand.find((c) => c.sub === 'tiesuo');
+  if (tiesuo && p.alive) {
+    const ci = pickAiTarget(idx);
+    if (ci >= 0 && !G.players[ci].chained) {
+      discardCard(p, tiesuo);
+      await useTrick(idx, tiesuo, ci);
+      await sleep(300);
+    } else if (Math.random() < 0.4) {
+      discardCard(p, tiesuo);
+      drawCards(p, 1);
+      addLog(`${p.name} 重铸【铁索连环】，摸一张牌`);
+      await sleep(200);
+    }
+  }
+  // 火攻：对敌方目标使用（目标须有手牌，否则必败）
+  const huogong = p.hand.find((c) => c.sub === 'huogong');
+  if (huogong && p.alive) {
+    const hi = pickAiTarget(idx);
+    if (hi >= 0 && G.players[hi].hand.length > 0) {
+      discardCard(p, huogong);
+      await useTrick(idx, huogong, hi);
+      await sleep(300);
+    }
+  }
+  // 借刀杀人：优先借「敌方」的武器，并让受害者优先是非同阵营角色
+  const jiedao = p.hand.find((c) => c.sub === 'jiedao');
+  if (jiedao && p.alive) {
+    let hi = -1,
+      vi = -1;
+    const holders: number[] = [];
+    for (let i = 0; i < G.players.length; i++) {
+      if (i === idx || !G.players[i].alive || !G.players[i].equip.weapon) continue;
+      holders.push(i);
+    }
+    holders.sort(
+      (x, y) =>
+        (sameFaction(G.players[x], p) ? 1 : 0) - (sameFaction(G.players[y], p) ? 1 : 0),
+    );
+    for (const i of holders) {
+      const victims: number[] = [];
+      for (let j = 0; j < G.players.length; j++) {
+        if (j === i || !G.players[j].alive) continue;
+        if (inRange(i, j)) victims.push(j);
+      }
+      if (!victims.length) continue;
+      victims.sort(
+        (x, y) =>
+          (sameFaction(G.players[x], p) ? 1 : 0) - (sameFaction(G.players[y], p) ? 1 : 0) ||
+          G.players[x].hp - G.players[y].hp,
+      );
+      hi = i;
+      vi = victims[0];
+      break;
+    }
+    if (hi >= 0) {
+      discardCard(p, jiedao);
+      await useTrick(idx, jiedao, hi, vi);
+      await sleep(300);
+    }
+  }
+  // 决斗：对敌方目标使用
+  const juedou = p.hand.find((c) => c.sub === 'juedou');
+  if (juedou && p.alive) {
+    const di = pickAiTarget(idx);
+    if (di >= 0) {
+      discardCard(p, juedou);
+      await useTrick(idx, juedou, di);
+      await sleep(300);
+    }
+  }
+  // AOE：仅当场上没有同阵营的其他存活角色时才使用，避免误伤
+  const allyAlive = G.players.some((q, i) => i !== idx && q.alive && q.faction === p.faction);
+  if (!allyAlive) {
+    for (const sub of ['nanman', 'wanjian']) {
+      const aoe = p.hand.find((c) => c.sub === sub);
+      if (aoe && p.alive) {
+        discardCard(p, aoe);
+        await useTrick(idx, aoe, null);
+        await sleep(300);
+      }
+    }
+  }
   if (p.alive && !p.flags.noSha && (p.flags.shaUsed || 0) < 1) {
-    const sha = p.hand.find((c) => c.sub === 'sha');
-    if (sha) {
+    const shas = p.hand.filter((c) => SHA_SUBS.includes(c.sub));
+    // 【酒】：本回合首次出杀前喝一口（每回合限一次，伤害 +1）
+    if (shas.length && !p.flags.jiuUsed) {
+      const jiu = p.hand.find((c) => c.sub === 'jiu');
+      if (jiu) {
+        discardCard(p, jiu);
+        await useJiu(idx);
+        await sleep(250);
+      }
+    }
+    // 场上有人横置（连环）时，优先用属性杀打出去以触发传导
+    const chainOn = G.players.some((q) => q.alive && q.chained);
+    if (shas.length) {
       // 博弈式目标选择：基于信念推断与身份策略（可能观望/佯攻）
-      const ti = pickAiTarget(idx);
+      let ti = pickAiTarget(idx);
+      if (chainOn) {
+        const ci = G.players.findIndex(
+          (q, i) => i !== idx && q.alive && q.chained && inRange(idx, i) && !sameFaction(q, p),
+        );
+        if (ci >= 0) ti = ci;
+      }
       if (ti >= 0) {
-        const suit = sha.suit;
-        discardCard(p, sha);
+        // 藤甲目标：只用属性杀（优先火杀），普通杀会被挡下
+        let sha: Card | null = shas[0];
+        if (G.players[ti].equip.armor?.skill === 'tengjia') {
+          sha = shas.find((c) => c.damageType === 'fire') || shas.find((c) => c.damageType === 'thunder') || null;
+        } else if (chainOn) {
+          sha = shas.find((c) => c.damageType === 'fire') || shas.find((c) => c.damageType === 'thunder') || shas[0];
+        }
+        if (sha) {
+          // 方天画戟：此杀是最后一张手牌时，可指定至多 3 个目标（优先非同阵营）
+          const multi = p.equip.weapon?.skill === 'fangtian' && p.hand.length === 1;
+          const targets: number[] = [ti];
+          if (multi) {
+            const rest = G.players.map((_, i) => i)
+              .filter((i) => i !== idx && i !== ti && G.players[i].alive && inRange(idx, i))
+              .sort(
+                (x, y) =>
+                  (sameFaction(G.players[x], p) ? 1 : 0) - (sameFaction(G.players[y], p) ? 1 : 0),
+              );
+            for (const i of rest) {
+              if (targets.length >= 3) break;
+              targets.push(i);
+            }
+          }
+          discardCard(p, sha);
+          for (let k = 0; k < targets.length; k++) {
+            if (!G.players[targets[k]].alive) continue;
+            await useSha(idx, targets[k], { suit: sha.suit, damageType: sha.damageType, fromFangtian: k > 0 });
+          }
+          await sleep(300);
+        }
+      }
+    }
+  }
+  // 丈八蛇矛：没有【杀】时，将两张手牌当【杀】使用
+  if (
+    p.alive &&
+    !p.flags.noSha &&
+    (p.flags.shaUsed || 0) < 1 &&
+    p.equip.weapon?.skill === 'zhangba' &&
+    p.hand.length >= 2
+  ) {
+    const ti = pickAiTarget(idx);
+    if (ti >= 0) {
+      // 优先拿价值最低的两张（桃/闪/杀/装备之外）
+      const junk = p.hand.filter(
+        (c) => !SHA_SUBS.includes(c.sub) && c.sub !== 'tao' && c.sub !== 'shan' && c.type !== 'equip',
+      );
+      const src = junk.length >= 2 ? junk : p.hand;
+      const two = src.slice(0, 2);
+      if (two.length === 2) {
+        discardCard(p, two[0]);
+        discardCard(p, two[1]);
+        const suit = two.every((c) => c.suit === '♥' || c.suit === '♦') ? '♥' : '♠';
+        addLog(`${p.name} 丈八蛇矛：两张手牌当杀`, 'hl');
         await useSha(idx, ti, { suit });
         await sleep(300);
       }

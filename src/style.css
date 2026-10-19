@@ -283,6 +283,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .badge-shield{color:#4af;background:rgba(68,170,255,.15);border:1px solid rgba(68,170,255,.55)}
 .badge-combo{color:var(--gold);background:rgba(245,197,66,.18);border:1px solid rgba(245,197,66,.55)}
 .badge-reveal{color:#ff8a80;background:rgba(231,76,60,.22);border:1px solid rgba(231,76,60,.65)}
+.badge-chain{color:#8fd3ff;background:rgba(52,152,219,.18);border:1px solid rgba(52,152,219,.6)}
+.badge-turned{color:#c9b8ff;background:rgba(155,89,182,.18);border:1px solid rgba(155,89,182,.6)}
 .table-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:260px;height:140px;display:flex;align-items:center;justify-content:space-around;z-index:1;border-radius:50%}
 .pile{display:flex;flex-direction:column;align-items:center;gap:2px}
 .pile-label{font-size:8.5px;color:var(--gold-dim);letter-spacing:1px}
@@ -354,6 +356,38 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .wb-bar{font-size:10.5px;color:#f0c040;letter-spacing:2px}
 .wb-bar span{margin-left:6px;color:var(--muted);letter-spacing:0}
 .wb-clear{margin-top:8px;width:100%}
+.wb-tag.ok{background:rgba(39,174,96,.25);color:#7ee2a8}
+/* 首页「我的学习情况」面板：统计条 + 知识点掌握 + 错题复习 */
+.study-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}
+.study-cell{background:rgba(0,0,0,.25);border:1px solid var(--gold-dim);border-radius:6px;padding:5px 2px;text-align:center}
+.study-cell b{display:block;font-size:14px;line-height:1.2;color:var(--gold)}
+.study-cell span{font-size:9.5px;color:var(--muted)}
+.study-tip{font-size:10.5px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.study-sub{font-size:11.5px;color:var(--gold);font-weight:700;margin:8px 0 5px;padding-left:6px;border-left:3px solid var(--gold-dim)}
+.kp-list{display:flex;flex-direction:column;gap:5px;max-height:190px;overflow-y:auto;padding-right:2px}
+.kp-item{padding:5px 7px;background:rgba(0,0,0,.22);border-radius:6px}
+.kp-item.done{background:rgba(39,174,96,.12)}
+.kp-top{display:flex;align-items:center;gap:6px;font-size:10.5px}
+.kp-name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.kp-num{flex-shrink:0;color:var(--gold-dim);font-weight:700}
+.kp-item.done .kp-num{color:#5fe08a}
+.kp-wrong{color:#e88b7f;font-weight:400}
+.kp-bar{margin-top:4px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.kp-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffe9a8)}
+.kp-item.done .kp-bar i{background:linear-gradient(90deg,#27ae60,#7ee2a8)}
+.study-list{display:flex;flex-direction:column;gap:6px;max-height:270px;overflow-y:auto;padding-right:2px}
+.si-item{padding:6px 8px;background:rgba(0,0,0,.25);border-left:3px solid #c0392b;border-radius:0 6px 6px 0;cursor:pointer}
+.si-item:hover{background:rgba(0,0,0,.35)}
+.si-item.done{border-left-color:#27ae60}
+.si-top{font-size:10.5px;color:var(--gold-dim);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.si-top .wb-tag{margin-left:0}
+.si-arrow{margin-left:auto;color:var(--muted)}
+.si-detail{margin-top:6px;padding:7px;background:rgba(0,0,0,.32);border-radius:5px;font-size:11px;line-height:1.7}
+.si-opt{padding:2px 4px;border-radius:4px;color:var(--text)}
+.si-opt.ok{background:rgba(39,174,96,.16);color:#7ee2a8;font-weight:700}
+.si-ans{margin-top:5px;font-size:10.5px;color:var(--gold-dim)}
+.si-mark{margin-top:6px;width:100%}
+.si-toggle{margin-bottom:4px}
 /* 档案弹窗标题栏徽章（等级/积分，仅自我视图） */
 .pm-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:10.5px;font-weight:700;color:#2a1a06;background:var(--gold);box-shadow:0 1px 6px rgba(0,0,0,.4);vertical-align:1px}
 
@@ -464,6 +498,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .action-hint.hint-urgent{color:#ff9a5a;font-weight:600;animation:hintPulse 1s infinite}
 @keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.65}}
 .action-btns{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-height:0;overflow-y:auto}
+/* 回合倒计时徽标：房主权威计时，随 state_sync 同步，房主端与客人端共用同一截止时间戳 */
+.timer-chip{flex-shrink:0;align-self:flex-end;margin-left:auto;font-size:12px;font-weight:700;color:#eee;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:1px 8px;background:rgba(0,0,0,.35);line-height:1.5;white-space:nowrap;min-height:0}
+.timer-chip.urgent{color:#fff;background:#c0392b;border-color:#ff7b6b;animation:hintPulse .8s infinite}
+@media (max-width:560px){.timer-chip{font-size:10px;padding:1px 6px}}
 .hand-row{display:flex;flex-wrap:wrap;gap:5px;padding:4px 2px 8px;min-height:98px;align-items:flex-end;position:relative;z-index:2;justify-content:center}
 .card{width:58px;height:84px;flex-shrink:0;border-radius:5px;background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.5),transparent 60%),linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);box-shadow:0 3px 9px rgba(0,0,0,.65);position:relative;cursor:default;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600}
 .card.clickable{cursor:pointer}
@@ -783,20 +821,18 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .tb-row{display:contents}
 /* 布局模式（JS 实测切换）：tb-mode2 = 窄屏恒定两行，更窄时整栏横向滚动（含第一行），
    绝不出现第三行、也不回落单行
-   第一行：标题+版本号+副标题(左) · 等级+积分+进度(右)
-   第二行：按钮组与个人信息相邻成一整组靠右 */
-#topBar.tb-mode2{flex-direction:column;align-items:stretch;row-gap:5px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+   第一行：品牌（左） · 个人信息（右）
+   第二行：等级+积分+进度（左） · 按钮组（右）
+   用 grid 显式定位四块：HTML 顺序与单行模式布局完全不动，仅在两行模式下重排位置 */
+#topBar.tb-mode2{display:grid;grid-template-columns:minmax(max-content,1fr) max-content;align-items:center;
+  row-gap:5px;column-gap:10px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 #topBar.tb-mode2::-webkit-scrollbar{display:none}
-#topBar.tb-mode2 .tb-row{display:flex;align-items:center;width:max-content;min-width:100%}
-#topBar.tb-mode2 .tb-row-top{gap:10px}
-#topBar.tb-mode2 .tb-row-main{gap:10px}
-/* 第一行：品牌在左，等级积分被 auto margin 推到行末（行超宽时整体由 #topBar 横向滚动） */
-#topBar.tb-mode2 .tb-brand{flex:0 0 auto}
-#topBar.tb-mode2 .tb-stats{margin-left:auto;flex:0 0 auto}
-/* 第二行：按钮组靠左（贴容器左缘），用户信息靠右（auto margin 推到行末，两端分布）；
-   flex-shrink:0 保证行内放不下时溢出交给 #topBar 整体横向滚动而非压缩 */
-#topBar.tb-mode2 .tb-right{margin-left:0;flex:0 0 auto;overflow:visible}
-#topBar.tb-mode2 .tb-user-chip{margin-left:auto;flex:0 0 auto}
+/* 行容器透明化：四个区块直接成为 grid 项，按 grid-area 落入两行两列 */
+#topBar.tb-mode2 .tb-row{display:contents}
+#topBar.tb-mode2 .tb-brand{grid-area:1/1;justify-self:start}
+#topBar.tb-mode2 .tb-user-chip{grid-area:1/2;justify-self:end;margin-left:0}
+#topBar.tb-mode2 .tb-stats{grid-area:2/1;justify-self:start;margin-left:0}
+#topBar.tb-mode2 .tb-right{grid-area:2/2;justify-self:end;margin-left:0;overflow:visible;flex-wrap:nowrap}
 /* 单行模式强制不换行：放不下时由按钮组横向滚动容纳，绝不出现第二/第三行 */
 #topBar:not(.tb-mode2){flex-wrap:nowrap}
 /* 游戏内状态条（牌桌上方，非顶栏） */

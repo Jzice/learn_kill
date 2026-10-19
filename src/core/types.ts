@@ -108,6 +108,9 @@ export interface QuizRec {
   text: string;
 }
 
+/** 伤害属性：普通 / 火 / 雷（属性伤害可被【藤甲】放大，并触发【铁索连环】传导） */
+export type DamageType = 'normal' | 'fire' | 'thunder';
+
 export interface Card {
   id: number;
   name: string;
@@ -119,6 +122,8 @@ export interface Card {
   skill?: string;
   dist?: number;
   judgeType?: 'lebu' | 'shandian';
+  /** 该牌造成的伤害属性（火杀/雷杀/火攻/闪电），缺省按普通伤害处理 */
+  damageType?: DamageType;
 }
 
 /** 出牌区展示用的轻量卡牌视图（允许 num 为 '?' 等占位） */
@@ -142,6 +147,8 @@ export interface PlayerFlags {
   extraDamage: number;
   skipPlay: boolean;
   noSha: boolean;
+  /** 本回合是否已使用过【酒】（每回合限一次，与额外伤害一起在回合初重置） */
+  jiuUsed: boolean;
 }
 
 export interface Player {
@@ -171,6 +178,10 @@ export interface Player {
   skills: Skill[];
   peerId: string | null;
   flags: PlayerFlags;
+  /** 铁索连环·横置：处于连环状态，受到属性伤害时传导给所有连环角色并各自重置 */
+  chained?: boolean;
+  /** 翻面：跳过一个回合（严格原版：与连环相互独立，不由铁索连环触发） */
+  turned?: boolean;
 }
 
 export interface ChoiceOption {
@@ -199,6 +210,12 @@ export interface GameState {
   myKills: number;
   handClickable?: boolean;
   targetSelectable?: boolean;
+  /** 回合限时：是否开启（开局选项，全局生效） */
+  timerOn?: boolean;
+  /** 回合限时秒数（10 / 20 / 30） */
+  timerSec?: number;
+  /** 当前决策的截止时间戳（ms，房主权威）；null / undefined = 无进行中的计时；随 state_sync 下发供客人端显示倒计时 */
+  timerEnd?: number | null;
 }
 
 export interface LogEntry {

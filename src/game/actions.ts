@@ -1,55 +1,141 @@
 /* ==================== 出牌 ==================== */
-import type { Card, Player } from '../core/types';
+import type { Card, DamageType, Player } from '../core/types';
 import { G } from './state';
 import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
-import { C } from '../data/cards';
+import { C, SHA_SUBS } from '../data/cards';
 import { addLog, addPlayLog } from './log';
-import { hasSkill, discardCard, drawCards, inRange } from './rules';
+import { hasSkill, discardCard, drawCards, genderOf, inRange, sameFaction } from './rules';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { aiQuiz, aiSpeak } from './ai';
 import { aiQuizRate, aiShouldCounter } from './aibrain';
-import { dealDamage } from './damage';
+import { dealDamage, onLoseArmor } from './damage';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { NET, scheduleSync } from '../net/network';
 
+/** 结算一次【杀】的伤害值（精忠 / 古锭刀 / 酒·额外伤害），并消耗额外伤害 */
+function shaDamage(a: Player, t: Player): number {
+  let dmg = 1;
+  if (hasSkill(a, 'jingzhong')) dmg += 1;
+  // 古锭刀：目标没有手牌时伤害 +1
+  if (a.equip.weapon?.skill === 'guding' && t.hand.length === 0) dmg += 1;
+  if (a.flags.extraDamage) {
+    dmg += a.flags.extraDamage;
+    a.flags.extraDamage = 0;
+  }
+  return dmg;
+}
+
+/** 弃置指定玩家手牌末尾 n 张（AI/自动弃牌用） */
+function dumpHand(p: Player, n: number): void {
+  for (let k = 0; k < n && p.hand.length > 0; k++) {
+    const c = p.hand.pop()!;
+    G.discard.push(c);
+  }
+}
+
 export async function useSha(
   attackerIdx: number,
   targetIdx: number,
-  opts: { fromQinglong?: boolean; suit?: string } = {},
+  opts: {
+    fromQinglong?: boolean;
+    fromFangtian?: boolean;
+    fromJiedao?: boolean;
+    suit?: string;
+    damageType?: DamageType;
+  } = {},
 ): Promise<void> {
   const a = G.players[attackerIdx],
     t = G.players[targetIdx];
   const hasLiannu = a.equip.weapon?.skill === 'liannu';
-  if (!hasLiannu && !opts.fromQinglong && (a.flags.shaUsed || 0) >= 1) {
+  if (
+    !hasLiannu &&
+    !opts.fromQinglong &&
+    !opts.fromFangtian &&
+    !opts.fromJiedao &&
+    (a.flags.shaUsed || 0) >= 1
+  ) {
     addLog('本回合已使用过【杀】');
     return;
   }
   a.flags.shaUsed = (a.flags.shaUsed || 0) + 1;
-  addPlayLog(a.name, 'use', '杀', t.name);
+  const dmgType: DamageType = opts.damageType || 'normal';
+  const cname = dmgType === 'fire' ? '火杀' : dmgType === 'thunder' ? '雷杀' : '杀';
+  const suit = opts.suit ?? '♠';
+  addPlayLog(a.name, 'use', cname, t.name);
   aiSpeak(a, 'attack');
   FX.attackLunge(attackerIdx);
   Sound.play('sha');
-  showPlayCard({ name: '杀', suit: '♠', num: '?', type: 'basic' }, a.name, FACTIONS[a.faction].color);
-  await FX.flyCard(attackerIdx, targetIdx, '杀', 'basic');
-  // 仁王盾：黑色【杀】无效
-  const suit = opts.suit ?? '♠';
+  showPlayCard({ name: cname, suit, num: '?', type: 'basic' }, a.name, FACTIONS[a.faction].color);
+  await FX.flyCard(attackerIdx, targetIdx, cname, 'basic');
+  // 青釭剑：无视目标防具（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）
+  const ignoreArmor = a.equip.weapon?.skill === 'qinggang';
+  const armor = ignoreArmor ? undefined : t.equip.armor?.skill;
   const black = suit === '♠' || suit === '♣';
-  if (t.equip.armor?.skill === 'renwang' && black) {
+  if (armor === 'renwang' && black) {
     addLog(`${t.name} 的【仁王盾】挡下了黑色【杀】`, 'hl');
     render();
     return;
   }
-  const dodged = await requestShan(targetIdx, attackerIdx);
+  // 藤甲：普通【杀】无效（属性杀可生效且火焰伤害 +1）
+  if (armor === 'tengjia' && dmgType === 'normal') {
+    addLog(`${t.name} 的【藤甲】挡下了普通【杀】`, 'hl');
+    render();
+    return;
+  }
+  // 雌雄双股剑：对异性角色使用杀，对方选择「令你摸一张」或「自弃一张」
+  if (a.equip.weapon?.skill === 'cixiong' && genderOf(a) !== genderOf(t)) {
+    addLog(`【雌雄双股剑】：${t.name} 需抉择`, 'hl');
+    let ch: string | number = 'draw';
+    if (t.hand.length > 0) {
+      ch = t.isAI
+        ? // 对敌方：弃自己一张（不让攻击者摸牌）；对同阵营：让队友摸牌
+          sameFaction(a, t)
+          ? 'draw'
+          : 'discard'
+        : await waitChoice(targetIdx, [
+            { label: `令 ${a.name} 摸一张牌`, value: 'draw' },
+            { label: '弃置自己一张手牌', value: 'discard' },
+          ], 'list');
+    }
+    if (ch === 'discard' && t.hand.length > 0) {
+      dumpHand(t, 1);
+      addLog(`${t.name} 弃置一张手牌`, 'dmg');
+    } else {
+      drawCards(a, 1);
+      addLog(`${a.name} 摸一张牌`, 'hl');
+    }
+    render();
+  }
+  // 相对论（爱因斯坦）：使用【杀】时，若目标手牌数与你不同，此杀不可闪避
+  const noDodge = hasSkill(a, 'xiangduilun') && a.hand.length !== t.hand.length;
+  if (noDodge) addLog(`【相对论】${t.name} 手牌数不同，此杀不可闪避`, 'hl');
+  const dodged = noDodge ? false : await requestShan(targetIdx, attackerIdx, { ignoreArmor });
   if (dodged) {
+    // 贯石斧：弃两张牌，令此杀强制命中
+    if (a.equip.weapon?.skill === 'guanshi' && a.hand.length >= 2) {
+      const force = a.isAI
+        ? true
+        : (await waitChoice(attackerIdx, [
+            { label: '🪓 贯石斧：弃两张牌强制命中', value: 'yes' },
+            { label: '不发动', value: 'no' },
+          ], 'list')) === 'yes';
+      if (force) {
+        dumpHand(a, 2);
+        addLog(`${a.name} 贯石斧：弃两张牌，此杀不可闪避`, 'hl');
+        render();
+        await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType);
+        return;
+      }
+    }
     // 青龙偃月刀：杀被闪后可对同目标再出一张杀
     if (a.equip.weapon?.skill === 'qinglong' && t.alive) {
       const again = a.isAI
-        ? a.hand.some((c) => c.sub === 'sha') && inRange(attackerIdx, targetIdx)
+        ? a.hand.some((c) => SHA_SUBS.includes(c.sub)) && inRange(attackerIdx, targetIdx)
         : (await waitChoice(
             attackerIdx,
             [
@@ -65,13 +151,23 @@ export async function useSha(
     }
     return;
   }
-  let dmg = 1;
-  if (hasSkill(a, 'jingzhong')) dmg += 1;
-  if (a.flags.extraDamage) {
-    dmg += a.flags.extraDamage;
-    a.flags.extraDamage = 0;
+  // 寒冰剑：防止伤害，改为弃置目标两张牌
+  if (a.equip.weapon?.skill === 'hanbing' && a.hand.length >= 2) {
+    const useSkill = a.isAI
+      ? t.hand.length >= 2
+      : (await waitChoice(attackerIdx, [
+          { label: '❄️ 寒冰剑：弃两张牌，改为令其弃两张牌', value: 'yes' },
+          { label: '正常造成伤害', value: 'no' },
+        ], 'list')) === 'yes';
+    if (useSkill) {
+      dumpHand(a, 2);
+      dumpHand(t, 2);
+      addLog(`【寒冰剑】${t.name} 弃置两张手牌，免除伤害`, 'hl');
+      render();
+      return;
+    }
   }
-  await dealDamage(attackerIdx, targetIdx, dmg);
+  await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType);
 }
 
 export async function useTao(idx: number): Promise<void> {
@@ -91,6 +187,12 @@ export async function useTao(idx: number): Promise<void> {
 
 export async function useJiu(idx: number): Promise<void> {
   const p = G.players[idx];
+  // 每回合限一次：多张酒不得叠加，避免一刀秒杀（原版规则）
+  if (p.flags.jiuUsed) {
+    addLog('本回合已使用过【酒】');
+    return;
+  }
+  p.flags.jiuUsed = true;
   p.flags.extraDamage = (p.flags.extraDamage || 0) + 1;
   addPlayLog(p.name, 'use', '酒', '');
   showPlayCard({ name: '酒', suit: '♠', num: '?', type: 'basic' }, p.name, FACTIONS[p.faction].color);
@@ -98,7 +200,12 @@ export async function useJiu(idx: number): Promise<void> {
   FX.skillWave(idx);
 }
 
-export async function useTrick(attackerIdx: number, card: Card, targetIdx: number | null): Promise<void> {
+export async function useTrick(
+  attackerIdx: number,
+  card: Card,
+  targetIdx: number | null,
+  secondTarget: number | null = null,
+): Promise<void> {
   const a = G.players[attackerIdx];
   const tn = targetIdx != null ? G.players[targetIdx].name : '';
   addPlayLog(a.name, 'use', card.name, tn);
@@ -137,7 +244,10 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
   );
 
   // 无懈可击：即时锦囊结算前插入响应链（延时类乐/闪电在判定区，不在范围）
-  const COUNTERABLE = ['wuzhong', 'guohe', 'shunshou', 'juedou', 'nanman', 'wanjian', 'taoyuan'];
+  const COUNTERABLE = [
+    'wuzhong', 'guohe', 'shunshou', 'juedou', 'nanman', 'wanjian', 'taoyuan',
+    'jiedao', 'wugu', 'tiesuo', 'huogong',
+  ];
   if (COUNTERABLE.includes(card.sub)) {
     const countered = await counterChain(attackerIdx, card.sub, targetIdx);
     if (countered) {
@@ -168,7 +278,7 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
         ai = attackerIdx,
         di = targetIdx;
       while (true) {
-        const sha = def.hand.find((c) => c.sub === 'sha');
+        const sha = def.hand.find((c) => SHA_SUBS.includes(c.sub));
         if (sha) {
           discardCard(def, sha);
           addLog(`${def.name} 打出【杀】`);
@@ -194,7 +304,12 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
       for (const i of targets) {
         const t = G.players[i];
         if (!t.alive) continue;
-        const sha = t.hand.find((c) => c.sub === 'sha');
+        // 藤甲：南蛮入侵无效
+        if (t.equip.armor?.skill === 'tengjia') {
+          addLog(`${t.name} 的【藤甲】令【南蛮入侵】无效`, 'hl');
+          continue;
+        }
+        const sha = t.hand.find((c) => SHA_SUBS.includes(c.sub));
         if (sha) {
           discardCard(t, sha);
           addLog(`${t.name} 出杀抵挡`);
@@ -213,6 +328,11 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
       for (const i of targets) {
         const t = G.players[i];
         if (!t.alive) continue;
+        // 藤甲：万箭齐发无效
+        if (t.equip.armor?.skill === 'tengjia') {
+          addLog(`${t.name} 的【藤甲】令【万箭齐发】无效`, 'hl');
+          continue;
+        }
         const shan = t.hand.find((c) => c.sub === 'shan');
         if (shan) {
           discardCard(t, shan);
@@ -242,6 +362,142 @@ export async function useTrick(attackerIdx: number, card: Card, targetIdx: numbe
     case 'shandian': {
       a.judge.push({ ...card, judgeType: 'shandian' });
       addLog(`【闪电】置于 ${a.name} 判定区`);
+      break;
+    }
+    case 'jiedao': {
+      if (targetIdx != null && secondTarget != null) {
+        const holder = G.players[targetIdx];
+        const victim = G.players[secondTarget];
+        let attack = false;
+        const shaCard = holder.hand.find((c) => SHA_SUBS.includes(c.sub));
+        if (holder.isAI) attack = !!shaCard && inRange(targetIdx, secondTarget);
+        else if (shaCard && inRange(targetIdx, secondTarget)) {
+          attack =
+            (await waitChoice(targetIdx, [
+              { label: `对 ${victim.name} 使用【杀】`, value: 'attack' },
+              { label: `交出武器【${holder.equip.weapon?.name || '武器'}】`, value: 'give' },
+            ], 'list')) === 'attack';
+        }
+        if (attack && shaCard) {
+          discardCard(holder, shaCard);
+          addLog(`${holder.name} 对 ${victim.name} 使用【杀】`);
+          await useSha(targetIdx, secondTarget, {
+            fromJiedao: true,
+            suit: shaCard.suit,
+            damageType: shaCard.damageType,
+          });
+        } else {
+          const w = holder.equip.weapon;
+          if (w) {
+            holder.equip.weapon = null;
+            a.hand.push(w);
+            addLog(`${a.name} 获得 ${holder.name} 的【${w.name}】`, 'hl');
+          }
+        }
+      }
+      break;
+    }
+    case 'wugu': {
+      const aliveCount = G.players.filter((q) => q.alive).length;
+      const shown: Card[] = [];
+      for (let k = 0; k < aliveCount; k++) {
+        const c = G.deck.pop();
+        if (c) shown.push(c);
+      }
+      addLog(`【五谷丰登】亮出 ${shown.length} 张牌`, 'hl');
+      const order: number[] = [];
+      const start = G.players.indexOf(a);
+      for (let k = 0; k < G.players.length; k++) {
+        const i = (start + k) % G.players.length;
+        if (G.players[i].alive) order.push(i);
+      }
+      for (const i of order) {
+        if (!shown.length) break;
+        const pl = G.players[i];
+        if (hasSkill(pl, 'fenshu')) continue;
+        let pickId = shown[0].id;
+        if (!pl.isAI) {
+          const ch = await waitChoice(
+            i,
+            shown.map((c) => ({ label: `【${c.name}】${c.suit}${c.num}`, value: c.id })),
+            'list',
+          );
+          pickId = Number(ch);
+        } else {
+          // AI 按价值挑牌：桃 > 杀 > 闪 > 装备 > 无懈 > 其他
+          const rank = (c: Card): number =>
+            c.sub === 'tao'
+              ? 5
+              : SHA_SUBS.includes(c.sub)
+                ? 4
+                : c.sub === 'shan'
+                  ? 3
+                  : c.type === 'equip'
+                    ? 2
+                    : c.sub === 'wuxie'
+                      ? 1
+                      : 0;
+          pickId = shown.reduce((best, c) => (rank(c) > rank(best) ? c : best), shown[0]).id;
+        }
+        let at = shown.findIndex((c) => c.id === pickId);
+        if (at < 0) at = 0;
+        const got = shown.splice(at, 1)[0];
+        pl.hand.push(got);
+        addLog(`${pl.name} 获得【${got.name}】`);
+      }
+      shown.forEach((c) => G.discard.push(c));
+      break;
+    }
+    case 'tiesuo': {
+      if (targetIdx != null) {
+        const t = G.players[targetIdx];
+        t.chained = !t.chained;
+        addLog(
+          t.chained
+            ? `【铁索连环】${t.name} 横置（进入连环）`
+            : `【铁索连环】${t.name} 重置（解除连环）`,
+          'hl',
+        );
+      }
+      break;
+    }
+    case 'huogong': {
+      if (targetIdx != null) {
+        const t = G.players[targetIdx];
+        const shown = t.hand.length ? t.hand[Math.floor(Math.random() * t.hand.length)] : null;
+        addLog(
+          shown
+            ? `【火攻】${t.name} 展示【${shown.name}】${shown.suit}${shown.num}`
+            : `【火攻】${t.name} 无手牌可展示，火攻失败`,
+          'hl',
+        );
+        if (shown) {
+          const same = a.hand.filter((c) => c.suit === shown.suit);
+          let burn = false;
+          if (a.isAI) {
+            burn = same.length > 0;
+            if (burn && same[0]) discardCard(a, same[0]);
+          } else if (same.length) {
+            const ch = await waitChoice(
+              attackerIdx,
+              same
+                .map((c) => ({ label: `弃【${c.name}】${c.suit}${c.num}`, value: 'c_' + c.id }))
+                .concat([{ label: '不弃牌（火攻失败）', value: 'no' }]),
+              'list',
+            );
+            if (String(ch).startsWith('c_')) {
+              const id = Number(String(ch).slice(2));
+              const c = a.hand.find((x) => x.id === id);
+              if (c) {
+                discardCard(a, c);
+                burn = true;
+              }
+            }
+          }
+          if (burn) await dealDamage(attackerIdx, targetIdx, 1, 'fire');
+          else addLog('火攻未生效', 'dmg');
+        }
+      }
       break;
     }
   }
@@ -291,6 +547,7 @@ function trickLabel(sub: string): string {
   const m: Record<string, string> = {
     wuzhong: '无中生有', guohe: '过河拆桥', shunshou: '顺手牵羊', juedou: '决斗',
     nanman: '南蛮入侵', wanjian: '万箭齐发', taoyuan: '桃园结义',
+    jiedao: '借刀杀人', wugu: '五谷丰登', tiesuo: '铁索连环', huogong: '火攻',
   };
   return m[sub] || '锦囊';
 }
@@ -317,6 +574,7 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
   } else {
     const c = t.equip[ch as keyof typeof t.equip];
     if (c) {
+      if (ch === 'armor') onLoseArmor(t, c);
       t.equip[ch as keyof typeof t.equip] = null;
       if (mode === '获得') src.hand.push(c);
       else G.discard.push(c);
@@ -328,21 +586,52 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
 }
 
 /* ==================== 出闪 ==================== */
-export async function requestShan(targetIdx: number, srcIdx: number): Promise<boolean> {
+export async function requestShan(
+  targetIdx: number,
+  srcIdx: number,
+  o: { ignoreArmor?: boolean } = {},
+): Promise<boolean> {
   const t = G.players[targetIdx];
+  // 三大定律（牛顿/法拉第/普朗克）：成功闪避后摸一张牌
+  const onDodged = async (): Promise<boolean> => {
+    if (hasSkill(t, 'sandadinglv')) {
+      drawCards(t, 1);
+      addLog(`【三大定律】${t.name} 闪避成功，摸一张牌`, 'hl');
+    }
+    return true;
+  };
   if (t.isAI) {
     const shan = t.hand.find((c) => c.sub === 'shan');
     if (shan) {
       discardCard(t, shan);
       addLog(`${t.name} 打出【闪】`);
       await FX.shield(targetIdx);
-      return true;
+      return onDodged();
+    }
+    // 八卦阵：手中无闪时判定，红色视为打出闪（AI 此前完全不判，装备形同虚设）
+    if (!o.ignoreArmor && t.equip.armor?.skill === 'bagua') {
+      const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+      addLog(`【八卦阵】判定：${jc.suit}${jc.num}`, 'hl');
+      G.discard.push(jc);
+      if (jc.suit === '♥' || jc.suit === '♦') {
+        addLog('【八卦阵】判定为红色，视为闪', 'hl');
+        await FX.shield(targetIdx);
+        return onDodged();
+      }
+      addLog('【八卦阵】判定失败');
     }
     if (t.knowledge >= 1 && aiQuiz(aiQuizRate(t))) {
       t.knowledge--;
       addLog(`${t.name} 消耗学识当闪`);
       await FX.shield(targetIdx);
-      return true;
+      return onDodged();
+    }
+    // 护盾当闪：残血时值得用（护盾是稀缺资源，满血时留给更需要的时候）
+    if ((t.shield || 0) >= 1 && t.hp <= 2) {
+      t.shield--;
+      addLog(`${t.name} 消耗1护盾当闪`);
+      await FX.shield(targetIdx);
+      return onDodged();
     }
     return false;
   }
@@ -351,14 +640,14 @@ export async function requestShan(targetIdx: number, srcIdx: number): Promise<bo
   shans.forEach((c) => opts.push({ label: `【闪】${c.suit}${c.num}`, value: 'card_' + c.id }));
   // 答题免伤/学识当闪 仅在手中无【闪】时可选：有闪必须出闪，保证闪牌价值（提高可玩性）
   const noShan = shans.length === 0;
-  if (noShan && t.equip.armor?.skill === 'bagua') {
+  if (noShan && !o.ignoreArmor && t.equip.armor?.skill === 'bagua') {
     const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
     addLog(`【八卦阵】判定：${jc.suit}${jc.num}`, 'hl');
     G.discard.push(jc);
     if (jc.suit === '♥' || jc.suit === '♦') {
       addLog('【八卦阵】判定为红色，视为闪', 'hl');
       await FX.shield(targetIdx);
-      return true;
+      return onDodged();
     }
     addLog('【八卦阵】判定失败');
   }
@@ -372,20 +661,20 @@ export async function requestShan(targetIdx: number, srcIdx: number): Promise<bo
     t.knowledge--;
     addLog(`${t.name} 消耗学识当闪`);
     await FX.shield(targetIdx);
-    return true;
+    return onDodged();
   }
   if (ch === 'shield') {
     t.shield--;
     addLog(`${t.name} 消耗护盾当闪`);
     await FX.shield(targetIdx);
-    return true;
+    return onDodged();
   }
   if (ch === 'quiz') {
     const ok = await askQuizForPlayer(t, false);
     if (ok) {
       addLog(`${t.name} 答对视为闪`, 'hl');
       await FX.shield(targetIdx);
-      return true;
+      return onDodged();
     }
     addLog(`${t.name} 答错`, 'dmg');
     return false;
@@ -397,7 +686,7 @@ export async function requestShan(targetIdx: number, srcIdx: number): Promise<bo
       discardCard(t, c);
       addLog(`${t.name} 打出【闪】`);
       await FX.shield(targetIdx);
-      return true;
+      return onDodged();
     }
   }
   return false;

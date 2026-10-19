@@ -45,7 +45,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '⚗️',
     subject: '化学',
     desc: '元素反应',
-    lordSkill: { id: 'cuihua', name: '催化', type: 'active', desc: '主公技：令一名角色回复1点体力' },
+    lordSkill: { id: 'cuihua', name: '催化', type: 'active', desc: '主公技：令一名角色回复1点体力（已满则改为摸一张牌）' },
   },
   biology: {
     name: '生物',
@@ -53,7 +53,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '🧬',
     subject: '生物',
     desc: '生命奥秘',
-    lordSkill: { id: 'jinhua', name: '进化', type: 'active', desc: '主公技：摸两张牌然后弃一张牌' },
+    lordSkill: { id: 'jinhualun', name: '进化', type: 'active', desc: '主公技：摸两张牌然后弃一张牌' },
   },
   history: {
     name: '历史',

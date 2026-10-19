@@ -250,7 +250,8 @@ export function pickAiTarget(idx: number): number {
       // 主公/忠臣：攻击疑似反贼/内奸；坚决回避疑似主公（忠臣不可误伤主公）
       s = P.rebel + P.spy + g * 0.8 - f * 0.6 - P.lord * 1.5;
     }
-    s += (4 - t.hp) * 0.12; // 偏好残血可击杀目标
+    // 偏好残血可击杀目标；但【白银狮子】每次受伤最多 1 点，残血反而难打穿，不再给残血加成
+    s += t.equip.armor?.skill === 'baiyin' ? 0 : (4 - t.hp) * 0.12;
     cands.push({ i, score: s });
   }
   if (!cands.length) return -1;
@@ -331,7 +332,7 @@ function sameTeam(a: Player, b: Player): boolean {
 
 /** 原始锦囊是否对 idx 有害（指向性锦囊看目标，AOE 对所有人有害） */
 function trickHarms(sub: string, primary: number | null, idx: number): boolean {
-  if (['guohe', 'shunshou', 'juedou', 'lebu'].includes(sub)) return primary === idx;
+  if (['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo'].includes(sub)) return primary === idx;
   if (sub === 'nanman' || sub === 'wanjian') return true;
   return false;
 }

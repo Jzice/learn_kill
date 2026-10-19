@@ -75,7 +75,7 @@ function gradesReasons(n) {
 console.log('初始已加载题库模块:', bankReqs.length === 0 ? '✅ 0 个（未加载任何年级）' : `❌ ${bankReqs.join(', ')}`);
 
 // 开局（默认年级 初二上 → g03）：先选模式进入设置子界面，再开始
-await page.click('#modePicker .opt-btn[data-mode="single"]');
+await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 await page.click('#startBtn');
 await page.waitForTimeout(3000);

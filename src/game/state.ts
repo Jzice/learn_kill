@@ -19,6 +19,10 @@ export const G: GameState = {
   playerCount: 4,
   settled: false,
   myKills: 0,
+  // 回合限时（开局选项，默认关闭）
+  timerOn: false,
+  timerSec: 20,
+  timerEnd: null,
 };
 
 /** 答题统计（const 对象，字段 mutate；setup 重置时逐字段清零） */

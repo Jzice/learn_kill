@@ -6,6 +6,7 @@
 import type { Question, QuizRec, QuizScope } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { GRADE_ORDER, gradeSortKey } from '../data/grades';
+import { QUESTION_BANK } from '../data/bankLoader';
 import { PROFILE, saveProfile } from './profile';
 
 /** 连对达到该次数即掌握，后续不再抽到 */
@@ -132,6 +133,75 @@ export function masteredCount(): number {
 
 export function recordedCount(): number {
   return Object.keys(recs()).length;
+}
+
+/** 按 key 直接取记录（首页学习面板展开解析用） */
+export function recByKey(key: string): QuizRec | undefined {
+  return recs()[key];
+}
+
+/** 已攻克错题：曾经答错但已连对达标（与「待复习」分开的单独列表） */
+export function masteredWrongList(): { key: string; rec: QuizRec }[] {
+  return Object.entries(recs())
+    .filter(([, r]) => r.w > 0 && r.c >= MASTER_STREAK)
+    .map(([key, rec]) => ({ key, rec }))
+    .sort((a, b) => b.rec.ts - a.rec.ts);
+}
+
+/** 知识点维度的掌握情况（按「学科 + 知识点」聚合） */
+export interface KpStat {
+  s: string;
+  kp: string;
+  /** 该知识点下有作答记录的题数 */
+  total: number;
+  /** 其中已掌握的题数 */
+  mastered: number;
+  /** 其中仍是错题（错 ≥1 次且未掌握）的题数 */
+  wrong: number;
+  /** 掌握百分比 */
+  pct: number;
+}
+
+export function kpStats(): KpStat[] {
+  const m = new Map<string, KpStat>();
+  for (const r of Object.values(recs())) {
+    const k = `${r.s || '综合'}|${r.kp || '综合'}`;
+    let st = m.get(k);
+    if (!st) {
+      st = { s: r.s || '综合', kp: r.kp || '综合', total: 0, mastered: 0, wrong: 0, pct: 0 };
+      m.set(k, st);
+    }
+    st.total++;
+    if (r.c >= MASTER_STREAK) st.mastered++;
+    if (r.w > 0 && r.c < MASTER_STREAK) st.wrong++;
+  }
+  const arr = [...m.values()];
+  for (const st of arr) st.pct = st.total ? Math.round((st.mastered / st.total) * 100) : 0;
+  // 「还差一点」的排前面（未掌握题多者优先），其次按已掌握题数，最后按学科名
+  return arr.sort(
+    (a, b) =>
+      b.total - b.mastered - (a.total - a.mastered) ||
+      b.wrong - a.wrong ||
+      b.mastered - a.mastered ||
+      a.s.localeCompare(b.s, 'zh'),
+  );
+}
+
+/** 按题干在题库中查找原题（用于首页展开解析）；题库未加载时返回 undefined */
+export function findQuestionByText(text: string, grade: string): Question | undefined {
+  if (!grade) return undefined;
+  return (QUESTION_BANK[grade] || []).find((q) => q.q === text);
+}
+
+/** 标记复习一次：推进掌握进度（连对 +1），达到 MASTER_STREAK 即从待复习移入已攻克 */
+export function markReviewed(key: string): QuizRec | undefined {
+  const map = recs();
+  const r = map[key];
+  if (!r) return undefined;
+  r.c = (r.c || 0) + 1;
+  r.ts = Date.now();
+  saveProfile();
+  return r;
 }
 
 /** 清空错题本与掌握度（保留选项设置） */

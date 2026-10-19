@@ -45,6 +45,9 @@ export type NetMessage =
       myPlayerIdx: number;
       grade: string;
       playerCount: number;
+      /** 回合限时（开局选项）：是否开启 + 秒数 */
+      timerOn?: boolean;
+      timerSec?: number;
     }
   | {
       type: 'state_sync';
@@ -58,6 +61,10 @@ export type NetMessage =
       pendingType: PendingType;
       pendingPlayer: number | null;
       playLog: LogEntry[];
+      /** 回合限时：开关 / 秒数 / 当前决策截止时间戳（客人端据此显示倒计时） */
+      timerOn?: boolean;
+      timerSec?: number;
+      timerEnd?: number | null;
     }
   | {
       type: 'choose_request';

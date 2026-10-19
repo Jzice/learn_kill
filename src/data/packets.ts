@@ -4,6 +4,7 @@
  */
 import type { Character, Skill } from '../core/types';
 import { charPoolForGrade } from './characters';
+import { GRADE_ORDER } from './grades';
 
 export type PacketId = 'all' | 'junior' | 'senior';
 /** 学段：初中（初一上~初三下）/ 高中（高一上~高三下） */
@@ -24,6 +25,9 @@ export const PACKETS: Packet[] = [
 
 /** 角色所属学段：由年级派生（初一~初三=初中；高一~高三=高中） */
 export function stageOf(grade: string): Stage {
+  const i = GRADE_ORDER.indexOf(grade);
+  if (i >= 0) return i < 6 ? 'junior' : 'senior';
+  // 未知年级：按「初 / 高」前缀推断，避免拼错的年级被一律当成高中生
   return grade.startsWith('初') ? 'junior' : 'senior';
 }
 
@@ -34,7 +38,7 @@ const SUBJECT_SKILLS: Record<string, Record<Stage, Skill>> = {
     senior: { id: 'wenyan', name: '文言', type: 'active', desc: '弃两张手牌，摸三张牌（文言积累，厚积薄发）' },
   },
   数学: {
-    junior: { id: 'youlrshu', name: '有理数', type: 'active', desc: '弃一张手牌，令一名角色判定：红色其摸一张，黑色其弃一张' },
+    junior: { id: 'youshu', name: '有理数', type: 'active', desc: '弃一张手牌，令一名角色判定：红色其摸一张，黑色其弃一张' },
     senior: { id: 'daoshu', name: '导数', type: 'active', desc: '弃一张手牌，令一名角色弃两张手牌（求导取极值）' },
   },
   英语: {
@@ -47,7 +51,7 @@ const SUBJECT_SKILLS: Record<string, Record<Stage, Skill>> = {
   },
   化学: {
     junior: { id: 'fangchengshi', name: '方程式', type: 'trigger', desc: '手牌上限+1（配平储备）' },
-    senior: { id: 'youji', name: '有机', type: 'active', desc: '弃两张手牌，回复1点体力并摸一张牌（有机合成）' },
+    senior: { id: 'youjihuaxue', name: '有机', type: 'active', desc: '弃两张手牌，回复1点体力并摸一张牌（有机合成）' },
   },
   生物: {
     junior: { id: 'guanghe', name: '光合', type: 'trigger', desc: '摸牌阶段额外摸一张牌（光合作用产能）' },
@@ -72,6 +76,11 @@ export function withPacketSkills(c: Character, packet: PacketId): Character {
   if (packet === 'all') return c;
   const sk = SUBJECT_SKILLS[c.subject]?.[packet];
   if (!sk || stageOf(c.grade) !== packet) return c;
+  // 开发期防护：主题技 ID 不得与角色自有技能 / 主公技重复（曾因 youji 重名导致分支不执行）
+  if (c.skills.some((s) => s.id === sk.id)) {
+    console.warn(`[packets] 主题技 ${sk.id} 与角色 ${c.id} 自有技能重名，已跳过追加`);
+    return c;
+  }
   return { ...c, skills: [...c.skills, sk] };
 }
 

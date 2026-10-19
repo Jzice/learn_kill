@@ -1,19 +1,20 @@
 /* ==================== 回合流程 ==================== */
-import type { Card, ChoiceOption } from '../core/types';
+import type { Card, ChoiceOption, DamageType } from '../core/types';
 import { G } from './state';
 import { FX } from '../core/fx';
 import { FACTIONS } from '../data/factions';
-import { C } from '../data/cards';
+import { C, SHA_SUBS } from '../data/cards';
 import { addLog, addPlayLog } from './log';
 import { hasSkill, drawCards, discardCard, distBetween, inRange, handLimit } from './rules';
 import { Sound } from '../core/sound';
 import { equipFx } from '../core/fx';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
+import { EQUIP_DESC, showPlayHint } from '../ui/hint';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { aiPlayPhase, aiQuiz, aiSpeak } from './ai';
-import { dealDamage } from './damage';
+import { dealDamage, onLoseArmor } from './damage';
 import { useActiveSkill } from './skills';
 import { useSha, useTao, useJiu, useTrick } from './actions';
 import { NET, scheduleSync } from '../net/network';
@@ -21,9 +22,25 @@ import { NET, scheduleSync } from '../net/network';
 export async function runTurn(idx: number): Promise<void> {
   const p = G.players[idx];
   if (!p.alive) return;
+  // 翻面：跳过整个回合并翻回正面（严格原版：与铁索连环的「横置」相互独立）
+  if (p.turned) {
+    p.turned = false;
+    addLog(`🔄 ${p.name} 处于翻面状态，跳过本回合`, 'hl');
+    render();
+    return;
+  }
+  // 回合初重置一切「本回合」状态：
+  // - shaUsed/skillUsed/noSha：原有
+  // - skipPlay：乐不思蜀等延时锦囊只跳过「当前」回合的判定阶段，必须在此清零，
+  //   否则一旦被跳过就永久失去出牌阶段（曾经的严重漏洞）
+  // - extraDamage：【酒】的加成只在本回合有效，没打出杀也不得留到下一回合
+  // - jiuUsed：【酒】每回合限饮一次，防止多张酒叠加一刀秒杀
   p.flags.shaUsed = 0;
   p.flags.skillUsed = false;
   p.flags.noSha = false;
+  p.flags.skipPlay = false;
+  p.flags.extraDamage = 0;
+  p.flags.jiuUsed = false;
   G.current = idx;
   addLog(`—— ${p.name}（${FACTIONS[p.faction].name}）的回合 ——`, 'hl');
   Sound.play('turn');
@@ -111,9 +128,9 @@ export async function playPhase(idx: number): Promise<void> {
   while (p.alive && !G.gameOver) {
     const opts: ChoiceOption[] = [];
     for (const c of p.hand) {
-      if (c.sub === 'sha') opts.push({ label: `【杀】${c.suit}${c.num}`, value: 'sha_' + c.id });
+      if (SHA_SUBS.includes(c.sub)) opts.push({ label: `【${c.name}】${c.suit}${c.num}`, value: 'sha_' + c.id });
       else if (c.sub === 'tao' && p.hp < p.maxHp) opts.push({ label: `【桃】`, value: 'tao_' + c.id });
-      else if (c.sub === 'jiu') opts.push({ label: `【酒】`, value: 'jiu_' + c.id });
+      else if (c.sub === 'jiu' && !p.flags.jiuUsed) opts.push({ label: `【酒】`, value: 'jiu_' + c.id });
       else if (c.type === 'trick' && c.sub !== 'wuxie') opts.push({ label: `【${c.name}】`, value: 'trick_' + c.id });
       else if (c.type === 'equip') opts.push({ label: `【${c.name}】`, value: 'equip_' + c.id });
     }
@@ -164,29 +181,54 @@ export async function playPhase(idx: number): Promise<void> {
         addLog('本回合不能使用【杀】');
         continue;
       }
-      const targets: ChoiceOption[] = [];
+      const cand: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === idx || !G.players[i].alive) continue;
-        if (inRange(idx, i)) targets.push({ label: `攻击 ${G.players[i].name}`, value: i });
+        if (inRange(idx, i)) cand.push(i);
       }
-      if (!targets.length) {
+      if (!cand.length) {
         addLog('攻击范围内无目标');
         continue;
       }
-      targets.push({ label: '取消', value: -1 });
-      const t = await waitChoice(idx, targets, 'target');
-      if (Number(t) < 0) continue;
+      // 方天画戟：此杀是最后一张手牌时，可指定至多 3 个目标
+      const maxTargets = p.equip.weapon?.skill === 'fangtian' && p.hand.length === 1 ? 3 : 1;
+      const picked = await pickShaTargets(idx, cand, maxTargets);
+      if (!picked.length) continue;
+      const dmgType: DamageType = card.damageType || 'normal';
       discardCard(p, card);
-      await useSha(idx, t as number, { suit: card.suit });
+      for (let k = 0; k < picked.length; k++) {
+        if (!G.players[picked[k]].alive) continue;
+        await useSha(idx, picked[k], { suit: card.suit, damageType: dmgType, fromFangtian: k > 0 });
+      }
     } else if (kind === 'tao') {
       discardCard(p, card);
       await useTao(idx);
     } else if (kind === 'jiu') {
+      if (p.flags.jiuUsed) {
+        addLog('本回合已使用过【酒】');
+        continue;
+      }
       discardCard(p, card);
       await useJiu(idx);
     } else if (kind === 'trick') {
       let tgt: number | null = null;
-      if (['guohe', 'shunshou', 'juedou', 'lebu'].includes(card.sub)) {
+      let second: number | null = null;
+      // 铁索连环：可重铸（弃此牌摸一张）
+      if (card.sub === 'tiesuo') {
+        const recast =
+          (await waitChoice(idx, [
+            { label: '指定一名角色（横置 / 重置）', value: 'use' },
+            { label: '重铸：弃此牌并摸一张牌', value: 'recast' },
+          ], 'list')) === 'recast';
+        if (recast) {
+          discardCard(p, card);
+          drawCards(p, 1);
+          addLog(`${p.name} 重铸【铁索连环】，摸一张牌`, 'hl');
+          render();
+          continue;
+        }
+      }
+      if (['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo'].includes(card.sub)) {
         const targets: ChoiceOption[] = [];
         for (let i = 0; i < G.players.length; i++) {
           if (i === idx || !G.players[i].alive) continue;
@@ -203,8 +245,39 @@ export async function playPhase(idx: number): Promise<void> {
         if (Number(t) < 0) continue;
         tgt = t as number;
       }
+      if (card.sub === 'jiedao') {
+        const holders: ChoiceOption[] = [];
+        for (let i = 0; i < G.players.length; i++) {
+          if (i === idx || !G.players[i].alive) continue;
+          const w = G.players[i].equip.weapon;
+          if (!w || hasSkill(G.players[i], 'fenshu')) continue;
+          holders.push({ label: `借刀：${G.players[i].name}（${w.name}）`, value: i });
+        }
+        if (!holders.length) {
+          addLog('无人装备武器，无法借刀');
+          continue;
+        }
+        holders.push({ label: '取消', value: -1 });
+        const h = await waitChoice(idx, holders, 'target');
+        if (Number(h) < 0) continue;
+        const hi = h as number;
+        const victims: ChoiceOption[] = [];
+        for (let i = 0; i < G.players.length; i++) {
+          if (i === hi || !G.players[i].alive) continue;
+          if (inRange(hi, i)) victims.push({ label: `令其攻击 ${G.players[i].name}`, value: i });
+        }
+        if (!victims.length) {
+          addLog('该角色攻击范围内无目标');
+          continue;
+        }
+        victims.push({ label: '取消', value: -1 });
+        const v = await waitChoice(idx, victims, 'target');
+        if (Number(v) < 0) continue;
+        tgt = hi;
+        second = v as number;
+      }
       discardCard(p, card);
-      await useTrick(idx, card, tgt);
+      await useTrick(idx, card, tgt, second);
     } else if (kind === 'equip') {
       discardCard(p, card, false);
       showPlayCard(card, p.name, FACTIONS[p.faction].color);
@@ -213,7 +286,10 @@ export async function playPhase(idx: number): Promise<void> {
         if (p.equip.weapon) G.discard.push(p.equip.weapon);
         p.equip.weapon = card;
       } else if (card.sub === 'armor') {
-        if (p.equip.armor) G.discard.push(p.equip.armor);
+        if (p.equip.armor) {
+          onLoseArmor(p, p.equip.armor);
+          G.discard.push(p.equip.armor);
+        }
         p.equip.armor = card;
       } else if (card.sub === 'horse+') {
         if (p.equip.horsePlus) G.discard.push(p.equip.horsePlus);
@@ -223,6 +299,7 @@ export async function playPhase(idx: number): Promise<void> {
         p.equip.horseMinus = card;
       }
       addLog(`${p.name} 装备【${card.name}】`);
+      showPlayHint('装备', card.name, EQUIP_DESC[card.skill || ''] || '');
       Sound.play('equip');
       void equipFx(idx, card.name);
       render();
@@ -253,20 +330,35 @@ export async function discardPhase(p: (typeof G.players)[number]): Promise<void>
   render();
 }
 
-/** 选杀的目标（攻击范围内存活玩家） */
+/** 依次选择【杀】的目标：max>1 时可多选（方天画戟最多 3 个），返回已选目标 */
+async function pickShaTargets(idx: number, cand: number[], max: number): Promise<number[]> {
+  const picked: number[] = [];
+  const rest = [...cand];
+  while (picked.length < max && rest.length) {
+    const opts: ChoiceOption[] = rest.map((i) => ({ label: `攻击 ${G.players[i].name}`, value: i }));
+    opts.push({ label: picked.length ? '结束选择' : '取消', value: -1 });
+    const t = await waitChoice(idx, opts, 'target');
+    const v = Number(t);
+    if (v < 0) break;
+    picked.push(v);
+    rest.splice(rest.indexOf(v), 1);
+  }
+  return picked;
+}
+
+/** 选单个【杀】目标（丈八蛇矛用），返回 -1 表示取消 */
 async function pickShaTarget(idx: number): Promise<number> {
-  const targets: ChoiceOption[] = [];
+  const cand: number[] = [];
   for (let i = 0; i < G.players.length; i++) {
     if (i === idx || !G.players[i].alive) continue;
-    if (inRange(idx, i)) targets.push({ label: `攻击 ${G.players[i].name}`, value: i });
+    if (inRange(idx, i)) cand.push(i);
   }
-  if (!targets.length) {
+  if (!cand.length) {
     addLog('攻击范围内无目标');
     return -1;
   }
-  targets.push({ label: '取消', value: -1 });
-  const t = await waitChoice(idx, targets, 'target');
-  return Number(t);
+  const r = await pickShaTargets(idx, cand, 1);
+  return r.length ? r[0] : -1;
 }
 
 /** 依次选择两张手牌（丈八蛇矛用），任意一步取消则返回空 */
