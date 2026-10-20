@@ -76,11 +76,100 @@ function triggerArchetype(subject, i) {
   }
 }
 
-// 哪些学科在高段（i>=6）改用触发技，体现 active/trigger 两类
+/* ---------- 高中扩展包：按「知识点主题」逐一定制的技能设计 ----------
+ * 高一上~高三下（学期下标 6..11）。此前高中与初中共用同一套「学科原型」模板，
+ * 同学科 6 个学期的技能几乎雷同（仅强度档不同），且化学与政治、生物与初中生物完全重复。
+ * 现按每个知识点的特色逐一定制：九科 × 六学期 = 54 个互不相同的技能；
+ * 生物 / 地理为触发技（仅用 extraDraw/handLimit/distMod/damageMod 四种可被钩子聚合的原语），
+ * 其余为主动技；强度随学段递进（高三技强，体力更低，见下方 hp）。
+ */
+const SENIOR_SKILLS = {
+  语文: {
+    6: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }], // 现代文·故都：细读积累
+    7: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 1 }, { kind: 'targetDraw', n: 1 }], // 诗歌·氓：吟诗共赏
+    8: [{ kind: 'costCard', n: 1 }, { kind: 'gainHand', n: 1 }], // 小说·祝福：剖析人物
+    9: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }, { kind: 'shield', n: 1 }], // 散文·荷塘：静心安神
+    10: [{ kind: 'costCard', n: 2 }, { kind: 'selfDraw', n: 3 }], // 古文·劝学：厚积薄发
+    11: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 2 }], // 论述·拿来：辩证批判
+  },
+  数学: {
+    6: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 1 }], // 集合：取交集
+    7: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }], // 三角函数：周期循环
+    8: [{ kind: 'costCard', n: 1 }, { kind: 'targetLoseHp', n: 1 }], // 立体几何：降维打击
+    9: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 2 }], // 导数：求导取极值
+    10: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 1 }, { kind: 'targetDraw', n: 1 }], // 数列：递推共生
+    11: [{ kind: 'costCard', n: 2 }, { kind: 'targetDamage', n: 2 }], // 概率统计：小概率重击
+  },
+  英语: {
+    6: [{ kind: 'costCard', n: 1 }, { kind: 'gainHand', n: 1 }], // Reading：阅读理解
+    7: [{ kind: 'costCard', n: 1 }, { kind: 'targetDraw', n: 1 }], // Culture：文化交流
+    8: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 1 }], // Argument：驳论拆招
+    9: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 1 }, { kind: 'gainHand', n: 1 }], // Translation：转换增益
+    10: [{ kind: 'costCard', n: 2 }, { kind: 'selfDraw', n: 3 }], // Cloze：完形积累
+    11: [{ kind: 'costCard', n: 2 }, { kind: 'gainHand', n: 2 }], // Summary：归纳摄取
+  },
+  物理: {
+    6: [{ kind: 'costCard', n: 1 }, { kind: 'targetDamage', n: 1 }], // 运动定律：作用力
+    7: [{ kind: 'costCard', n: 1 }, { kind: 'targetDamage', n: 1 }, { kind: 'selfDraw', n: 1 }], // 曲线运动：抛体轨迹
+    8: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 1 }], // 电场：静电屏蔽
+    9: [{ kind: 'costCard', n: 2 }, { kind: 'targetDamage', n: 2 }], // 电磁感应：感应生能
+    10: [{ kind: 'costCard', n: 1 }, { kind: 'targetLoseHp', n: 1 }], // 动量：动量传递
+    11: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }], // 波与光：波动传播
+  },
+  化学: {
+    6: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 1 }, { kind: 'shield', n: 1 }], // 物质的量：计量守恒
+    7: [{ kind: 'costCard', n: 1 }, { kind: 'targetHeal', n: 1 }], // 元素周期：周期调和
+    8: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }], // 反应速率：催化加速
+    9: [{ kind: 'costCard', n: 2 }, { kind: 'targetHeal', n: 1 }, { kind: 'selfDraw', n: 1 }], // 有机基础：有机合成
+    10: [{ kind: 'costCard', n: 1 }, { kind: 'targetDamage', n: 1 }], // 电化学：电解冲击
+    11: [{ kind: 'costCard', n: 2 }, { kind: 'shield', n: 2 }], // 物质结构：结构稳固
+  },
+  生物: {
+    6: [{ kind: 'extraDraw', n: 1 }], // 分子与细胞
+    7: [{ kind: 'extraDraw', n: 1 }, { kind: 'handLimit', n: 1 }], // 代谢
+    8: [{ kind: 'handLimit', n: 2 }], // 稳态
+    9: [{ kind: 'extraDraw', n: 2 }], // 生物工程
+    10: [{ kind: 'extraDraw', n: 1 }, { kind: 'handLimit', n: 1 }, { kind: 'distMod', delta: -1 }], // 进化
+    11: [{ kind: 'extraDraw', n: 2 }, { kind: 'handLimit', n: 1 }], // 生态工程
+  },
+  历史: {
+    6: [{ kind: 'costCard', n: 1 }, { kind: 'allDiscard', n: 1 }], // 古代中国：时代洪流
+    7: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 2 }], // 世界近代：列强掠夺
+    8: [{ kind: 'costCard', n: 1 }, { kind: 'allDiscard', n: 1 }, { kind: 'selfDraw', n: 1 }], // 中国近现代：变革中自强
+    9: [{ kind: 'costCard', n: 2 }, { kind: 'allDiscard', n: 2 }], // 世界现代：全面洗牌
+    10: [{ kind: 'costCard', n: 1 }, { kind: 'targetDraw', n: 1 }, { kind: 'selfDraw', n: 1 }], // 改革：改革红利
+    11: [{ kind: 'costCard', n: 2 }, { kind: 'allDraw', n: 1 }], // 全球化：全球协作
+  },
+  地理: {
+    6: [{ kind: 'distMod', delta: -1 }], // 宇宙地球：视野开阔
+    7: [{ kind: 'handLimit', n: 1 }, { kind: 'extraDraw', n: 1 }], // 人文地理：物产丰饶
+    8: [{ kind: 'extraDraw', n: 1 }, { kind: 'handLimit', n: 2 }], // 区域生态：生态承载
+    9: [{ kind: 'distMod', delta: -1 }, { kind: 'handLimit', n: 1 }], // 国土整治：通达整治
+    10: [{ kind: 'distMod', delta: -1 }, { kind: 'extraDraw', n: 1 }], // 自然地理：山川通衢
+    11: [{ kind: 'distMod', delta: -2 }], // 区域发展：枢纽通达
+  },
+  政治: {
+    6: [{ kind: 'costCard', n: 1 }, { kind: 'targetHeal', n: 1 }], // 经济生活：民生保障
+    7: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 1 }], // 政治生活：制度约束
+    8: [{ kind: 'costCard', n: 1 }, { kind: 'gainHand', n: 1 }], // 哲学：思辨取牌
+    9: [{ kind: 'costCard', n: 1 }, { kind: 'targetDraw', n: 1 }, { kind: 'selfDraw', n: 1 }], // 文化：文化繁荣
+    10: [{ kind: 'costCard', n: 1 }, { kind: 'targetLoseHp', n: 1 }, { kind: 'selfDraw', n: 1 }], // 辩证法：辩证批判
+    11: [{ kind: 'costCard', n: 2 }, { kind: 'allDraw', n: 1 }, { kind: 'shield', n: 1 }], // 人生价值：价值共享且自守
+  },
+};
+
+// 高中（i>=6）按上表逐一定制；初中（i<6）沿用原有学科原型模板
 function buildSkill(subject, i) {
-  const useTrigger = (subject === '生物' || subject === '地理') || (i >= 6 && ['数学', '物理', '化学'].includes(subject));
+  const topic = TOPICS[subject][i];
+  if (i >= 6) {
+    const effects = SENIOR_SKILLS[subject][i];
+    const type = subject === '生物' || subject === '地理' ? 'trigger' : 'active';
+    return { arch: { type, effects }, topic };
+  }
+  // 初中：生物/地理为触发技，其余为主动技（原版行为）
+  const useTrigger = subject === '生物' || subject === '地理';
   const arch = useTrigger ? triggerArchetype(subject, i) : activeArchetype(subject, i);
-  return { arch, topic: TOPICS[subject][i] };
+  return { arch, topic };
 }
 
 /* ---------- 装备目录（可学分购买，局前配装，不进牌堆） ---------- */
@@ -134,7 +223,8 @@ for (let i = 0; i < GRADES.length; i++) {
       effects: arch.effects,
     };
     skillsById[skillId] = skill;
-    const hp = i % 3 === 0 ? 4 : 3;
+    // 体力设计：高一/高二 4 血，高三 3 血（高三技能更强，以体力换强度）；初中维持原节奏
+    const hp = i >= 6 ? (i >= 10 ? 3 : 4) : (i % 3 === 0 ? 4 : 3);
     chars.push({
       id: charId,
       name: topic,
@@ -154,6 +244,14 @@ for (let i = 0; i < GRADES.length; i++) {
 const errors = [];
 if (chars.length !== 108) errors.push(`角色数量应为 108，实际 ${chars.length}`);
 for (const g of GRADES) for (const s of SUBJECTS) if (!coverage[`${g}/${s}`]) errors.push(`缺少覆盖：${g}/${s}`);
+// 高中技能设计必须完整（九科 × 六学期）
+for (const s of SUBJECTS) for (let i = 6; i < 12; i++) if (!SENIOR_SKILLS[s] || !SENIOR_SKILLS[s][i]) errors.push(`缺少高中技能设计：${GRADES[i]}/${s}`);
+// 触发技只能使用可被规则钩子聚合的原语，否则运行时为空转
+const TRIGGER_KINDS = new Set(['extraDraw', 'handLimit', 'distMod', 'damageMod']);
+for (const c of chars) {
+  if (c.skills[0].type !== 'trigger') continue;
+  for (const e of c.skills[0].effects) if (!TRIGGER_KINDS.has(e.kind)) errors.push(`触发技 ${c.skills[0].id} 含不可聚合原语: ${e.kind}`);
+}
 // 原语合法性
 const allEffects = chars.flatMap((c) => c.skills[0].effects);
 for (const e of allEffects) if (!EFFECT_KINDS.has(e.kind)) errors.push(`非法原语: ${e.kind}`);

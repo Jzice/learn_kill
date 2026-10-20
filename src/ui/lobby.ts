@@ -4,7 +4,7 @@ import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../data/characters';
-import { PACKETS, charPoolForPacket, packetName } from '../data/packets';
+import { PACKETS, charPoolForPacket, packetName, stageOf, withPacketSkills } from '../data/packets';
 import type { PacketId } from '../data/packets';
 import { EXPANSION_CHARS } from '../data/expansion';
 import { gradeSortKey } from '../data/grades';
@@ -320,8 +320,13 @@ export function renderCharPreview(): void {
 export function selectChar(id: string): void {
   Sound.play('click');
   USER_CHOSEN = true;
+  // 优先从合并池（含扩展包主题技）取，保证自选角色也带上该学段/学科的主题技能；
+  // 找不到（如切换了扩展包）时回退到原始数据
   SELECTED_CHAR =
-    CHARACTERS.find((c) => c.id === id) || EXPANSION_CHARS.find((c) => c.id === id) || null;
+    mergedCharPool(SELECTED_GRADE, SELECTED_PACKET).find((c) => c.id === id) ||
+    CHARACTERS.find((c) => c.id === id) ||
+    EXPANSION_CHARS.find((c) => c.id === id) ||
+    null;
   renderCharPicker();
   pushGuestPref();
 }
@@ -330,9 +335,13 @@ export function selectChar(id: string): void {
 export function mergedCharPool(grade: string, packet: PacketId): Character[] {
   const base = charPoolForPacket(grade, packet);
   const lim = gradeSortKey(grade);
+  // 扩展包角色与基础池一致：按扩展包筛选学段，并追加该学段 / 学科的主题技能
+  //（此前扩展角色不过滤学段、也不追加主题技，导致高中扩展包里混入初中角色且拿不到学科主题技）
   const extra = EXPANSION_CHARS.filter(
     (c) => isCharUnlocked(c.id) && gradeSortKey(c.grade) <= lim && gradeSortKey(c.grade) > 0,
-  );
+  )
+    .filter((c) => packet === 'all' || stageOf(c.grade) === packet)
+    .map((c) => withPacketSkills(c, packet));
   const ids = new Set(base.map((c) => c.id));
   return [...base, ...extra.filter((c) => !ids.has(c.id))];
 }

@@ -1519,11 +1519,15 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_6_ma_sk",
         "name": "集合",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetDiscard",
             "n": 1
           }
         ]
@@ -1544,7 +1548,7 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_6_en_sk",
         "name": "Reading",
         "type": "active",
-        "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+        "desc": "弃 1 张手牌，获得一名角色 1 张手牌",
         "effects": [
           {
             "kind": "costCard",
@@ -1552,7 +1556,7 @@ export const EXPANSION_CHARS: Character[] = [
           },
           {
             "kind": "gainHand",
-            "n": 2
+            "n": 1
           }
         ]
       }
@@ -1571,12 +1575,16 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_6_ph_sk",
         "name": "运动定律",
-        "type": "trigger",
-        "desc": "出杀/伤害 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，对一名角色造成 1 点伤害",
         "effects": [
           {
-            "kind": "damageMod",
-            "delta": 1
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetDamage",
+            "n": 1
           }
         ]
       }
@@ -1595,11 +1603,19 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_6_ch_sk",
         "name": "物质的量",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，摸 1 张牌，获得 1 点护盾",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
+            "n": 1
+          },
+          {
+            "kind": "shield",
             "n": 1
           }
         ]
@@ -1716,13 +1732,45 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高一下·语文学子",
     "faction": "chinese",
     "subject": "语文",
-    "hp": 3,
+    "hp": 4,
     "avatar": "📜",
     "grade": "高一下",
     "skills": [
       {
         "id": "ex_7_cn_sk",
         "name": "诗歌·氓",
+        "type": "active",
+        "desc": "弃 1 张手牌，摸 1 张牌，令一名角色摸 1 张牌",
+        "effects": [
+          {
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
+            "n": 1
+          },
+          {
+            "kind": "targetDraw",
+            "n": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ex_7_ma",
+    "name": "三角函数",
+    "title": "高一下·数学学子",
+    "faction": "math",
+    "subject": "数学",
+    "hp": 4,
+    "avatar": "🔢",
+    "grade": "高一下",
+    "skills": [
+      {
+        "id": "ex_7_ma_sk",
+        "name": "三角函数",
         "type": "active",
         "desc": "弃 1 张手牌，摸 2 张牌",
         "effects": [
@@ -1739,36 +1787,12 @@ export const EXPANSION_CHARS: Character[] = [
     ]
   },
   {
-    "id": "ex_7_ma",
-    "name": "三角函数",
-    "title": "高一下·数学学子",
-    "faction": "math",
-    "subject": "数学",
-    "hp": 3,
-    "avatar": "🔢",
-    "grade": "高一下",
-    "skills": [
-      {
-        "id": "ex_7_ma_sk",
-        "name": "三角函数",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
-        "effects": [
-          {
-            "kind": "handLimit",
-            "n": 1
-          }
-        ]
-      }
-    ]
-  },
-  {
     "id": "ex_7_en",
     "name": "Culture",
     "title": "高一下·英语学子",
     "faction": "english",
     "subject": "英语",
-    "hp": 3,
+    "hp": 4,
     "avatar": "🔤",
     "grade": "高一下",
     "skills": [
@@ -1776,15 +1800,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_7_en_sk",
         "name": "Culture",
         "type": "active",
-        "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+        "desc": "弃 1 张手牌，令一名角色摸 1 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "gainHand",
-            "n": 2
+            "kind": "targetDraw",
+            "n": 1
           }
         ]
       }
@@ -1796,19 +1820,27 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高一下·物理学子",
     "faction": "physics",
     "subject": "物理",
-    "hp": 3,
+    "hp": 4,
     "avatar": "⚛️",
     "grade": "高一下",
     "skills": [
       {
         "id": "ex_7_ph_sk",
         "name": "曲线运动",
-        "type": "trigger",
-        "desc": "出杀/伤害 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，对一名角色造成 1 点伤害，摸 1 张牌",
         "effects": [
           {
-            "kind": "damageMod",
-            "delta": 1
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetDamage",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
+            "n": 1
           }
         ]
       }
@@ -1820,18 +1852,22 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高一下·化学学子",
     "faction": "chemistry",
     "subject": "化学",
-    "hp": 3,
+    "hp": 4,
     "avatar": "⚗️",
     "grade": "高一下",
     "skills": [
       {
         "id": "ex_7_ch_sk",
         "name": "元素周期",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetHeal",
             "n": 1
           }
         ]
@@ -1844,7 +1880,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高一下·生物学子",
     "faction": "biology",
     "subject": "生物",
-    "hp": 3,
+    "hp": 4,
     "avatar": "🧬",
     "grade": "高一下",
     "skills": [
@@ -1852,10 +1888,14 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_7_bi_sk",
         "name": "代谢",
         "type": "trigger",
-        "desc": "摸牌阶段额外摸 1 张牌（触发）",
+        "desc": "摸牌阶段额外摸 1 张牌（触发），手牌上限 +1（触发）",
         "effects": [
           {
             "kind": "extraDraw",
+            "n": 1
+          },
+          {
+            "kind": "handLimit",
             "n": 1
           }
         ]
@@ -1868,7 +1908,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高一下·历史学子",
     "faction": "history",
     "subject": "历史",
-    "hp": 3,
+    "hp": 4,
     "avatar": "📜",
     "grade": "高一下",
     "skills": [
@@ -1876,15 +1916,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_7_hi_sk",
         "name": "世界近代",
         "type": "active",
-        "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+        "desc": "弃 1 张手牌，令一名角色弃 2 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "allDiscard",
-            "n": 1
+            "kind": "targetDiscard",
+            "n": 2
           }
         ]
       }
@@ -1896,7 +1936,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高一下·地理学子",
     "faction": "geography",
     "subject": "地理",
-    "hp": 3,
+    "hp": 4,
     "avatar": "🌏",
     "grade": "高一下",
     "skills": [
@@ -1904,11 +1944,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_7_ge_sk",
         "name": "人文地理",
         "type": "trigger",
-        "desc": "计算距离 − 1（触发）",
+        "desc": "手牌上限 +1（触发），摸牌阶段额外摸 1 张牌（触发）",
         "effects": [
           {
-            "kind": "distMod",
-            "delta": -1
+            "kind": "handLimit",
+            "n": 1
+          },
+          {
+            "kind": "extraDraw",
+            "n": 1
           }
         ]
       }
@@ -1920,7 +1964,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高一下·政治学子",
     "faction": "politics",
     "subject": "政治",
-    "hp": 3,
+    "hp": 4,
     "avatar": "⚖️",
     "grade": "高一下",
     "skills": [
@@ -1928,14 +1972,14 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_7_po_sk",
         "name": "政治生活",
         "type": "active",
-        "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+        "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "targetHeal",
+            "kind": "targetDiscard",
             "n": 1
           }
         ]
@@ -1948,7 +1992,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·语文学子",
     "faction": "chinese",
     "subject": "语文",
-    "hp": 3,
+    "hp": 4,
     "avatar": "📜",
     "grade": "高二上",
     "skills": [
@@ -1956,15 +2000,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_8_cn_sk",
         "name": "小说·祝福",
         "type": "active",
-        "desc": "弃 1 张手牌，摸 3 张牌",
+        "desc": "弃 1 张手牌，获得一名角色 1 张手牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "selfDraw",
-            "n": 3
+            "kind": "gainHand",
+            "n": 1
           }
         ]
       }
@@ -1976,18 +2020,22 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·数学学子",
     "faction": "math",
     "subject": "数学",
-    "hp": 3,
+    "hp": 4,
     "avatar": "🔢",
     "grade": "高二上",
     "skills": [
       {
         "id": "ex_8_ma_sk",
         "name": "立体几何",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，令一名角色失去 1 点体力",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetLoseHp",
             "n": 1
           }
         ]
@@ -2000,7 +2048,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·英语学子",
     "faction": "english",
     "subject": "英语",
-    "hp": 3,
+    "hp": 4,
     "avatar": "🔤",
     "grade": "高二上",
     "skills": [
@@ -2008,15 +2056,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_8_en_sk",
         "name": "Argument",
         "type": "active",
-        "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+        "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "gainHand",
-            "n": 2
+            "kind": "targetDiscard",
+            "n": 1
           }
         ]
       }
@@ -2028,19 +2076,23 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·物理学子",
     "faction": "physics",
     "subject": "物理",
-    "hp": 3,
+    "hp": 4,
     "avatar": "⚛️",
     "grade": "高二上",
     "skills": [
       {
         "id": "ex_8_ph_sk",
         "name": "电场",
-        "type": "trigger",
-        "desc": "出杀/伤害 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
         "effects": [
           {
-            "kind": "damageMod",
-            "delta": 1
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetDiscard",
+            "n": 1
           }
         ]
       }
@@ -2052,19 +2104,23 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·化学学子",
     "faction": "chemistry",
     "subject": "化学",
-    "hp": 3,
+    "hp": 4,
     "avatar": "⚗️",
     "grade": "高二上",
     "skills": [
       {
         "id": "ex_8_ch_sk",
         "name": "反应速率",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，摸 2 张牌",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
             "n": 1
+          },
+          {
+            "kind": "selfDraw",
+            "n": 2
           }
         ]
       }
@@ -2076,7 +2132,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·生物学子",
     "faction": "biology",
     "subject": "生物",
-    "hp": 3,
+    "hp": 4,
     "avatar": "🧬",
     "grade": "高二上",
     "skills": [
@@ -2084,11 +2140,11 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_8_bi_sk",
         "name": "稳态",
         "type": "trigger",
-        "desc": "摸牌阶段额外摸 1 张牌（触发）",
+        "desc": "手牌上限 +2（触发）",
         "effects": [
           {
-            "kind": "extraDraw",
-            "n": 1
+            "kind": "handLimit",
+            "n": 2
           }
         ]
       }
@@ -2100,7 +2156,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·历史学子",
     "faction": "history",
     "subject": "历史",
-    "hp": 3,
+    "hp": 4,
     "avatar": "📜",
     "grade": "高二上",
     "skills": [
@@ -2108,7 +2164,7 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_8_hi_sk",
         "name": "中国近现代",
         "type": "active",
-        "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+        "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌，摸 1 张牌",
         "effects": [
           {
             "kind": "costCard",
@@ -2116,6 +2172,10 @@ export const EXPANSION_CHARS: Character[] = [
           },
           {
             "kind": "allDiscard",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
             "n": 1
           }
         ]
@@ -2128,7 +2188,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·地理学子",
     "faction": "geography",
     "subject": "地理",
-    "hp": 3,
+    "hp": 4,
     "avatar": "🌏",
     "grade": "高二上",
     "skills": [
@@ -2136,11 +2196,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_8_ge_sk",
         "name": "区域生态",
         "type": "trigger",
-        "desc": "计算距离 − 1（触发）",
+        "desc": "摸牌阶段额外摸 1 张牌（触发），手牌上限 +2（触发）",
         "effects": [
           {
-            "kind": "distMod",
-            "delta": -1
+            "kind": "extraDraw",
+            "n": 1
+          },
+          {
+            "kind": "handLimit",
+            "n": 2
           }
         ]
       }
@@ -2152,7 +2216,7 @@ export const EXPANSION_CHARS: Character[] = [
     "title": "高二上·政治学子",
     "faction": "politics",
     "subject": "政治",
-    "hp": 3,
+    "hp": 4,
     "avatar": "⚖️",
     "grade": "高二上",
     "skills": [
@@ -2160,14 +2224,14 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_8_po_sk",
         "name": "哲学",
         "type": "active",
-        "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+        "desc": "弃 1 张手牌，获得一名角色 1 张手牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "targetHeal",
+            "kind": "gainHand",
             "n": 1
           }
         ]
@@ -2188,7 +2252,7 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_9_cn_sk",
         "name": "散文·荷塘",
         "type": "active",
-        "desc": "弃 1 张手牌，摸 3 张牌",
+        "desc": "弃 1 张手牌，摸 2 张牌，获得 1 点护盾",
         "effects": [
           {
             "kind": "costCard",
@@ -2196,7 +2260,11 @@ export const EXPANSION_CHARS: Character[] = [
           },
           {
             "kind": "selfDraw",
-            "n": 3
+            "n": 2
+          },
+          {
+            "kind": "shield",
+            "n": 1
           }
         ]
       }
@@ -2215,12 +2283,16 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_9_ma_sk",
         "name": "导数",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，令一名角色弃 2 张牌",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
             "n": 1
+          },
+          {
+            "kind": "targetDiscard",
+            "n": 2
           }
         ]
       }
@@ -2240,15 +2312,19 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_9_en_sk",
         "name": "Translation",
         "type": "active",
-        "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+        "desc": "弃 1 张手牌，摸 1 张牌，获得一名角色 1 张手牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
+            "kind": "selfDraw",
+            "n": 1
+          },
+          {
             "kind": "gainHand",
-            "n": 2
+            "n": 1
           }
         ]
       }
@@ -2267,12 +2343,16 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_9_ph_sk",
         "name": "电磁感应",
-        "type": "trigger",
-        "desc": "出杀/伤害 +1（触发）",
+        "type": "active",
+        "desc": "弃 2 张手牌，对一名角色造成 2 点伤害",
         "effects": [
           {
-            "kind": "damageMod",
-            "delta": 1
+            "kind": "costCard",
+            "n": 2
+          },
+          {
+            "kind": "targetDamage",
+            "n": 2
           }
         ]
       }
@@ -2291,11 +2371,19 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_9_ch_sk",
         "name": "有机基础",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 2 张手牌，令一名角色回复 1 点体力，摸 1 张牌",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
+            "n": 2
+          },
+          {
+            "kind": "targetHeal",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
             "n": 1
           }
         ]
@@ -2316,11 +2404,11 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_9_bi_sk",
         "name": "生物工程",
         "type": "trigger",
-        "desc": "摸牌阶段额外摸 1 张牌（触发）",
+        "desc": "摸牌阶段额外摸 2 张牌（触发）",
         "effects": [
           {
             "kind": "extraDraw",
-            "n": 1
+            "n": 2
           }
         ]
       }
@@ -2340,15 +2428,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_9_hi_sk",
         "name": "世界现代",
         "type": "active",
-        "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+        "desc": "弃 2 张手牌，令所有其他角色各弃 2 张牌",
         "effects": [
           {
             "kind": "costCard",
-            "n": 1
+            "n": 2
           },
           {
             "kind": "allDiscard",
-            "n": 1
+            "n": 2
           }
         ]
       }
@@ -2368,11 +2456,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_9_ge_sk",
         "name": "国土整治",
         "type": "trigger",
-        "desc": "计算距离 − 1（触发）",
+        "desc": "计算距离 − 1（触发），手牌上限 +1（触发）",
         "effects": [
           {
             "kind": "distMod",
             "delta": -1
+          },
+          {
+            "kind": "handLimit",
+            "n": 1
           }
         ]
       }
@@ -2392,14 +2484,18 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_9_po_sk",
         "name": "文化",
         "type": "active",
-        "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+        "desc": "弃 1 张手牌，令一名角色摸 1 张牌，摸 1 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "targetHeal",
+            "kind": "targetDraw",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
             "n": 1
           }
         ]
@@ -2420,11 +2516,11 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_10_cn_sk",
         "name": "古文·劝学",
         "type": "active",
-        "desc": "弃 1 张手牌，摸 3 张牌",
+        "desc": "弃 2 张手牌，摸 3 张牌",
         "effects": [
           {
             "kind": "costCard",
-            "n": 1
+            "n": 2
           },
           {
             "kind": "selfDraw",
@@ -2447,11 +2543,19 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_10_ma_sk",
         "name": "数列",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，摸 1 张牌，令一名角色摸 1 张牌",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
+            "n": 1
+          },
+          {
+            "kind": "targetDraw",
             "n": 1
           }
         ]
@@ -2472,15 +2576,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_10_en_sk",
         "name": "Cloze",
         "type": "active",
-        "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+        "desc": "弃 2 张手牌，摸 3 张牌",
         "effects": [
           {
             "kind": "costCard",
-            "n": 1
+            "n": 2
           },
           {
-            "kind": "gainHand",
-            "n": 2
+            "kind": "selfDraw",
+            "n": 3
           }
         ]
       }
@@ -2499,12 +2603,16 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_10_ph_sk",
         "name": "动量",
-        "type": "trigger",
-        "desc": "出杀/伤害 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，令一名角色失去 1 点体力",
         "effects": [
           {
-            "kind": "damageMod",
-            "delta": 1
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetLoseHp",
+            "n": 1
           }
         ]
       }
@@ -2523,11 +2631,15 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_10_ch_sk",
         "name": "电化学",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，对一名角色造成 1 点伤害",
         "effects": [
           {
-            "kind": "handLimit",
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "targetDamage",
             "n": 1
           }
         ]
@@ -2548,11 +2660,19 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_10_bi_sk",
         "name": "进化",
         "type": "trigger",
-        "desc": "摸牌阶段额外摸 1 张牌（触发）",
+        "desc": "摸牌阶段额外摸 1 张牌（触发），手牌上限 +1（触发），计算距离 − 1（触发）",
         "effects": [
           {
             "kind": "extraDraw",
             "n": 1
+          },
+          {
+            "kind": "handLimit",
+            "n": 1
+          },
+          {
+            "kind": "distMod",
+            "delta": -1
           }
         ]
       }
@@ -2572,14 +2692,18 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_10_hi_sk",
         "name": "改革",
         "type": "active",
-        "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+        "desc": "弃 1 张手牌，令一名角色摸 1 张牌，摸 1 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "allDiscard",
+            "kind": "targetDraw",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
             "n": 1
           }
         ]
@@ -2600,11 +2724,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_10_ge_sk",
         "name": "自然地理",
         "type": "trigger",
-        "desc": "计算距离 − 1（触发）",
+        "desc": "计算距离 − 1（触发），摸牌阶段额外摸 1 张牌（触发）",
         "effects": [
           {
             "kind": "distMod",
             "delta": -1
+          },
+          {
+            "kind": "extraDraw",
+            "n": 1
           }
         ]
       }
@@ -2624,14 +2752,18 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_10_po_sk",
         "name": "辩证法",
         "type": "active",
-        "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+        "desc": "弃 1 张手牌，令一名角色失去 1 点体力，摸 1 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "targetHeal",
+            "kind": "targetLoseHp",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
             "n": 1
           }
         ]
@@ -2652,15 +2784,15 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_11_cn_sk",
         "name": "论述·拿来",
         "type": "active",
-        "desc": "弃 1 张手牌，摸 3 张牌",
+        "desc": "弃 1 张手牌，令一名角色弃 2 张牌",
         "effects": [
           {
             "kind": "costCard",
             "n": 1
           },
           {
-            "kind": "selfDraw",
-            "n": 3
+            "kind": "targetDiscard",
+            "n": 2
           }
         ]
       }
@@ -2679,12 +2811,16 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_11_ma_sk",
         "name": "概率统计",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 2 张手牌，对一名角色造成 2 点伤害",
         "effects": [
           {
-            "kind": "handLimit",
-            "n": 1
+            "kind": "costCard",
+            "n": 2
+          },
+          {
+            "kind": "targetDamage",
+            "n": 2
           }
         ]
       }
@@ -2704,11 +2840,11 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_11_en_sk",
         "name": "Summary",
         "type": "active",
-        "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+        "desc": "弃 2 张手牌，获得一名角色 2 张手牌",
         "effects": [
           {
             "kind": "costCard",
-            "n": 1
+            "n": 2
           },
           {
             "kind": "gainHand",
@@ -2731,12 +2867,16 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_11_ph_sk",
         "name": "波与光",
-        "type": "trigger",
-        "desc": "出杀/伤害 +1（触发）",
+        "type": "active",
+        "desc": "弃 1 张手牌，摸 2 张牌",
         "effects": [
           {
-            "kind": "damageMod",
-            "delta": 1
+            "kind": "costCard",
+            "n": 1
+          },
+          {
+            "kind": "selfDraw",
+            "n": 2
           }
         ]
       }
@@ -2755,12 +2895,16 @@ export const EXPANSION_CHARS: Character[] = [
       {
         "id": "ex_11_ch_sk",
         "name": "物质结构",
-        "type": "trigger",
-        "desc": "手牌上限 +1（触发）",
+        "type": "active",
+        "desc": "弃 2 张手牌，获得 2 点护盾",
         "effects": [
           {
-            "kind": "handLimit",
-            "n": 1
+            "kind": "costCard",
+            "n": 2
+          },
+          {
+            "kind": "shield",
+            "n": 2
           }
         ]
       }
@@ -2780,10 +2924,14 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_11_bi_sk",
         "name": "生态工程",
         "type": "trigger",
-        "desc": "摸牌阶段额外摸 1 张牌（触发）",
+        "desc": "摸牌阶段额外摸 2 张牌（触发），手牌上限 +1（触发）",
         "effects": [
           {
             "kind": "extraDraw",
+            "n": 2
+          },
+          {
+            "kind": "handLimit",
             "n": 1
           }
         ]
@@ -2804,14 +2952,14 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_11_hi_sk",
         "name": "全球化",
         "type": "active",
-        "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+        "desc": "弃 2 张手牌，令所有角色各摸 1 张牌",
         "effects": [
           {
             "kind": "costCard",
-            "n": 1
+            "n": 2
           },
           {
-            "kind": "allDiscard",
+            "kind": "allDraw",
             "n": 1
           }
         ]
@@ -2832,11 +2980,11 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_11_ge_sk",
         "name": "区域发展",
         "type": "trigger",
-        "desc": "计算距离 − 1（触发）",
+        "desc": "计算距离 − 2（触发）",
         "effects": [
           {
             "kind": "distMod",
-            "delta": -1
+            "delta": -2
           }
         ]
       }
@@ -2856,14 +3004,18 @@ export const EXPANSION_CHARS: Character[] = [
         "id": "ex_11_po_sk",
         "name": "人生价值",
         "type": "active",
-        "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+        "desc": "弃 2 张手牌，令所有角色各摸 1 张牌，获得 1 点护盾",
         "effects": [
           {
             "kind": "costCard",
+            "n": 2
+          },
+          {
+            "kind": "allDraw",
             "n": 1
           },
           {
-            "kind": "targetHeal",
+            "kind": "shield",
             "n": 1
           }
         ]
@@ -3708,11 +3860,15 @@ export const EXPANSION_SKILLS: Skill[] = [
   {
     "id": "ex_6_ma_sk",
     "name": "集合",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetDiscard",
         "n": 1
       }
     ]
@@ -3721,7 +3877,7 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_6_en_sk",
     "name": "Reading",
     "type": "active",
-    "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+    "desc": "弃 1 张手牌，获得一名角色 1 张手牌",
     "effects": [
       {
         "kind": "costCard",
@@ -3729,30 +3885,42 @@ export const EXPANSION_SKILLS: Skill[] = [
       },
       {
         "kind": "gainHand",
-        "n": 2
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_6_ph_sk",
     "name": "运动定律",
-    "type": "trigger",
-    "desc": "出杀/伤害 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，对一名角色造成 1 点伤害",
     "effects": [
       {
-        "kind": "damageMod",
-        "delta": 1
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetDamage",
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_6_ch_sk",
     "name": "物质的量",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，摸 1 张牌，获得 1 点护盾",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 1
+      },
+      {
+        "kind": "shield",
         "n": 1
       }
     ]
@@ -3817,6 +3985,26 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_7_cn_sk",
     "name": "诗歌·氓",
     "type": "active",
+    "desc": "弃 1 张手牌，摸 1 张牌，令一名角色摸 1 张牌",
+    "effects": [
+      {
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 1
+      },
+      {
+        "kind": "targetDraw",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "id": "ex_7_ma_sk",
+    "name": "三角函数",
+    "type": "active",
     "desc": "弃 1 张手牌，摸 2 张牌",
     "effects": [
       {
@@ -3830,53 +4018,53 @@ export const EXPANSION_SKILLS: Skill[] = [
     ]
   },
   {
-    "id": "ex_7_ma_sk",
-    "name": "三角函数",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
-    "effects": [
-      {
-        "kind": "handLimit",
-        "n": 1
-      }
-    ]
-  },
-  {
     "id": "ex_7_en_sk",
     "name": "Culture",
     "type": "active",
-    "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+    "desc": "弃 1 张手牌，令一名角色摸 1 张牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
-        "kind": "gainHand",
-        "n": 2
+        "kind": "targetDraw",
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_7_ph_sk",
     "name": "曲线运动",
-    "type": "trigger",
-    "desc": "出杀/伤害 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，对一名角色造成 1 点伤害，摸 1 张牌",
     "effects": [
       {
-        "kind": "damageMod",
-        "delta": 1
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetDamage",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_7_ch_sk",
     "name": "元素周期",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetHeal",
         "n": 1
       }
     ]
@@ -3885,10 +4073,14 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_7_bi_sk",
     "name": "代谢",
     "type": "trigger",
-    "desc": "摸牌阶段额外摸 1 张牌（触发）",
+    "desc": "摸牌阶段额外摸 1 张牌（触发），手牌上限 +1（触发）",
     "effects": [
       {
         "kind": "extraDraw",
+        "n": 1
+      },
+      {
+        "kind": "handLimit",
         "n": 1
       }
     ]
@@ -3897,15 +4089,15 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_7_hi_sk",
     "name": "世界近代",
     "type": "active",
-    "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+    "desc": "弃 1 张手牌，令一名角色弃 2 张牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
-        "kind": "allDiscard",
-        "n": 1
+        "kind": "targetDiscard",
+        "n": 2
       }
     ]
   },
@@ -3913,11 +4105,15 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_7_ge_sk",
     "name": "人文地理",
     "type": "trigger",
-    "desc": "计算距离 − 1（触发）",
+    "desc": "手牌上限 +1（触发），摸牌阶段额外摸 1 张牌（触发）",
     "effects": [
       {
-        "kind": "distMod",
-        "delta": -1
+        "kind": "handLimit",
+        "n": 1
+      },
+      {
+        "kind": "extraDraw",
+        "n": 1
       }
     ]
   },
@@ -3925,14 +4121,14 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_7_po_sk",
     "name": "政治生活",
     "type": "active",
-    "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+    "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
-        "kind": "targetHeal",
+        "kind": "targetDiscard",
         "n": 1
       }
     ]
@@ -3941,26 +4137,30 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_8_cn_sk",
     "name": "小说·祝福",
     "type": "active",
-    "desc": "弃 1 张手牌，摸 3 张牌",
+    "desc": "弃 1 张手牌，获得一名角色 1 张手牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
-        "kind": "selfDraw",
-        "n": 3
+        "kind": "gainHand",
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_8_ma_sk",
     "name": "立体几何",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色失去 1 点体力",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetLoseHp",
         "n": 1
       }
     ]
@@ -3969,39 +4169,47 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_8_en_sk",
     "name": "Argument",
     "type": "active",
-    "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+    "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
-        "kind": "gainHand",
-        "n": 2
+        "kind": "targetDiscard",
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_8_ph_sk",
     "name": "电场",
-    "type": "trigger",
-    "desc": "出杀/伤害 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色弃 1 张牌",
     "effects": [
       {
-        "kind": "damageMod",
-        "delta": 1
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetDiscard",
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_8_ch_sk",
     "name": "反应速率",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，摸 2 张牌",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
         "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 2
       }
     ]
   },
@@ -4009,11 +4217,11 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_8_bi_sk",
     "name": "稳态",
     "type": "trigger",
-    "desc": "摸牌阶段额外摸 1 张牌（触发）",
+    "desc": "手牌上限 +2（触发）",
     "effects": [
       {
-        "kind": "extraDraw",
-        "n": 1
+        "kind": "handLimit",
+        "n": 2
       }
     ]
   },
@@ -4021,7 +4229,7 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_8_hi_sk",
     "name": "中国近现代",
     "type": "active",
-    "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+    "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌，摸 1 张牌",
     "effects": [
       {
         "kind": "costCard",
@@ -4029,6 +4237,10 @@ export const EXPANSION_SKILLS: Skill[] = [
       },
       {
         "kind": "allDiscard",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
         "n": 1
       }
     ]
@@ -4037,11 +4249,15 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_8_ge_sk",
     "name": "区域生态",
     "type": "trigger",
-    "desc": "计算距离 − 1（触发）",
+    "desc": "摸牌阶段额外摸 1 张牌（触发），手牌上限 +2（触发）",
     "effects": [
       {
-        "kind": "distMod",
-        "delta": -1
+        "kind": "extraDraw",
+        "n": 1
+      },
+      {
+        "kind": "handLimit",
+        "n": 2
       }
     ]
   },
@@ -4049,14 +4265,14 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_8_po_sk",
     "name": "哲学",
     "type": "active",
-    "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+    "desc": "弃 1 张手牌，获得一名角色 1 张手牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
-        "kind": "targetHeal",
+        "kind": "gainHand",
         "n": 1
       }
     ]
@@ -4065,7 +4281,7 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_9_cn_sk",
     "name": "散文·荷塘",
     "type": "active",
-    "desc": "弃 1 张手牌，摸 3 张牌",
+    "desc": "弃 1 张手牌，摸 2 张牌，获得 1 点护盾",
     "effects": [
       {
         "kind": "costCard",
@@ -4073,19 +4289,27 @@ export const EXPANSION_SKILLS: Skill[] = [
       },
       {
         "kind": "selfDraw",
-        "n": 3
+        "n": 2
+      },
+      {
+        "kind": "shield",
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_9_ma_sk",
     "name": "导数",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色弃 2 张牌",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
         "n": 1
+      },
+      {
+        "kind": "targetDiscard",
+        "n": 2
       }
     ]
   },
@@ -4093,38 +4317,54 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_9_en_sk",
     "name": "Translation",
     "type": "active",
-    "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+    "desc": "弃 1 张手牌，摸 1 张牌，获得一名角色 1 张手牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
+        "kind": "selfDraw",
+        "n": 1
+      },
+      {
         "kind": "gainHand",
-        "n": 2
+        "n": 1
       }
     ]
   },
   {
     "id": "ex_9_ph_sk",
     "name": "电磁感应",
-    "type": "trigger",
-    "desc": "出杀/伤害 +1（触发）",
+    "type": "active",
+    "desc": "弃 2 张手牌，对一名角色造成 2 点伤害",
     "effects": [
       {
-        "kind": "damageMod",
-        "delta": 1
+        "kind": "costCard",
+        "n": 2
+      },
+      {
+        "kind": "targetDamage",
+        "n": 2
       }
     ]
   },
   {
     "id": "ex_9_ch_sk",
     "name": "有机基础",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 2 张手牌，令一名角色回复 1 点体力，摸 1 张牌",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
+        "n": 2
+      },
+      {
+        "kind": "targetHeal",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
         "n": 1
       }
     ]
@@ -4133,11 +4373,11 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_9_bi_sk",
     "name": "生物工程",
     "type": "trigger",
-    "desc": "摸牌阶段额外摸 1 张牌（触发）",
+    "desc": "摸牌阶段额外摸 2 张牌（触发）",
     "effects": [
       {
         "kind": "extraDraw",
-        "n": 1
+        "n": 2
       }
     ]
   },
@@ -4145,15 +4385,15 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_9_hi_sk",
     "name": "世界现代",
     "type": "active",
-    "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+    "desc": "弃 2 张手牌，令所有其他角色各弃 2 张牌",
     "effects": [
       {
         "kind": "costCard",
-        "n": 1
+        "n": 2
       },
       {
         "kind": "allDiscard",
-        "n": 1
+        "n": 2
       }
     ]
   },
@@ -4161,11 +4401,15 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_9_ge_sk",
     "name": "国土整治",
     "type": "trigger",
-    "desc": "计算距离 − 1（触发）",
+    "desc": "计算距离 − 1（触发），手牌上限 +1（触发）",
     "effects": [
       {
         "kind": "distMod",
         "delta": -1
+      },
+      {
+        "kind": "handLimit",
+        "n": 1
       }
     ]
   },
@@ -4173,14 +4417,18 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_9_po_sk",
     "name": "文化",
     "type": "active",
-    "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+    "desc": "弃 1 张手牌，令一名角色摸 1 张牌，摸 1 张牌",
     "effects": [
       {
         "kind": "costCard",
         "n": 1
       },
       {
-        "kind": "targetHeal",
+        "kind": "targetDraw",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
         "n": 1
       }
     ]
@@ -4189,11 +4437,11 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_10_cn_sk",
     "name": "古文·劝学",
     "type": "active",
-    "desc": "弃 1 张手牌，摸 3 张牌",
+    "desc": "弃 2 张手牌，摸 3 张牌",
     "effects": [
       {
         "kind": "costCard",
-        "n": 1
+        "n": 2
       },
       {
         "kind": "selfDraw",
@@ -4204,11 +4452,19 @@ export const EXPANSION_SKILLS: Skill[] = [
   {
     "id": "ex_10_ma_sk",
     "name": "数列",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，摸 1 张牌，令一名角色摸 1 张牌",
     "effects": [
       {
-        "kind": "handLimit",
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 1
+      },
+      {
+        "kind": "targetDraw",
         "n": 1
       }
     ]
@@ -4217,107 +4473,11 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_10_en_sk",
     "name": "Cloze",
     "type": "active",
-    "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+    "desc": "弃 2 张手牌，摸 3 张牌",
     "effects": [
       {
         "kind": "costCard",
-        "n": 1
-      },
-      {
-        "kind": "gainHand",
         "n": 2
-      }
-    ]
-  },
-  {
-    "id": "ex_10_ph_sk",
-    "name": "动量",
-    "type": "trigger",
-    "desc": "出杀/伤害 +1（触发）",
-    "effects": [
-      {
-        "kind": "damageMod",
-        "delta": 1
-      }
-    ]
-  },
-  {
-    "id": "ex_10_ch_sk",
-    "name": "电化学",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
-    "effects": [
-      {
-        "kind": "handLimit",
-        "n": 1
-      }
-    ]
-  },
-  {
-    "id": "ex_10_bi_sk",
-    "name": "进化",
-    "type": "trigger",
-    "desc": "摸牌阶段额外摸 1 张牌（触发）",
-    "effects": [
-      {
-        "kind": "extraDraw",
-        "n": 1
-      }
-    ]
-  },
-  {
-    "id": "ex_10_hi_sk",
-    "name": "改革",
-    "type": "active",
-    "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
-    "effects": [
-      {
-        "kind": "costCard",
-        "n": 1
-      },
-      {
-        "kind": "allDiscard",
-        "n": 1
-      }
-    ]
-  },
-  {
-    "id": "ex_10_ge_sk",
-    "name": "自然地理",
-    "type": "trigger",
-    "desc": "计算距离 − 1（触发）",
-    "effects": [
-      {
-        "kind": "distMod",
-        "delta": -1
-      }
-    ]
-  },
-  {
-    "id": "ex_10_po_sk",
-    "name": "辩证法",
-    "type": "active",
-    "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
-    "effects": [
-      {
-        "kind": "costCard",
-        "n": 1
-      },
-      {
-        "kind": "targetHeal",
-        "n": 1
-      }
-    ]
-  },
-  {
-    "id": "ex_11_cn_sk",
-    "name": "论述·拿来",
-    "type": "active",
-    "desc": "弃 1 张手牌，摸 3 张牌",
-    "effects": [
-      {
-        "kind": "costCard",
-        "n": 1
       },
       {
         "kind": "selfDraw",
@@ -4326,14 +4486,142 @@ export const EXPANSION_SKILLS: Skill[] = [
     ]
   },
   {
-    "id": "ex_11_ma_sk",
-    "name": "概率统计",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "id": "ex_10_ph_sk",
+    "name": "动量",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色失去 1 点体力",
     "effects": [
+      {
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetLoseHp",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "id": "ex_10_ch_sk",
+    "name": "电化学",
+    "type": "active",
+    "desc": "弃 1 张手牌，对一名角色造成 1 点伤害",
+    "effects": [
+      {
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetDamage",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "id": "ex_10_bi_sk",
+    "name": "进化",
+    "type": "trigger",
+    "desc": "摸牌阶段额外摸 1 张牌（触发），手牌上限 +1（触发），计算距离 − 1（触发）",
+    "effects": [
+      {
+        "kind": "extraDraw",
+        "n": 1
+      },
       {
         "kind": "handLimit",
         "n": 1
+      },
+      {
+        "kind": "distMod",
+        "delta": -1
+      }
+    ]
+  },
+  {
+    "id": "ex_10_hi_sk",
+    "name": "改革",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色摸 1 张牌，摸 1 张牌",
+    "effects": [
+      {
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetDraw",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "id": "ex_10_ge_sk",
+    "name": "自然地理",
+    "type": "trigger",
+    "desc": "计算距离 − 1（触发），摸牌阶段额外摸 1 张牌（触发）",
+    "effects": [
+      {
+        "kind": "distMod",
+        "delta": -1
+      },
+      {
+        "kind": "extraDraw",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "id": "ex_10_po_sk",
+    "name": "辩证法",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色失去 1 点体力，摸 1 张牌",
+    "effects": [
+      {
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetLoseHp",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "id": "ex_11_cn_sk",
+    "name": "论述·拿来",
+    "type": "active",
+    "desc": "弃 1 张手牌，令一名角色弃 2 张牌",
+    "effects": [
+      {
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "targetDiscard",
+        "n": 2
+      }
+    ]
+  },
+  {
+    "id": "ex_11_ma_sk",
+    "name": "概率统计",
+    "type": "active",
+    "desc": "弃 2 张手牌，对一名角色造成 2 点伤害",
+    "effects": [
+      {
+        "kind": "costCard",
+        "n": 2
+      },
+      {
+        "kind": "targetDamage",
+        "n": 2
       }
     ]
   },
@@ -4341,11 +4629,11 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_11_en_sk",
     "name": "Summary",
     "type": "active",
-    "desc": "弃 1 张手牌，获得一名角色 2 张手牌",
+    "desc": "弃 2 张手牌，获得一名角色 2 张手牌",
     "effects": [
       {
         "kind": "costCard",
-        "n": 1
+        "n": 2
       },
       {
         "kind": "gainHand",
@@ -4356,24 +4644,32 @@ export const EXPANSION_SKILLS: Skill[] = [
   {
     "id": "ex_11_ph_sk",
     "name": "波与光",
-    "type": "trigger",
-    "desc": "出杀/伤害 +1（触发）",
+    "type": "active",
+    "desc": "弃 1 张手牌，摸 2 张牌",
     "effects": [
       {
-        "kind": "damageMod",
-        "delta": 1
+        "kind": "costCard",
+        "n": 1
+      },
+      {
+        "kind": "selfDraw",
+        "n": 2
       }
     ]
   },
   {
     "id": "ex_11_ch_sk",
     "name": "物质结构",
-    "type": "trigger",
-    "desc": "手牌上限 +1（触发）",
+    "type": "active",
+    "desc": "弃 2 张手牌，获得 2 点护盾",
     "effects": [
       {
-        "kind": "handLimit",
-        "n": 1
+        "kind": "costCard",
+        "n": 2
+      },
+      {
+        "kind": "shield",
+        "n": 2
       }
     ]
   },
@@ -4381,10 +4677,14 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_11_bi_sk",
     "name": "生态工程",
     "type": "trigger",
-    "desc": "摸牌阶段额外摸 1 张牌（触发）",
+    "desc": "摸牌阶段额外摸 2 张牌（触发），手牌上限 +1（触发）",
     "effects": [
       {
         "kind": "extraDraw",
+        "n": 2
+      },
+      {
+        "kind": "handLimit",
         "n": 1
       }
     ]
@@ -4393,14 +4693,14 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_11_hi_sk",
     "name": "全球化",
     "type": "active",
-    "desc": "弃 1 张手牌，令所有其他角色各弃 1 张牌",
+    "desc": "弃 2 张手牌，令所有角色各摸 1 张牌",
     "effects": [
       {
         "kind": "costCard",
-        "n": 1
+        "n": 2
       },
       {
-        "kind": "allDiscard",
+        "kind": "allDraw",
         "n": 1
       }
     ]
@@ -4409,11 +4709,11 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_11_ge_sk",
     "name": "区域发展",
     "type": "trigger",
-    "desc": "计算距离 − 1（触发）",
+    "desc": "计算距离 − 2（触发）",
     "effects": [
       {
         "kind": "distMod",
-        "delta": -1
+        "delta": -2
       }
     ]
   },
@@ -4421,14 +4721,18 @@ export const EXPANSION_SKILLS: Skill[] = [
     "id": "ex_11_po_sk",
     "name": "人生价值",
     "type": "active",
-    "desc": "弃 1 张手牌，令一名角色回复 1 点体力",
+    "desc": "弃 2 张手牌，令所有角色各摸 1 张牌，获得 1 点护盾",
     "effects": [
       {
         "kind": "costCard",
+        "n": 2
+      },
+      {
+        "kind": "allDraw",
         "n": 1
       },
       {
-        "kind": "targetHeal",
+        "kind": "shield",
         "n": 1
       }
     ]

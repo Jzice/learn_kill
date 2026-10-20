@@ -54,56 +54,56 @@ ex_5_hi	二战	初三下·历史学子	history	历史	初三下	3	📜	ex_5_hi_s
 ex_5_ge	经济发展	初三下·地理学子	geography	地理	初三下	3	🌏	ex_5_ge_sk	经济发展	trigger	计算距离 − 1（触发）
 ex_5_po	世界舞台	初三下·政治学子	politics	政治	初三下	3	⚖️	ex_5_po_sk	世界舞台	active	弃 1 张手牌，令一名角色回复 1 点体力
 ex_6_cn	现代文·故都	高一上·语文学子	chinese	语文	高一上	4	📜	ex_6_cn_sk	现代文·故都	active	弃 1 张手牌，摸 2 张牌
-ex_6_ma	集合	高一上·数学学子	math	数学	高一上	4	🔢	ex_6_ma_sk	集合	trigger	手牌上限 +1（触发）
-ex_6_en	Reading	高一上·英语学子	english	英语	高一上	4	🔤	ex_6_en_sk	Reading	active	弃 1 张手牌，获得一名角色 2 张手牌
-ex_6_ph	运动定律	高一上·物理学子	physics	物理	高一上	4	⚛️	ex_6_ph_sk	运动定律	trigger	出杀/伤害 +1（触发）
-ex_6_ch	物质的量	高一上·化学学子	chemistry	化学	高一上	4	⚗️	ex_6_ch_sk	物质的量	trigger	手牌上限 +1（触发）
+ex_6_ma	集合	高一上·数学学子	math	数学	高一上	4	🔢	ex_6_ma_sk	集合	active	弃 1 张手牌，令一名角色弃 1 张牌
+ex_6_en	Reading	高一上·英语学子	english	英语	高一上	4	🔤	ex_6_en_sk	Reading	active	弃 1 张手牌，获得一名角色 1 张手牌
+ex_6_ph	运动定律	高一上·物理学子	physics	物理	高一上	4	⚛️	ex_6_ph_sk	运动定律	active	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_6_ch	物质的量	高一上·化学学子	chemistry	化学	高一上	4	⚗️	ex_6_ch_sk	物质的量	active	弃 1 张手牌，摸 1 张牌，获得 1 点护盾
 ex_6_bi	分子与细胞	高一上·生物学子	biology	生物	高一上	4	🧬	ex_6_bi_sk	分子与细胞	trigger	摸牌阶段额外摸 1 张牌（触发）
 ex_6_hi	古代中国	高一上·历史学子	history	历史	高一上	4	📜	ex_6_hi_sk	古代中国	active	弃 1 张手牌，令所有其他角色各弃 1 张牌
 ex_6_ge	宇宙地球	高一上·地理学子	geography	地理	高一上	4	🌏	ex_6_ge_sk	宇宙地球	trigger	计算距离 − 1（触发）
 ex_6_po	经济生活	高一上·政治学子	politics	政治	高一上	4	⚖️	ex_6_po_sk	经济生活	active	弃 1 张手牌，令一名角色回复 1 点体力
-ex_7_cn	诗歌·氓	高一下·语文学子	chinese	语文	高一下	3	📜	ex_7_cn_sk	诗歌·氓	active	弃 1 张手牌，摸 2 张牌
-ex_7_ma	三角函数	高一下·数学学子	math	数学	高一下	3	🔢	ex_7_ma_sk	三角函数	trigger	手牌上限 +1（触发）
-ex_7_en	Culture	高一下·英语学子	english	英语	高一下	3	🔤	ex_7_en_sk	Culture	active	弃 1 张手牌，获得一名角色 2 张手牌
-ex_7_ph	曲线运动	高一下·物理学子	physics	物理	高一下	3	⚛️	ex_7_ph_sk	曲线运动	trigger	出杀/伤害 +1（触发）
-ex_7_ch	元素周期	高一下·化学学子	chemistry	化学	高一下	3	⚗️	ex_7_ch_sk	元素周期	trigger	手牌上限 +1（触发）
-ex_7_bi	代谢	高一下·生物学子	biology	生物	高一下	3	🧬	ex_7_bi_sk	代谢	trigger	摸牌阶段额外摸 1 张牌（触发）
-ex_7_hi	世界近代	高一下·历史学子	history	历史	高一下	3	📜	ex_7_hi_sk	世界近代	active	弃 1 张手牌，令所有其他角色各弃 1 张牌
-ex_7_ge	人文地理	高一下·地理学子	geography	地理	高一下	3	🌏	ex_7_ge_sk	人文地理	trigger	计算距离 − 1（触发）
-ex_7_po	政治生活	高一下·政治学子	politics	政治	高一下	3	⚖️	ex_7_po_sk	政治生活	active	弃 1 张手牌，令一名角色回复 1 点体力
-ex_8_cn	小说·祝福	高二上·语文学子	chinese	语文	高二上	3	📜	ex_8_cn_sk	小说·祝福	active	弃 1 张手牌，摸 3 张牌
-ex_8_ma	立体几何	高二上·数学学子	math	数学	高二上	3	🔢	ex_8_ma_sk	立体几何	trigger	手牌上限 +1（触发）
-ex_8_en	Argument	高二上·英语学子	english	英语	高二上	3	🔤	ex_8_en_sk	Argument	active	弃 1 张手牌，获得一名角色 2 张手牌
-ex_8_ph	电场	高二上·物理学子	physics	物理	高二上	3	⚛️	ex_8_ph_sk	电场	trigger	出杀/伤害 +1（触发）
-ex_8_ch	反应速率	高二上·化学学子	chemistry	化学	高二上	3	⚗️	ex_8_ch_sk	反应速率	trigger	手牌上限 +1（触发）
-ex_8_bi	稳态	高二上·生物学子	biology	生物	高二上	3	🧬	ex_8_bi_sk	稳态	trigger	摸牌阶段额外摸 1 张牌（触发）
-ex_8_hi	中国近现代	高二上·历史学子	history	历史	高二上	3	📜	ex_8_hi_sk	中国近现代	active	弃 1 张手牌，令所有其他角色各弃 1 张牌
-ex_8_ge	区域生态	高二上·地理学子	geography	地理	高二上	3	🌏	ex_8_ge_sk	区域生态	trigger	计算距离 − 1（触发）
-ex_8_po	哲学	高二上·政治学子	politics	政治	高二上	3	⚖️	ex_8_po_sk	哲学	active	弃 1 张手牌，令一名角色回复 1 点体力
-ex_9_cn	散文·荷塘	高二下·语文学子	chinese	语文	高二下	4	📜	ex_9_cn_sk	散文·荷塘	active	弃 1 张手牌，摸 3 张牌
-ex_9_ma	导数	高二下·数学学子	math	数学	高二下	4	🔢	ex_9_ma_sk	导数	trigger	手牌上限 +1（触发）
-ex_9_en	Translation	高二下·英语学子	english	英语	高二下	4	🔤	ex_9_en_sk	Translation	active	弃 1 张手牌，获得一名角色 2 张手牌
-ex_9_ph	电磁感应	高二下·物理学子	physics	物理	高二下	4	⚛️	ex_9_ph_sk	电磁感应	trigger	出杀/伤害 +1（触发）
-ex_9_ch	有机基础	高二下·化学学子	chemistry	化学	高二下	4	⚗️	ex_9_ch_sk	有机基础	trigger	手牌上限 +1（触发）
-ex_9_bi	生物工程	高二下·生物学子	biology	生物	高二下	4	🧬	ex_9_bi_sk	生物工程	trigger	摸牌阶段额外摸 1 张牌（触发）
-ex_9_hi	世界现代	高二下·历史学子	history	历史	高二下	4	📜	ex_9_hi_sk	世界现代	active	弃 1 张手牌，令所有其他角色各弃 1 张牌
-ex_9_ge	国土整治	高二下·地理学子	geography	地理	高二下	4	🌏	ex_9_ge_sk	国土整治	trigger	计算距离 − 1（触发）
-ex_9_po	文化	高二下·政治学子	politics	政治	高二下	4	⚖️	ex_9_po_sk	文化	active	弃 1 张手牌，令一名角色回复 1 点体力
-ex_10_cn	古文·劝学	高三上·语文学子	chinese	语文	高三上	3	📜	ex_10_cn_sk	古文·劝学	active	弃 1 张手牌，摸 3 张牌
-ex_10_ma	数列	高三上·数学学子	math	数学	高三上	3	🔢	ex_10_ma_sk	数列	trigger	手牌上限 +1（触发）
-ex_10_en	Cloze	高三上·英语学子	english	英语	高三上	3	🔤	ex_10_en_sk	Cloze	active	弃 1 张手牌，获得一名角色 2 张手牌
-ex_10_ph	动量	高三上·物理学子	physics	物理	高三上	3	⚛️	ex_10_ph_sk	动量	trigger	出杀/伤害 +1（触发）
-ex_10_ch	电化学	高三上·化学学子	chemistry	化学	高三上	3	⚗️	ex_10_ch_sk	电化学	trigger	手牌上限 +1（触发）
-ex_10_bi	进化	高三上·生物学子	biology	生物	高三上	3	🧬	ex_10_bi_sk	进化	trigger	摸牌阶段额外摸 1 张牌（触发）
-ex_10_hi	改革	高三上·历史学子	history	历史	高三上	3	📜	ex_10_hi_sk	改革	active	弃 1 张手牌，令所有其他角色各弃 1 张牌
-ex_10_ge	自然地理	高三上·地理学子	geography	地理	高三上	3	🌏	ex_10_ge_sk	自然地理	trigger	计算距离 − 1（触发）
-ex_10_po	辩证法	高三上·政治学子	politics	政治	高三上	3	⚖️	ex_10_po_sk	辩证法	active	弃 1 张手牌，令一名角色回复 1 点体力
-ex_11_cn	论述·拿来	高三下·语文学子	chinese	语文	高三下	3	📜	ex_11_cn_sk	论述·拿来	active	弃 1 张手牌，摸 3 张牌
-ex_11_ma	概率统计	高三下·数学学子	math	数学	高三下	3	🔢	ex_11_ma_sk	概率统计	trigger	手牌上限 +1（触发）
-ex_11_en	Summary	高三下·英语学子	english	英语	高三下	3	🔤	ex_11_en_sk	Summary	active	弃 1 张手牌，获得一名角色 2 张手牌
-ex_11_ph	波与光	高三下·物理学子	physics	物理	高三下	3	⚛️	ex_11_ph_sk	波与光	trigger	出杀/伤害 +1（触发）
-ex_11_ch	物质结构	高三下·化学学子	chemistry	化学	高三下	3	⚗️	ex_11_ch_sk	物质结构	trigger	手牌上限 +1（触发）
-ex_11_bi	生态工程	高三下·生物学子	biology	生物	高三下	3	🧬	ex_11_bi_sk	生态工程	trigger	摸牌阶段额外摸 1 张牌（触发）
-ex_11_hi	全球化	高三下·历史学子	history	历史	高三下	3	📜	ex_11_hi_sk	全球化	active	弃 1 张手牌，令所有其他角色各弃 1 张牌
-ex_11_ge	区域发展	高三下·地理学子	geography	地理	高三下	3	🌏	ex_11_ge_sk	区域发展	trigger	计算距离 − 1（触发）
-ex_11_po	人生价值	高三下·政治学子	politics	政治	高三下	3	⚖️	ex_11_po_sk	人生价值	active	弃 1 张手牌，令一名角色回复 1 点体力
+ex_7_cn	诗歌·氓	高一下·语文学子	chinese	语文	高一下	4	📜	ex_7_cn_sk	诗歌·氓	active	弃 1 张手牌，摸 1 张牌，令一名角色摸 1 张牌
+ex_7_ma	三角函数	高一下·数学学子	math	数学	高一下	4	🔢	ex_7_ma_sk	三角函数	active	弃 1 张手牌，摸 2 张牌
+ex_7_en	Culture	高一下·英语学子	english	英语	高一下	4	🔤	ex_7_en_sk	Culture	active	弃 1 张手牌，令一名角色摸 1 张牌
+ex_7_ph	曲线运动	高一下·物理学子	physics	物理	高一下	4	⚛️	ex_7_ph_sk	曲线运动	active	弃 1 张手牌，对一名角色造成 1 点伤害，摸 1 张牌
+ex_7_ch	元素周期	高一下·化学学子	chemistry	化学	高一下	4	⚗️	ex_7_ch_sk	元素周期	active	弃 1 张手牌，令一名角色回复 1 点体力
+ex_7_bi	代谢	高一下·生物学子	biology	生物	高一下	4	🧬	ex_7_bi_sk	代谢	trigger	摸牌阶段额外摸 1 张牌（触发），手牌上限 +1（触发）
+ex_7_hi	世界近代	高一下·历史学子	history	历史	高一下	4	📜	ex_7_hi_sk	世界近代	active	弃 1 张手牌，令一名角色弃 2 张牌
+ex_7_ge	人文地理	高一下·地理学子	geography	地理	高一下	4	🌏	ex_7_ge_sk	人文地理	trigger	手牌上限 +1（触发），摸牌阶段额外摸 1 张牌（触发）
+ex_7_po	政治生活	高一下·政治学子	politics	政治	高一下	4	⚖️	ex_7_po_sk	政治生活	active	弃 1 张手牌，令一名角色弃 1 张牌
+ex_8_cn	小说·祝福	高二上·语文学子	chinese	语文	高二上	4	📜	ex_8_cn_sk	小说·祝福	active	弃 1 张手牌，获得一名角色 1 张手牌
+ex_8_ma	立体几何	高二上·数学学子	math	数学	高二上	4	🔢	ex_8_ma_sk	立体几何	active	弃 1 张手牌，令一名角色失去 1 点体力
+ex_8_en	Argument	高二上·英语学子	english	英语	高二上	4	🔤	ex_8_en_sk	Argument	active	弃 1 张手牌，令一名角色弃 1 张牌
+ex_8_ph	电场	高二上·物理学子	physics	物理	高二上	4	⚛️	ex_8_ph_sk	电场	active	弃 1 张手牌，令一名角色弃 1 张牌
+ex_8_ch	反应速率	高二上·化学学子	chemistry	化学	高二上	4	⚗️	ex_8_ch_sk	反应速率	active	弃 1 张手牌，摸 2 张牌
+ex_8_bi	稳态	高二上·生物学子	biology	生物	高二上	4	🧬	ex_8_bi_sk	稳态	trigger	手牌上限 +2（触发）
+ex_8_hi	中国近现代	高二上·历史学子	history	历史	高二上	4	📜	ex_8_hi_sk	中国近现代	active	弃 1 张手牌，令所有其他角色各弃 1 张牌，摸 1 张牌
+ex_8_ge	区域生态	高二上·地理学子	geography	地理	高二上	4	🌏	ex_8_ge_sk	区域生态	trigger	摸牌阶段额外摸 1 张牌（触发），手牌上限 +2（触发）
+ex_8_po	哲学	高二上·政治学子	politics	政治	高二上	4	⚖️	ex_8_po_sk	哲学	active	弃 1 张手牌，获得一名角色 1 张手牌
+ex_9_cn	散文·荷塘	高二下·语文学子	chinese	语文	高二下	4	📜	ex_9_cn_sk	散文·荷塘	active	弃 1 张手牌，摸 2 张牌，获得 1 点护盾
+ex_9_ma	导数	高二下·数学学子	math	数学	高二下	4	🔢	ex_9_ma_sk	导数	active	弃 1 张手牌，令一名角色弃 2 张牌
+ex_9_en	Translation	高二下·英语学子	english	英语	高二下	4	🔤	ex_9_en_sk	Translation	active	弃 1 张手牌，摸 1 张牌，获得一名角色 1 张手牌
+ex_9_ph	电磁感应	高二下·物理学子	physics	物理	高二下	4	⚛️	ex_9_ph_sk	电磁感应	active	弃 2 张手牌，对一名角色造成 2 点伤害
+ex_9_ch	有机基础	高二下·化学学子	chemistry	化学	高二下	4	⚗️	ex_9_ch_sk	有机基础	active	弃 2 张手牌，令一名角色回复 1 点体力，摸 1 张牌
+ex_9_bi	生物工程	高二下·生物学子	biology	生物	高二下	4	🧬	ex_9_bi_sk	生物工程	trigger	摸牌阶段额外摸 2 张牌（触发）
+ex_9_hi	世界现代	高二下·历史学子	history	历史	高二下	4	📜	ex_9_hi_sk	世界现代	active	弃 2 张手牌，令所有其他角色各弃 2 张牌
+ex_9_ge	国土整治	高二下·地理学子	geography	地理	高二下	4	🌏	ex_9_ge_sk	国土整治	trigger	计算距离 − 1（触发），手牌上限 +1（触发）
+ex_9_po	文化	高二下·政治学子	politics	政治	高二下	4	⚖️	ex_9_po_sk	文化	active	弃 1 张手牌，令一名角色摸 1 张牌，摸 1 张牌
+ex_10_cn	古文·劝学	高三上·语文学子	chinese	语文	高三上	3	📜	ex_10_cn_sk	古文·劝学	active	弃 2 张手牌，摸 3 张牌
+ex_10_ma	数列	高三上·数学学子	math	数学	高三上	3	🔢	ex_10_ma_sk	数列	active	弃 1 张手牌，摸 1 张牌，令一名角色摸 1 张牌
+ex_10_en	Cloze	高三上·英语学子	english	英语	高三上	3	🔤	ex_10_en_sk	Cloze	active	弃 2 张手牌，摸 3 张牌
+ex_10_ph	动量	高三上·物理学子	physics	物理	高三上	3	⚛️	ex_10_ph_sk	动量	active	弃 1 张手牌，令一名角色失去 1 点体力
+ex_10_ch	电化学	高三上·化学学子	chemistry	化学	高三上	3	⚗️	ex_10_ch_sk	电化学	active	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_10_bi	进化	高三上·生物学子	biology	生物	高三上	3	🧬	ex_10_bi_sk	进化	trigger	摸牌阶段额外摸 1 张牌（触发），手牌上限 +1（触发），计算距离 − 1（触发）
+ex_10_hi	改革	高三上·历史学子	history	历史	高三上	3	📜	ex_10_hi_sk	改革	active	弃 1 张手牌，令一名角色摸 1 张牌，摸 1 张牌
+ex_10_ge	自然地理	高三上·地理学子	geography	地理	高三上	3	🌏	ex_10_ge_sk	自然地理	trigger	计算距离 − 1（触发），摸牌阶段额外摸 1 张牌（触发）
+ex_10_po	辩证法	高三上·政治学子	politics	政治	高三上	3	⚖️	ex_10_po_sk	辩证法	active	弃 1 张手牌，令一名角色失去 1 点体力，摸 1 张牌
+ex_11_cn	论述·拿来	高三下·语文学子	chinese	语文	高三下	3	📜	ex_11_cn_sk	论述·拿来	active	弃 1 张手牌，令一名角色弃 2 张牌
+ex_11_ma	概率统计	高三下·数学学子	math	数学	高三下	3	🔢	ex_11_ma_sk	概率统计	active	弃 2 张手牌，对一名角色造成 2 点伤害
+ex_11_en	Summary	高三下·英语学子	english	英语	高三下	3	🔤	ex_11_en_sk	Summary	active	弃 2 张手牌，获得一名角色 2 张手牌
+ex_11_ph	波与光	高三下·物理学子	physics	物理	高三下	3	⚛️	ex_11_ph_sk	波与光	active	弃 1 张手牌，摸 2 张牌
+ex_11_ch	物质结构	高三下·化学学子	chemistry	化学	高三下	3	⚗️	ex_11_ch_sk	物质结构	active	弃 2 张手牌，获得 2 点护盾
+ex_11_bi	生态工程	高三下·生物学子	biology	生物	高三下	3	🧬	ex_11_bi_sk	生态工程	trigger	摸牌阶段额外摸 2 张牌（触发），手牌上限 +1（触发）
+ex_11_hi	全球化	高三下·历史学子	history	历史	高三下	3	📜	ex_11_hi_sk	全球化	active	弃 2 张手牌，令所有角色各摸 1 张牌
+ex_11_ge	区域发展	高三下·地理学子	geography	地理	高三下	3	🌏	ex_11_ge_sk	区域发展	trigger	计算距离 − 2（触发）
+ex_11_po	人生价值	高三下·政治学子	politics	政治	高三下	3	⚖️	ex_11_po_sk	人生价值	active	弃 2 张手牌，令所有角色各摸 1 张牌，获得 1 点护盾
