@@ -13,6 +13,7 @@ import { SUBJECT_ICON } from '../data/factions';
 import { G, quizStats } from '../game/state';
 import { addLog } from '../game/log';
 import { NET } from '../net/network';
+import { checkLearningAchievements } from './learningAch';
 
 const PROFILE_KEY = 'xuetangsha_profile_v1';
 
@@ -79,6 +80,18 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'kill_3', name: '杀伐果断', desc: '单局击杀3名角色', icon: '💀' },
   { id: 'score_1000', name: '千分学士', desc: '积分达到1000', icon: '🎖️' },
   { id: 'all_subjects', name: '博学多才', desc: '答对全部9个科目的题目', icon: '🌟' },
+  // —— 学习类成就（v1.8.2 学习激励，解锁时发学分 50 + 积分 30，见 learningAch.ts）——
+  { id: 'quiz_100', name: '百题斩', desc: '累计答对100题', icon: '📝' },
+  { id: 'quiz_300', name: '题海无涯', desc: '累计答对300题', icon: '📚' },
+  { id: 'kp_20', name: '初窥门径', desc: '全库已掌握20个知识点', icon: '🔑' },
+  { id: 'kp_60', name: '博闻强识', desc: '全库已掌握60个知识点', icon: '🗝️' },
+  { id: 'streak_10', name: '十连绝世', desc: '单次连对/连击达到10', icon: '⚡' },
+  { id: 'daily_7', name: '七日不辍', desc: '连续7天完成每日任务', icon: '📅' },
+  { id: 'subject_master', name: '学科精通', desc: '任一学科已掌握10个知识点', icon: '🎯' },
+  { id: 'all_master_9', name: '九科学霸', desc: '9个学科均达到学科精通', icon: '👑' },
+  { id: 'perfect_game', name: '全对达人', desc: '单局答题全对且不少于5题', icon: '💯' },
+  { id: 'pass_30', name: '学期圆满', desc: '学期通关战令达到30级', icon: '🎓' },
+  { id: 'first_unlock', name: '学有所用', desc: '首次在商店解锁角色/装备', icon: '🛒' },
 ];
 
 function defaultProfile(): Profile {
@@ -107,6 +120,9 @@ function defaultProfile(): Profile {
     creditDaily: { date: todayStr(), earned: 0, missionEarned: 0, sources: {} },
     // 每日学习任务（v1.8.1）
     missionDaily: { date: todayStr(), quiz: 0, review: 0, wrongFixed: 0, combo: 0, claimed: [] },
+    // 学期通关战令 + 连续学习天数（v1.8.2）
+    pass: { semester: '', exp: 0, claimed: [] },
+    studyStreak: { lastDate: '', days: 0 },
     // 已解锁（购买）内容
     unlockedChars: [],
     unlockedEquips: [],
@@ -175,6 +191,19 @@ function loadProfile(): Profile {
         // 兼容旧档案：补学段学习量与新手礼包字段（v1.8.0 学习成果解锁）
         gradeStats: p.gradeStats && typeof p.gradeStats === 'object' ? p.gradeStats : {},
         newbieGift: typeof p.newbieGift === 'boolean' ? p.newbieGift : false,
+        // 兼容旧档案：补战令与连续学习字段（v1.8.2）
+        pass:
+          p.pass && typeof p.pass === 'object' && typeof p.pass.semester === 'string'
+            ? {
+                semester: p.pass.semester,
+                exp: p.pass.exp || 0,
+                claimed: Array.isArray(p.pass.claimed) ? p.pass.claimed : [],
+              }
+            : { semester: '', exp: 0, claimed: [] },
+        studyStreak:
+          p.studyStreak && typeof p.studyStreak === 'object'
+            ? { lastDate: p.studyStreak.lastDate || '', days: p.studyStreak.days || 0 }
+            : { lastDate: '', days: 0 },
       });
     }
   } catch (e) {
@@ -422,11 +451,14 @@ export function maybeSettle(): void {
     if ((me.maxCombo || 0) >= 5) unlock('combo_5');
   }
   if ((G.myKills || 0) >= 3) unlock('kill_3');
+  if (correct === total && total >= 5) unlock('perfect_game'); // 学习成就：单局全对
   const subs = Object.keys(PROFILE.subjects || {}).filter((k) => PROFILE.subjects[k] > 0);
   if (subs.length >= 9) unlock('all_subjects');
   PROFILE.score += gained;
   if (PROFILE.score >= 1000) unlock('score_1000');
   saveProfile();
+  // 学习类成就（累计答对 / 知识点掌握 / 连对 / 学科精通 / 战令满级等）
+  checkLearningAchievements();
   addLog(`📊 本局结算：${win ? '胜利' : '败北'} ｜ 答题 ${correct}/${total} ｜ 积分 +${gained}`, 'hl');
   newAch.forEach((id) => {
     const a = ACHIEVEMENTS.find((x) => x.id === id);

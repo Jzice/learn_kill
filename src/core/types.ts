@@ -379,6 +379,10 @@ export interface Profile {
   creditDaily: { date: string; earned: number; missionEarned: number; sources: Record<string, number> };
   /** 每日学习任务进度（跨日重置；claimed 为已领取的任务 id） */
   missionDaily: { date: string; quiz: number; review: number; wrongFixed: number; combo: number; claimed: string[] };
+  /** 学期通关战令（按学期隔离；claimed 为已领取的等级） */
+  pass: { semester: string; exp: number; claimed: number[] };
+  /** 连续学习天数（每日任务完成即更新，断日清零） */
+  studyStreak: { lastDate: string; days: number };
   /** 已解锁的扩展包角色 id 列表 */
   unlockedChars: string[];
   /** 已解锁（购买）的装备 id 列表 */

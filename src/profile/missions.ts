@@ -5,6 +5,7 @@
  * 计数只在真实学习事件埋点处 +1（答对 / 复习 / 攻克错题 / 连击），无法刷。
  */
 import { addCredits } from './credits';
+import { addPassExp } from './pass';
 import { PROFILE, saveProfile } from './profile';
 
 export type MissionId = 'quiz' | 'review' | 'wrongFixed' | 'combo';
@@ -81,8 +82,21 @@ export function claimMission(id: MissionId): boolean {
   m.claimed = [...m.claimed, id];
   saveProfile();
   addCredits(def.reward, MISSION_REASON);
+  addPassExp(10); // 战令经验：完成每日任务 +10
+  bumpStudyStreak(); // 连续学习天数（断日清零）
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('missions-updated'));
   }
   return true;
+}
+
+/** 连续学习天数：完成每日任务时调用（同日不重复计，断日清零） */
+function bumpStudyStreak(): void {
+  const t = todayStr();
+  const s = PROFILE.studyStreak || { lastDate: '', days: 0 };
+  if (s.lastDate === t) return;
+  const y = new Date(Date.now() - 86400000);
+  const yStr = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
+  PROFILE.studyStreak = { lastDate: t, days: s.lastDate === yStr ? (s.days || 0) + 1 : 1 };
+  saveProfile();
 }

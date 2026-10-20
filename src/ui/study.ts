@@ -9,6 +9,8 @@ import type { Question, QuizRec } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { addCredits, CREDIT_RULE } from '../profile/credits';
 import { bumpMission } from '../profile/missions';
+import { addPassExp } from '../profile/pass';
+import { checkLearningAchievements } from '../profile/learningAch';
 import { Sound } from '../core/sound';
 import { shuffledIndices } from '../core/shuffle';
 import { SUBJECT_ICON } from '../data/factions';
@@ -205,6 +207,8 @@ export function markStudyReviewed(key: string): void {
   if (!r) return;
   addCredits(CREDIT_RULE.perWrongFixed, 'wrongfix');
   bumpMission('wrongFixed'); // 每日任务埋点（日课·攻克错题）
+  addPassExp(8); // 战令经验：攻克错题 +8
+  checkLearningAchievements();
   expanded.delete(key);
   shuffleCache.delete(key);
   Sound.play('click');
@@ -320,6 +324,8 @@ export function answerReview(pos: number): void {
     reviewCorrect++;
     addCredits(CREDIT_RULE.perReview, 'review');
     bumpMission('review'); // 每日任务埋点（日课·复习）
+    addPassExp(5); // 战令经验：复习 +5
+    checkLearningAchievements();
   }
   const fb = document.getElementById('reviewFeedback')!;
   fb.style.color = correct ? '#1e7a3a' : '#a02020';

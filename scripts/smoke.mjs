@@ -339,6 +339,37 @@ const srcShown = await page.locator('#shopBody .sc-src').count();
 check('学分商店：学分来源统计展示', srcShown > 0, `${srcShown} 个来源`);
 await page.click('#shopModal .rules-close');
 
+// 8.9 学期通关战令：等级奖励可领（档案直写经验后重载）
+await page.evaluate(() => {
+  const p = JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}');
+  p.pass = { semester: '初二上', exp: 300, claimed: [] };
+  localStorage.setItem('xuetangsha_profile_v1', JSON.stringify(p));
+});
+await page.reload({ waitUntil: 'networkidle' });
+await page.click('#topBar button[onclick="openShop(\'chars\')"]');
+await page.waitForSelector('#shopModal.show', { timeout: 3000 });
+await page.locator('#shopBody .shop-tabs .shop-tab').nth(3).click();
+await page.waitForTimeout(200);
+const passRows = await page.locator('#shopBody .sc-pass-row').count();
+check('学分商店：战令奖励表渲染', passRows === 30, `${passRows} 级`);
+const passHead = (await page.locator('#shopBody .sc-pass-head').textContent()) || '';
+check('学分商店：战令等级显示', passHead.includes('Lv.2/30'), passHead.trim().slice(0, 24));
+const creditBefore2 = await page.evaluate(
+  () => JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}').credits || 0,
+);
+await page.locator('#shopBody .sc-pass-row.reach .btn-accent').first().click();
+await page.waitForTimeout(300);
+const profileAfter2 = await page.evaluate(() =>
+  JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}'),
+);
+check(
+  '学分商店：战令等级奖励入账',
+  (profileAfter2.credits || 0) === creditBefore2 + 20,
+  `${creditBefore2} → ${profileAfter2.credits}`,
+);
+check('学分商店：战令奖励已领标记', (await page.locator('#shopBody .sc-pass-row.claimed').count()) === 1);
+await page.click('#shopModal .rules-close');
+
 // 9. 控制台错误
 check('控制台零错误', errors.length === 0, errors.slice(0, 3).join(' ; '));
 

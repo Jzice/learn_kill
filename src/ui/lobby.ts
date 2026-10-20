@@ -610,6 +610,7 @@ export function bindLobbyEvents(): void {
     document.querySelectorAll('#gradePicker .opt-btn').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
     SELECTED_GRADE = b.dataset.grade || SELECTED_GRADE;
+    (window as unknown as { SELECTED_GRADE?: string }).SELECTED_GRADE = SELECTED_GRADE;
     updateSetupGradeHint();
     ensureCharValid();
     renderFactionPicker();
@@ -641,6 +642,8 @@ export function bindLobbyEvents(): void {
   window.addEventListener('missions-updated', () => {
     renderShopEntry();
   });
+  // 同步当前年级到 window（商店默认定位年级 / 战令学期判定读取）
+  (window as unknown as { SELECTED_GRADE?: string }).SELECTED_GRADE = SELECTED_GRADE;
   renderShopEntry();
 }
 

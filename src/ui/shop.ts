@@ -56,6 +56,16 @@ import {
 } from '../profile/unlockCondition';
 import { openBankBrowser } from './bank';
 import { claimMission, missionProgress } from '../profile/missions';
+import {
+  PASS_MAX_LEVEL,
+  PASS_REWARDS,
+  claimPassReward,
+  grantPassEquip,
+  passExpInLevel,
+  passLevelOf,
+  passState,
+} from '../profile/pass';
+import { checkLearningAchievements } from '../profile/learningAch';
 
 /** 道具学分定价（消耗类，可重复购买） */
 export const ITEM_PRICE: Record<string, number> = {
@@ -149,7 +159,78 @@ function missionCards(): string {
     </div>`,
       )
       .join('')}
+  </div>` + passHtml();
+}
+
+/** 战令装备自选中的等级（模块级，点击「自选领取」后展开该档位装备按钮） */
+let passEquipChoice: number | null = null;
+
+/** 学期通关战令面板：等级进度 + 30 级固定奖励表（装备为自选） */
+function passHtml(): string {
+  const p = passState();
+  const lv = passLevelOf(p.exp);
+  const prog = passExpInLevel(p.exp);
+  const pct = Math.round((prog.cur / Math.max(1, prog.need)) * 100);
+  const rows = PASS_REWARDS.map((r) => {
+    const claimed = p.claimed.includes(r.level);
+    const reach = lv >= r.level;
+    let action: string;
+    if (claimed) action = '<span class="sc-owned">✓ 已领取</span>';
+    else if (!reach) action = `<span class="sc-pass-lock">Lv.${r.level} 解锁</span>`;
+    else if (r.kind === 'equip') {
+      if (passEquipChoice === r.level) {
+        const opts = EXPANSION_EQUIPS.filter((e) => e.tier === r.tier && !isEquipUnlocked(e.id))
+          .map(
+            (e) =>
+              `<button class="btn btn-xs btn-accent" onclick="shopGrantPassEquip(${r.level},'${e.id}')">${e.icon} ${escapeHtml(e.name)}</button>`,
+          )
+          .join('');
+        action = opts || '<span class="sc-owned">该档位已全部拥有</span>';
+      } else {
+        action = `<button class="btn btn-sm btn-accent" onclick="shopClaimPass(${r.level})">自选领取</button>`;
+      }
+    } else {
+      action = `<button class="btn btn-sm btn-accent" onclick="shopClaimPass(${r.level})">领取</button>`;
+    }
+    return `<div class="sc-pass-row ${claimed ? 'claimed' : reach ? 'reach' : ''}">
+      <span class="sc-pass-lv">Lv.${r.level}</span>
+      <span class="sc-pass-rw">${escapeHtml(r.label)}</span>
+      <span class="sc-pass-act">${action}</span>
+    </div>`;
+  }).join('');
+  return `<div class="sc-pass">
+    <div class="sc-pass-head">🎓 学期通关战令 · ${escapeHtml(p.semester || '未选学期（大厅选择年级后生效）')} <b>Lv.${lv}/${PASS_MAX_LEVEL}</b></div>
+    <div class="sc-pass-bar"><i style="width:${pct}%"></i><span>${lv >= PASS_MAX_LEVEL ? '已满级' : `经验 ${prog.cur}/${prog.need} → Lv.${lv + 1}`}</span></div>
+    <div class="sc-pass-tip">经验来源：答对 +2 ｜ 复习 +5 ｜ 攻克错题 +8 ｜ 完成每日任务 +10 ｜ 切换学期重置进度</div>
+    <div class="sc-pass-grid">${rows}</div>
   </div>`;
+}
+
+/** 领取战令等级奖励（equip 档进入自选） */
+export function shopClaimPass(level: number): void {
+  const r = claimPassReward(level);
+  if (r === 'choice') {
+    passEquipChoice = level;
+    renderBody();
+    return;
+  }
+  passEquipChoice = null;
+  if (r) {
+    checkLearningAchievements(); // 满级成就「学期圆满」
+    renderBody();
+    window.dispatchEvent(new CustomEvent('credits-updated'));
+  }
+}
+
+/** 战令装备自选：直通解锁（不扣学分） */
+export function shopGrantPassEquip(level: number, equipId: string): void {
+  if (!grantPassEquip(level, equipId)) return;
+  const e = expansionEquipById(equipId);
+  if (e) addLog(`🎓 战令 Lv.${level} 奖励：解锁装备【${e.name}】`, 'reward');
+  passEquipChoice = null;
+  checkLearningAchievements();
+  renderBody();
+  window.dispatchEvent(new CustomEvent('credits-updated'));
 }
 
 /** 单条解锁条件行（credit/must 必须满足；either 组内任一满足即可，行首标「或」） */
@@ -301,12 +382,14 @@ export function shopUnlockChar(id: string): void {
   if (unlockChar(id)) {
     const c = expansionCharById(id);
     if (c) flashUnlock(c.name);
+    checkLearningAchievements(); // 首次解锁成就「学有所用」
     renderBody();
     window.dispatchEvent(new CustomEvent('credits-updated'));
   }
 }
 export function shopBuyEquip(id: string): void {
   if (buyEquip(id, curGrade)) {
+    checkLearningAchievements(); // 首次解锁成就「学有所用」
     renderBody();
     window.dispatchEvent(new CustomEvent('credits-updated'));
   }
@@ -329,6 +412,7 @@ export function shopGrantNewbie(id: string): void {
     PROFILE.newbieGift = true;
     saveProfile();
     addLog(`🎁 领取新手礼包【${e.name}】`, 'reward');
+    checkLearningAchievements(); // 首次解锁成就「学有所用」
   }
   renderBody();
   window.dispatchEvent(new CustomEvent('credits-updated'));

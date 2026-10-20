@@ -19,6 +19,9 @@ import {
 } from '../profile/credits';
 import { bankDrillContext } from './bank';
 import { bumpMission } from '../profile/missions';
+import { addPassExp } from '../profile/pass';
+import { checkLearningAchievements } from '../profile/learningAch';
+import { PROFILE, saveProfile } from '../profile/profile';
 
 /** 每组题数 */
 export const DRILL_SIZE = 10;
@@ -125,6 +128,7 @@ export function answerDrill(pos: number): void {
     combo++;
     bumpMission('quiz'); // 每日任务埋点（日课·答对）
     bumpMission('combo', combo); // 日课·连对（取当日最大值）
+    addPassExp(2); // 战令经验：答对 +2
     let add = quizCreditFor(item.q.g || grade);
     let bonus = 0;
     if (combo % COMBO_STEP === 0) {
@@ -156,6 +160,12 @@ export function answerDrill(pos: number): void {
 
 /** 一组刷完的小结 */
 function renderDrillSummary(): void {
+  // 刷题连对也计入最高连击（成就「十连绝世」口径）
+  if (combo > (PROFILE.maxCombo || 0)) {
+    PROFILE.maxCombo = combo;
+    saveProfile();
+  }
+  checkLearningAchievements();
   setText('drillIcon', '🎓');
   setText('drillSubject', '刷题完成');
   setText('drillProgress', '');
