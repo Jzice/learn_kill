@@ -5,7 +5,7 @@
 import './style.css';
 
 import { G } from './game/state';
-import { dealDamage } from './game/damage';
+import { dealDamage, checkWin } from './game/damage';
 import { useTrick } from './game/actions';
 
 import type { FactionId } from './core/types';
@@ -329,6 +329,7 @@ if (new URLSearchParams(location.search).has('debug')) {
       return G;
     },
     dealDamage,
+    checkWin,
     useTrick,
   };
 }

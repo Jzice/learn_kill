@@ -59,6 +59,9 @@ jobs:
       - name: 联机冒烟测试（发布门禁）
         run: npm run smoke:net
 
+      - name: 联机结算界面回归（发布门禁）
+        run: npm run smoke:net:settle
+
       - name: 铁索连环·横置机制回归（发布门禁）
         run: npm run smoke:tiesuo
 
