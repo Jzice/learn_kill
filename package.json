@@ -1,7 +1,7 @@
 {
   "name": "xuetangsha",
   "private": true,
-  "version": "1.7.7",
+  "version": "1.7.8",
   "type": "module",
   "description": "学堂杀 · 九科争鸣 —— TypeScript 工程化重构，构建产出单 HTML 文件",
   "scripts": {
@@ -14,12 +14,14 @@
     "build:pages": "node scripts/build-pages.mjs",
     "stage:release": "node scripts/stage-release.mjs",
     "audit:banks": "node scripts/audit-banks.mjs",
+    "audit:expansion": "node scripts/build-expansion.mjs",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "smoke:net": "node scripts/smoke-net.mjs",
     "repro:net": "node scripts/repro-net.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
     "verify:lazy": "node scripts/verify-lazy.mjs",
+    "verify:file": "node scripts/verify-file.mjs",
     "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
