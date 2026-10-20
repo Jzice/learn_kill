@@ -385,6 +385,10 @@ export interface Profile {
   items: Record<string, number>;
   /** 局前配装 */
   loadout: Loadout;
+  /** 各学期累计答对题数（学段学习量：装备 tier2/3 解锁条件的度量） */
+  gradeStats: Record<string, number>;
+  /** 新手礼包（tier1 装备自选 1 件）是否已发放 */
+  newbieGift: boolean;
 }
 
 export interface PublicProfile extends PlayerIdentity {

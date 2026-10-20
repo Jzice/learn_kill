@@ -18,6 +18,7 @@ import {
   expansionEquipById,
   expansionItemById,
 } from '../data/expansion';
+import { charConditions, condsOk, equipConditions, masterySnapshot } from './unlockCondition';
 
 /** 学分数值曲线（便于调参） */
 export const CREDIT_RULE: { perCorrectQuiz: number; perReview: number; perWrongFixed: number; dailyCap: number } = {
@@ -101,6 +102,8 @@ export function unlockChar(id: string): boolean {
   const c = expansionCharById(id);
   if (!c) return false;
   if (isCharUnlocked(id)) return true;
+  // 学习成果判定（与商店 UI 同一判定源，见 unlockCondition.ts）
+  if (!condsOk(charConditions(c, masterySnapshot()))) return false;
   const price = charPrice(id);
   if (!spendCredits(price, `unlock:${id}`)) return false;
   PROFILE.unlockedChars = [...(PROFILE.unlockedChars || []), id];
@@ -122,8 +125,20 @@ export function buyEquip(id: string, grade?: string): boolean {
   if (isEquipUnlocked(id)) return true;
   // 年级门槛：达到装备要求年级方可购买（不传 grade 则跳过该校验，供内部调用）
   if (grade !== undefined && gradeSortKey(e.grade) > gradeSortKey(grade)) return false;
+  // 学习成果判定（与商店 UI 同一判定源，见 unlockCondition.ts）
+  if (!condsOk(equipConditions(e, masterySnapshot()))) return false;
   const price = EQUIP_PRICE[e.tier] ?? 0;
   if (!spendCredits(price, `buy:${id}`)) return false;
+  PROFILE.unlockedEquips = [...(PROFILE.unlockedEquips || []), id];
+  saveProfile();
+  return true;
+}
+
+/** 直接解锁装备（不扣学分）：新手礼包 / 战令奖励等确定性发放通道 */
+export function grantEquip(id: string): boolean {
+  const e = expansionEquipById(id);
+  if (!e) return false;
+  if (isEquipUnlocked(id)) return true;
   PROFILE.unlockedEquips = [...(PROFILE.unlockedEquips || []), id];
   saveProfile();
   return true;

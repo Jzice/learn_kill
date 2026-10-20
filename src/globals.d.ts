@@ -105,6 +105,8 @@ declare global {
     shopUnlockChar: (id: string) => void;
     shopBuyEquip: (id: string) => void;
     shopBuyItem: (id: string, n?: number) => void;
+    shopGrantNewbie: (id: string) => void;
+    shopJumpBank: () => void;
     shopSetLoadoutSlot: (slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus', value: string) => void;
     shopAddLoadoutItem: (id: string, n?: number) => void;
     shopRemoveLoadoutItem: (id: string, n?: number) => void;

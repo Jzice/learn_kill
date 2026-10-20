@@ -29,6 +29,7 @@ import {
   dailyCapReached,
   earnedToday,
   equipPrice,
+  grantEquip,
   isCharUnlocked,
   isEquipUnlocked,
   loadoutEquipCount,
@@ -42,6 +43,15 @@ import {
   LOADOUT_ITEM_LIMIT,
   quizCreditFor,
 } from '../profile/credits';
+import type { MasterySnapshot, UnlockCond } from '../profile/unlockCondition';
+import {
+  charConditions,
+  condsOk,
+  equipConditions,
+  firstBlocked,
+  masterySnapshot,
+} from '../profile/unlockCondition';
+import { openBankBrowser } from './bank';
 
 /** 道具学分定价（消耗类，可重复购买） */
 export const ITEM_PRICE: Record<string, number> = {
@@ -88,26 +98,49 @@ function tabBar(): string {
   return `<div class="shop-tabs">${mk('chars', '角色')}${mk('equips', '装备')}${mk('items', '道具')}</div>`;
 }
 
-function charCards(): string {
+/** 单条解锁条件行（credit/must 必须满足；either 组内任一满足即可，行首标「或」） */
+function condRow(c: UnlockCond): string {
+  const mark = c.ok ? '✓' : '✗';
+  const or = c.group === 'either' ? '<span class="sc-cond-or">或</span> ' : '';
+  const jump =
+    !c.ok && c.jump
+      ? ` <button class="sc-cond-jump" onclick="shopJumpBank()">去学习 →</button>`
+      : '';
+  return `<div class="sc-cond ${c.ok ? 'ok' : 'no'}">${or}${mark} ${escapeHtml(c.label)} <b>${c.cur}/${c.need}</b>${jump}</div>`;
+}
+
+function condsHtml(conds: UnlockCond[]): string {
+  return `<div class="sc-conds">${conds.map(condRow).join('')}</div>`;
+}
+
+/** 首个未达标条件的提示文案（按钮 tooltip 用） */
+function blockedTip(conds: UnlockCond[]): string {
+  const b = firstBlocked(conds);
+  return b ? `还需：${b.label} ${b.cur}/${b.need}` : '';
+}
+
+function charCards(snap: MasterySnapshot): string {
   const list = EXPANSION_CHARS.filter((c) => c.grade === curGrade);
   return `<div class="shop-grid">${list
     .map((c) => {
       const unlocked = isCharUnlocked(c.id);
       const price = CHAR_PRICE[c.id] ?? 0;
+      const conds = charConditions(c, snap);
+      const can = !unlocked && condsOk(conds) && credits() >= price && !dailyCapReached();
       const sk = c.skills[0];
-      const can = !unlocked && credits() >= price && !dailyCapReached();
       return `<div class="shop-card ${unlocked ? 'unlocked' : ''}">
         <div class="sc-avatar">${c.avatar}</div>
         <div class="sc-info">
           <div class="sc-name">${escapeHtml(c.name)} <span class="sc-title">${escapeHtml(c.title)}</span></div>
           <div class="sc-sub">${c.subject} ｜ ${c.grade} ｜ 体力 ${c.hp}</div>
           <div class="sc-skill"><b>${escapeHtml(sk.name)}</b>（${sk.type === 'active' ? '主动' : '触发'}）${escapeHtml(sk.desc)}</div>
+          ${condsHtml(conds)}
         </div>
         <div class="sc-action">
           ${
             unlocked
               ? '<span class="sc-owned">✓ 已解锁</span>'
-              : `<button class="btn btn-sm ${can ? 'btn-accent' : ''}" ${can ? '' : 'disabled'} onclick="shopUnlockChar('${c.id}')">解锁 ${price}</button>`
+              : `<button class="btn btn-sm ${can ? 'btn-accent' : ''}" ${can ? '' : 'disabled'} title="${escapeHtml(blockedTip(conds))}" onclick="shopUnlockChar('${c.id}')">解锁 ${price}</button>`
           }
         </div>
       </div>`;
@@ -115,13 +148,14 @@ function charCards(): string {
     .join('')}</div>`;
 }
 
-function equipCards(): string {
+function equipCards(snap: MasterySnapshot): string {
   return `<div class="shop-grid">${EXPANSION_EQUIPS.map((e) => {
     const owned = isEquipUnlocked(e.id);
     const price = EQUIP_PRICE[e.tier] ?? 0;
     // 年级门槛：达到装备要求年级才可购买（未达到时展示为目标激励）
     const gradeOk = gradeSortKey(e.grade) <= gradeSortKey(curGrade);
-    const can = !owned && gradeOk && credits() >= price && !dailyCapReached();
+    const conds = equipConditions(e, snap);
+    const can = !owned && gradeOk && condsOk(conds) && credits() >= price && !dailyCapReached();
     return `<div class="shop-card ${owned ? 'unlocked' : ''}">
       <div class="sc-avatar">${e.icon}</div>
       <div class="sc-info">
@@ -129,12 +163,13 @@ function equipCards(): string {
         <div class="sc-sub">${TIER_NAME[e.tier] || '普通'} ｜ ${escapeHtml(e.grade)}起</div>
         <div class="sc-skill">${escapeHtml(e.desc)}</div>
         ${owned || gradeOk ? '' : `<div class="sc-skill" style="color:#e08a7a">🔒 需达到 ${escapeHtml(e.grade)}（当前 ${escapeHtml(curGrade)}）</div>`}
+        ${condsHtml(conds)}
       </div>
       <div class="sc-action">
         ${
           owned
             ? '<span class="sc-owned">✓ 已拥有</span>'
-            : `<button class="btn btn-sm ${can ? 'btn-accent' : ''}" ${can ? '' : 'disabled'} onclick="shopBuyEquip('${e.id}')">${gradeOk ? `购买 ${price}` : `🔒 ${escapeHtml(e.grade)}`}</button>`
+            : `<button class="btn btn-sm ${can ? 'btn-accent' : ''}" ${can ? '' : 'disabled'} title="${escapeHtml(blockedTip(conds))}" onclick="shopBuyEquip('${e.id}')">${gradeOk ? `购买 ${price}` : `🔒 ${escapeHtml(e.grade)}`}</button>`
         }
       </div>
     </div>`;
@@ -159,12 +194,29 @@ function itemCards(): string {
   }).join('')}</div>`;
 }
 
+/** 新手礼包：首次进店免费领 1 件 tier1 装备（一次性、确定性） */
+function newbieGiftHtml(): string {
+  if (PROFILE.newbieGift) return '';
+  const opts = EXPANSION_EQUIPS.filter((e) => e.tier === 1)
+    .map(
+      (e) =>
+        `<button class="btn btn-sm btn-accent" onclick="shopGrantNewbie('${e.id}')">${e.icon} ${escapeHtml(e.name)}</button>`,
+    )
+    .join('');
+  return `<div class="sc-newbie">
+      <div class="sc-newbie-t">🎁 新手学习礼包：免费领取 1 件初始装备（仅一次）</div>
+      <div class="sc-newbie-opts">${opts}</div>
+    </div>`;
+}
+
 function renderBody(): void {
   const body = document.getElementById('shopBody');
   if (!body) return;
-  let html = creditOverview() + gradeCapsules() + tabBar();
-  if (curTab === 'chars') html += charCards();
-  else if (curTab === 'equips') html += equipCards();
+  // 一次渲染内共享掌握度快照（kpStats 只遍历一次 quizRec）
+  const snap = masterySnapshot();
+  let html = creditOverview() + newbieGiftHtml() + gradeCapsules() + tabBar();
+  if (curTab === 'chars') html += charCards(snap);
+  else if (curTab === 'equips') html += equipCards(snap);
   else html += itemCards();
   body.innerHTML = html;
 }
@@ -211,6 +263,26 @@ export function shopBuyItem(id: string, n = 1): void {
     renderBody();
     window.dispatchEvent(new CustomEvent('credits-updated'));
   }
+}
+
+/** 领取新手礼包（tier1 装备 1 件，不扣学分，一次性） */
+export function shopGrantNewbie(id: string): void {
+  if (PROFILE.newbieGift) return;
+  const e = expansionEquipById(id);
+  if (!e || e.tier !== 1) return;
+  if (grantEquip(id)) {
+    PROFILE.newbieGift = true;
+    saveProfile();
+    addLog(`🎁 领取新手礼包【${e.name}】`, 'reward');
+  }
+  renderBody();
+  window.dispatchEvent(new CustomEvent('credits-updated'));
+}
+
+/** 解锁条件未达标时的引导跳转：前往题库刷题 / 学习 */
+export function shopJumpBank(): void {
+  closeShop();
+  openBankBrowser();
 }
 
 function flashUnlock(name: string): void {

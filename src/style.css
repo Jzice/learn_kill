@@ -949,6 +949,21 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .se-credit b{color:var(--gold);font-size:16px;font-variant-numeric:tabular-nums}
 .se-unlocked{font-size:11px;color:var(--muted)}
 
+/* ===== 解锁条件区块（学习成果解锁，v1.8.0） ===== */
+.sc-conds{margin-top:5px;display:flex;flex-direction:column;gap:2px}
+.sc-cond{font-size:8.5px;line-height:1.5;color:var(--muted)}
+.sc-cond b{font-variant-numeric:tabular-nums}
+.sc-cond.ok{color:var(--green)}
+.sc-cond.no{color:#c9a27a}
+.sc-cond-or{color:var(--gold-dim);font-size:8px;margin-right:2px}
+.sc-cond-jump{background:transparent;border:1px solid var(--gold-dim);border-radius:4px;color:var(--gold);font-size:8px;padding:1px 5px;margin-left:4px;cursor:pointer;font-family:inherit}
+.sc-cond-jump:hover{background:var(--gold-dim);color:#1a1206}
+
+/* ===== 新手学习礼包（v1.8.0） ===== */
+.sc-newbie{margin-bottom:10px;background:linear-gradient(160deg,rgba(39,174,96,.14),rgba(0,0,0,.3));border:1px solid rgba(39,174,96,.45);border-radius:9px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sc-newbie-t{font-size:11.5px;color:var(--green);font-weight:600}
+.sc-newbie-opts{display:flex;gap:6px;flex-wrap:wrap}
+
 /* ===== 局前配装 ===== */
 #loadoutBar{display:flex;flex-direction:column;gap:9px}
 .lo-equips{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}

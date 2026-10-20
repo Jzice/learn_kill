@@ -111,6 +111,11 @@ export function recordAnswer(q: Question, correct: boolean, grade = ''): QuizRec
     text: old?.text || q.q,
   };
   map[key] = rec;
+  // 学段学习量：答对时按所属学期累加（装备 tier2/3 解锁条件的度量，见 unlockCondition.ts）
+  if (correct && grade) {
+    if (!PROFILE.gradeStats || typeof PROFILE.gradeStats !== 'object') PROFILE.gradeStats = {};
+    PROFILE.gradeStats[grade] = (PROFILE.gradeStats[grade] || 0) + 1;
+  }
   saveProfile();
   return rec;
 }

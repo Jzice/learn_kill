@@ -111,6 +111,9 @@ function defaultProfile(): Profile {
     items: {},
     // 局前配装
     loadout: { weapon: null, armor: null, horsePlus: null, horseMinus: null, items: {} },
+    // 学段学习量（各学期累计答对题数）与新手礼包发放标记
+    gradeStats: {},
+    newbieGift: false,
   };
 }
 
@@ -147,6 +150,9 @@ function loadProfile(): Profile {
               items: p.loadout.items && typeof p.loadout.items === 'object' ? p.loadout.items : {},
             }
           : { weapon: null, armor: null, horsePlus: null, horseMinus: null, items: {} },
+        // 兼容旧档案：补学段学习量与新手礼包字段（v1.8.0 学习成果解锁）
+        gradeStats: p.gradeStats && typeof p.gradeStats === 'object' ? p.gradeStats : {},
+        newbieGift: typeof p.newbieGift === 'boolean' ? p.newbieGift : false,
       });
     }
   } catch (e) {

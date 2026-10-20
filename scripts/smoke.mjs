@@ -279,6 +279,31 @@ check('知识图谱：可切回题目视图', bankQ4 > 0, `${bankQ4} 题`);
 await page.click('#screenBank .setup-top button'); // 返回主界面
 await page.waitForSelector('#screenGame.active', { timeout: 3000 });
 
+// 8.7 学分商店：学习成果解锁条件 + 新手礼包
+await page.click('#topBar button[onclick="openShop(\'chars\')"]');
+await page.waitForSelector('#shopModal.show', { timeout: 3000 });
+check('学分商店打开（顶栏入口）', await page.isVisible('#shopModal.show'));
+const newbieGift = await page.locator('#shopBody .sc-newbie').count();
+check('学分商店：新手礼包展示', newbieGift === 1, `${newbieGift} 个礼包`);
+await page.locator('#shopBody .sc-newbie-opts .btn').first().click();
+await page.waitForTimeout(300);
+check(
+  '学分商店：新手礼包领取后消失',
+  (await page.locator('#shopBody .sc-newbie').count()) === 0,
+);
+const condRows = await page.locator('#shopBody .sc-cond').count();
+check('学分商店：角色卡显示解锁条件', condRows > 0, `${condRows} 条条件`);
+const lockedBtns = await page.locator('#shopBody .shop-card .sc-action button[disabled]').count();
+check('学分商店：无学习记录时解锁按钮禁用', lockedBtns > 0, `${lockedBtns} 个禁用`);
+await page.locator('#shopBody .shop-tabs .shop-tab').nth(1).click();
+await page.waitForTimeout(200);
+const eqConds = await page.locator('#shopBody .sc-cond').count();
+check('学分商店：装备卡显示解锁条件', eqConds > 0, `${eqConds} 条条件`);
+const eqLocked = await page.locator('#shopBody .shop-card .sc-action button[disabled]').count();
+check('学分商店：装备高档位按钮禁用', eqLocked > 0, `${eqLocked} 个禁用`);
+await page.click('#shopModal .rules-close');
+await page.waitForTimeout(200);
+
 // 9. 控制台错误
 check('控制台零错误', errors.length === 0, errors.slice(0, 3).join(' ; '));
 
