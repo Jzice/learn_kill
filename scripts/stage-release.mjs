@@ -3,6 +3,7 @@
 // 因此上传前统一复制为 ASCII 文件名，中文说明在 gh 上传时以 label 形式附带
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 const root = path.resolve(import.meta.dirname, '..');
 const distDir = path.resolve(process.argv[2] || path.join(root, 'dist'));
@@ -54,11 +55,21 @@ for (const g of fs.readdirSync(path.join(outDir, 'banks'))) {
 }
 if (bankFiles === 0) fail('release/banks 下没有题库分片，产物无法抽题');
 console.log(`[release] banks/ -> release/banks  ${bankFiles} 个学科分片（必须与 HTML 同级分发）`);
+// 打包为 banks.zip 单一 ASCII 资产上传，规避 GitHub 对非 ASCII 文件名的重命名；本地双击仍用 banks/ 目录
+// CI（ubuntu）自带 zip；本地若无 zip 则回退为按 banks/ 目录上传（功能不变，仅资产名含中文）
+let bankAsset = path.join(outDir, 'banks.zip');
+try {
+  execSync('zip -r "banks.zip" banks', { cwd: outDir, stdio: 'ignore' });
+  console.log(`[release] banks.zip 已生成（${(fs.statSync(bankAsset).size / 1024).toFixed(1)} KB）`);
+} catch {
+  console.warn('[release] 未检测到 zip 工具，回退为按 banks/ 目录上传（CI ubuntu 环境会生成 banks.zip）');
+  bankAsset = path.join(outDir, 'banks');
+}
 
 fs.writeFileSync(
   path.join(outDir, 'assets.txt'),
   staged.map((s) => `${path.join(outDir, s.dest)}#${s.label}`).join('\n') +
-    `\n${path.join(outDir, 'banks')}#题库资源目录（${bankFiles} 个分片，必须与 HTML 放在同一目录；分发时请整目录打包 zip）\n`,
+    `\n${bankAsset}#题库${bankAsset.endsWith('.zip') ? '分片压缩包' : '资源目录'}（${bankFiles} 个分片，解压/放置到与 HTML 同级目录）\n`,
   'utf8',
 );
 console.log('[release] 资产清单已写入 release/assets.txt（路径#中文说明）');
