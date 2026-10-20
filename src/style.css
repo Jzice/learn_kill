@@ -608,7 +608,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .judge-fx .jname{font-size:8px;margin-top:3px;color:#8a1a10;border-top:1px solid #c0b090;padding-top:2px;width:80%;text-align:center}
 .judge-fx.red{color:#c0392b}
 .judge-fx.black{color:#1a1a1a}
-.death-fx{position:fixed;font-size:46px;font-weight:900;color:#888;text-shadow:0 0 20px #000,0 0 40px #f00;pointer-events:none;z-index:1002;animation:deathAnim 1.25s ease-out forwards;font-family:"STKaiti","KaiTi",serif}
+.death-fx{position:fixed;width:180px;text-align:center;pointer-events:none;z-index:1002;animation:deathAnim 1.25s ease-out forwards;font-family:"STKaiti","KaiTi",serif}
+.death-fx .df-title{font-size:46px;font-weight:900;color:#888;text-shadow:0 0 20px #000,0 0 40px #f00;line-height:1.1}
+.death-fx .df-role{margin-top:4px;font-size:20px;font-weight:800;color:#f5c53d;text-shadow:0 0 14px #000,0 0 26px #c0392b}
+.death-fx .df-killer{margin-top:3px;font-size:13px;color:#e8dcc0;text-shadow:0 0 10px #000;opacity:.92}
 @keyframes deathAnim{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.4) rotate(-8deg)}100%{opacity:0;transform:scale(.8) rotate(-15deg) translateY(-80px)}}
 
 /* 锦囊牌特效 */

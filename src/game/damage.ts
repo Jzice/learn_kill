@@ -164,10 +164,12 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
       }
       if (!saved) {
         p.alive = false;
-        revealDeadRole(p);
+        p.killedBy = killerName(srcIdx, idx);
+        const kt = killerText(srcIdx, idx);
+        revealDeadRole(p, kt);
         if (srcIdx === G.myPlayerIdx) G.myKills++;
         Sound.play('death');
-        await FX.death(idx);
+        await FX.death(idx, ROLES[p.role].name, kt);
         break;
       }
     } else {
@@ -181,10 +183,12 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
       const ch = await waitChoice(idx, opts, 'rescue');
       if (ch === 'giveup') {
         p.alive = false;
-        revealDeadRole(p);
+        p.killedBy = killerName(srcIdx, idx);
+        const kt = killerText(srcIdx, idx);
+        revealDeadRole(p, kt);
         if (srcIdx === G.myPlayerIdx) G.myKills++;
         Sound.play('death');
-        await FX.death(idx);
+        await FX.death(idx, ROLES[p.role].name, kt);
         break;
       }
       if (ch === 'know') {
@@ -217,14 +221,27 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
   render();
 }
 
-export function revealDeadRole(p: (typeof G)['players'][number]): void {
+/** 击杀者名字：有明确来源（非自己、非环境/判定伤害）时返回其名字，否则为空 */
+function killerName(srcIdx: number, tgtIdx: number): string {
+  if (srcIdx < 0 || srcIdx === tgtIdx) return '';
+  return G.players[srcIdx]?.name || '';
+}
+
+/** 击杀者文案：如「被 曹操 击杀」，无明确来源时为空 */
+function killerText(srcIdx: number, tgtIdx: number): string {
+  const n = killerName(srcIdx, tgtIdx);
+  return n ? `被 ${n} 击杀` : '';
+}
+
+export function revealDeadRole(p: (typeof G)['players'][number], killer?: string): void {
   if (!p || p.alive) return;
   const wasRevealed = p.roleRevealed;
   p.roleRevealed = true;
+  const by = killer ? `（${killer}）` : '';
   if (wasRevealed) {
-    addLog(`☠ ${p.name} 阵亡`, 'dmg');
+    addLog(`☠ ${p.name} 阵亡${by}`, 'dmg');
   } else {
-    addLog(`☠ ${p.name} 阵亡，身份公开：${ROLES[p.role].name}`, 'hl');
+    addLog(`☠ ${p.name} 阵亡，身份公开：${ROLES[p.role].name}${by}`, 'hl');
   }
   if (NET.isHost && NET.mode === 'host') scheduleSync();
 }

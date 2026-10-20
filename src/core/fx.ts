@@ -1,6 +1,6 @@
 /* ==================== 特效（DOM 动画层） ==================== */
 import type { Card } from './types';
-import { sleep } from './dom';
+import { escapeHtml, sleep } from './dom';
 
 export const FX = {
   anchor(idx: number): { x: number; y: number } {
@@ -116,13 +116,20 @@ export const FX = {
     await sleep(900);
     f.remove();
   },
-  async death(idx: number): Promise<void> {
+  /**
+   * 阵亡动画：显示身份与击杀者（二者可选）。
+   * @param roleText 身份名，如「反贼」；@param killerText 击杀说明，如「被 曹操 击杀」
+   */
+  async death(idx: number, roleText?: string, killerText?: string): Promise<void> {
     const a = this.anchor(idx);
     const f = document.createElement('div');
     f.className = 'death-fx';
-    f.textContent = '☠ 阵亡';
-    f.style.left = a.x - 62 + 'px';
-    f.style.top = a.y - 26 + 'px';
+    f.innerHTML =
+      '<div class="df-title">☠ 阵亡</div>' +
+      (roleText ? `<div class="df-role">${escapeHtml(roleText)}</div>` : '') +
+      (killerText ? `<div class="df-killer">${escapeHtml(killerText)}</div>` : '');
+    f.style.left = a.x - 90 + 'px';
+    f.style.top = a.y - 30 + 'px';
     document.getElementById('fxLayer')!.appendChild(f);
     await sleep(1250);
     f.remove();

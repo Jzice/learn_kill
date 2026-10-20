@@ -11,6 +11,8 @@ import { SELECTED_COUNT, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInf
 import { backToRoomForRematch, hostHandleRematchRequest } from '../ui/settle';
 import { onAskQuizRequest } from '../game/quiz';
 import { maybeSettle, publicProfile } from '../profile/profile';
+import { FX } from '../core/fx';
+import { ROLES } from '../data/characters';
 
 export const NET_PLAYER_NAMES: Record<string, string> = {};
 
@@ -352,6 +354,7 @@ export function onClientData(data: NetMessage): void {
     clearPlayZone();
     render();
   } else if (data.type === 'state_sync') {
+    const prevAlive = G.players.map((p) => p.alive);
     G.players = data.players;
     G.current = data.current;
     G.deck = data.deck;
@@ -369,6 +372,12 @@ export function onClientData(data: NetMessage): void {
     }
     if (G.gameOver) maybeSettle();
     render();
+    // 新阵亡者：客人端补播阵亡动画（身份 + 击杀者），与房主端表现一致
+    G.players.forEach((p, i) => {
+      if (prevAlive[i] && !p.alive) {
+        void FX.death(i, ROLES[p.role].name, p.killedBy ? `被 ${p.killedBy} 击杀` : '');
+      }
+    });
   } else if (data.type === 'choose_request') {
     G.pendingOptions = data.options;
     G.pendingPlayer = data.myPlayerIdx;

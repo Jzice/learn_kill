@@ -257,6 +257,8 @@ export interface Player {
   faction: FactionId;
   role: Role;
   roleRevealed: boolean;
+  /** 击杀者名字（阵亡时记录，联机下随状态同步，供客人端播放阵亡动画显示「被谁所杀」） */
+  killedBy?: string;
   hp: number;
   maxHp: number;
   hand: Card[];
