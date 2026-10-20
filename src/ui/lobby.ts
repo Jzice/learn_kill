@@ -547,7 +547,10 @@ export function setNetMode(net: 'host' | 'join'): void {
 
 export function updateAIHint(): void {
   const h = document.getElementById('aiCountHint');
-  if (h) h.textContent = `将补充 ${SELECTED_COUNT - 1} 名 AI`;
+  if (!h) return;
+  // AI 位 = 总人数 − 真人已加入人数（房主 + 已加入客人），随人数调整即时变化
+  const ai = Math.max(0, SELECTED_COUNT - joinedHumans());
+  h.textContent = ai > 0 ? `将补充 ${ai} 名 AI` : '真人已满，无 AI 位';
 }
 
 /** 保证当前选角在年级/阵营池内合法 */
@@ -691,6 +694,7 @@ export function updateHostRoomInfo(state: RoomStateLike): void {
   cb!.style.display = 'inline-block';
   crb!.style.display = 'none';
   renderSeatPanel();
+  syncCountSliderBounds(); // 已加入人数变化时同步人数下限
 }
 
 export function updateGuestRoomInfo(state: RoomStateLike): void {
@@ -724,7 +728,9 @@ export function renderSeatPanel(): void {
   const box = document.getElementById(NET.isHost ? 'hostSeatList' : 'guestSeatList');
   if (!box) return;
   if (!NET.isHost && !NET.seats.length) return; // 客人尚未收到座位表
-  const total = Math.max(SELECTED_COUNT, NET.seats.length);
+  // 房主端取「目标人数」与已占座位数的较大值；客人端以房主同步来的座位表长度为准（房主权威），
+  // 避免客人本地人数（与房主无关）导致 AI 空位数与房主不一致
+  const total = NET.isHost ? Math.max(SELECTED_COUNT, NET.seats.length) : NET.seats.length;
   const myId = NET.myPeerId || '';
   const isHost = NET.isHost;
   const rows: string[] = [];
@@ -941,17 +947,72 @@ export function selectMoodIcon(v: string): void {
 }
 
 /* ==================== 玩家总数滑块 ==================== */
+
+/** 房间内真人总数（含房主）；非房主场景为 1（仅自己） */
+function joinedHumans(): number {
+  if (NET.mode === 'host' && NET.isHost) {
+    return Math.max(1, NET.roomMembers.length, NET.seats.filter(Boolean).length);
+  }
+  return 1;
+}
+
+/** 人数下限：联机建房后不得低于已加入人数，且至少 2 人 */
+export function minPlayerCount(): number {
+  return Math.max(2, Math.min(8, joinedHumans()));
+}
+
+/**
+ * 把座位表调整到目标人数：真人座位尽量保留原位（放不下的挪到空位），
+ * 其余由 AI 空位补齐 —— 即 AI 位随总数即时增减。
+ */
+function resizeSeats(target: number): void {
+  type Slot = NonNullable<(typeof NET)['seats'][number]>;
+  const humans = NET.seats
+    .map((s, i) => ({ s, i }))
+    .filter((x): x is { s: Slot; i: number } => !!x.s);
+  const arr: (Slot | null)[] = new Array(Math.max(target, humans.length)).fill(null);
+  const spill: Slot[] = [];
+  for (const { s, i } of humans) {
+    if (i < arr.length) arr[i] = s;
+    else spill.push(s);
+  }
+  for (const s of spill) {
+    const free = arr.indexOf(null);
+    if (free >= 0) arr[free] = s;
+  }
+  NET.seats = arr;
+}
+
 export function setPlayerCount(n: number): void {
-  const v = Math.max(2, Math.min(8, Math.round(n)));
+  const min = minPlayerCount();
+  const v = Math.max(min, Math.min(8, Math.round(n)));
   SELECTED_COUNT = v;
   const slider = document.getElementById('countSlider') as HTMLInputElement | null;
-  if (slider) slider.value = String(v);
+  if (slider) {
+    slider.min = String(min); // 建房后滑块不可拖到已加入人数以下
+    slider.value = String(v);
+  }
   const label = document.getElementById('countValue');
   if (label) label.textContent = v + ' 人';
   updateAIHint();
   renderRolePicker();
+  renderSeatPanel();
+  if (NET.isHost && NET.mode === 'host') {
+    resizeSeats(v); // AI 位随总数即时增减（真人座位保留）
+    NET.broadcastSeats(); // 座位表（含 AI 空位）同步给客人
+    NET.broadcastRoomState(); // 「已加入 X / Y 人」同步给客人
+  }
   saveSetupPrefs();
   Sound.play('click');
+}
+
+/** 同步人数滑块下限：建房后随加入人数变化（有人加入则下限提高，有人退出则回落） */
+export function syncCountSliderBounds(): void {
+  const slider = document.getElementById('countSlider') as HTMLInputElement | null;
+  if (!slider) return;
+  const min = minPlayerCount();
+  slider.min = String(min);
+  if (Number(slider.value) < min) setPlayerCount(min);
 }
 
 export function bindCountSlider(): void {
