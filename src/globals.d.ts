@@ -110,6 +110,11 @@ declare global {
     shopClaimMission: (id: string) => void;
     shopClaimPass: (level: number) => void;
     shopGrantPassEquip: (level: number, equipId: string) => void;
+    // 随机武将预览卡 / 开局亮将
+    rerollRandomChar: () => void;
+    revealConfirm: () => void;
+    revealReroll: () => void;
+    revealCancel: () => void;
     shopSetLoadoutSlot: (slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus', value: string) => void;
     shopAddLoadoutItem: (id: string, n?: number) => void;
     shopRemoveLoadoutItem: (id: string, n?: number) => void;

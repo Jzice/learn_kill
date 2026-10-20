@@ -151,8 +151,10 @@ check(
 // 固定人数为 4，避免受默认人数（现为 5）变动影响，保证断言确定性（与单机 smoke 一致显式设值）
 await host.evaluate(() => window.setPlayerCount(4));
 
-// 房主开始游戏
+// 房主开始游戏（随机模式：先亮将确认）
 await host.click('#hostStartBtn');
+await host.waitForSelector('#revealModal.show', { timeout: 5000 });
+await host.click('#revealBody button[onclick="revealConfirm()"]');
 await host.waitForSelector('#screenGame.active', { timeout: 10000 });
 await guest.waitForSelector('#screenGame.active', { timeout: 10000 });
 check('双方进入游戏界面', true);

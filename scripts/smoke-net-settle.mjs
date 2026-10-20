@@ -106,8 +106,10 @@ await guest.waitForFunction(
 );
 check('客人加入房间', true);
 
-// 开始游戏
+// 开始游戏（随机模式：先亮将确认）
 await host.click('#hostStartBtn');
+await host.waitForSelector('#revealModal.show', { timeout: 5000 });
+await host.click('#revealBody button[onclick="revealConfirm()"]');
 await host.waitForSelector('#screenGame.active', { timeout: 10000 });
 await guest.waitForSelector('#screenGame.active', { timeout: 10000 });
 check('双方进入游戏界面', true);

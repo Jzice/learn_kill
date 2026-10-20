@@ -11,6 +11,7 @@ import { gradeSortKey } from '../data/grades';
 import { isCharUnlocked, credits } from '../profile/credits';
 import { claimableCount } from '../profile/missions';
 import { openShop, renderLoadoutBar } from './shop';
+import { charCardHtml } from './reveal';
 import { NET } from '../net/network';
 import {
   EXTERNAL_STATS,
@@ -302,7 +303,7 @@ export function renderCharPicker(): void {
   renderCharPreview();
 }
 
-/** 角色预览：随机派发时展示将使用的角色信息（开局前可见）；手动选择后展示已选角色 */
+/** 角色预览：完整武将卡（随机派发时展示将使用的角色并支持「换一个」；手动选择后展示已选角色） */
 export function renderCharPreview(): void {
   const box = document.getElementById('charPreview');
   if (!box) return;
@@ -311,11 +312,30 @@ export function renderCharPreview(): void {
     box.innerHTML = '';
     return;
   }
-  const f = FACTIONS[c.faction];
-  const label = USER_CHOSEN ? '✅ 已选择' : '🎲 随机派发';
-  box.innerHTML =
-    `${label} <b style="color:${f.color}">${escapeHtml(c.avatar)} ${escapeHtml(c.name)}</b>` +
-    `${c.title ? `（${escapeHtml(c.title)}）` : ''} · <span style="color:${f.color}">${escapeHtml(f.name)}</span>`;
+  box.innerHTML = charCardHtml(c, {
+    label: USER_CHOSEN ? '✅ 已选择' : '🎲 随机派发',
+    random: !USER_CHOSEN,
+    expanded: c.id.startsWith('ex_'),
+  });
+}
+
+/** 随机模式：开局前更换随机派发的武将（重新派发后仍保持「开局所见即所得」） */
+export function rerollRandomChar(): Character | null {
+  if (USER_CHOSEN) return SELECTED_CHAR;
+  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+  if (!pool.length) return null;
+  let c = pool[Math.floor(Math.random() * pool.length)];
+  if (pool.length > 1 && RANDOM_CHAR && c.id === RANDOM_CHAR.id) {
+    const others = pool.filter((x) => x.id !== RANDOM_CHAR!.id);
+    c = others[Math.floor(Math.random() * others.length)];
+  }
+  RANDOM_CHAR = c;
+  SELECTED_FACTION = c.faction;
+  SELECTED_CHAR = c;
+  Sound.play('click');
+  renderFactionPicker();
+  renderCharPicker();
+  return c;
 }
 
 export function selectChar(id: string): void {

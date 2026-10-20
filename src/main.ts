@@ -106,6 +106,8 @@ import {
   shopSetTab,
   shopUnlockChar,
 } from './ui/shop';
+import { rerollRandomChar } from './ui/lobby';
+import { revealCancel, revealConfirm, revealReroll } from './ui/reveal';
 import { useItem } from './game/actions';
 
 /* ---- 1. window 全局挂载（供 HTML 内联 onclick / 动态模板调用） ---- */
@@ -204,6 +206,11 @@ window.shopJumpBank = shopJumpBank;
 window.shopClaimMission = shopClaimMission;
 window.shopClaimPass = shopClaimPass;
 window.shopGrantPassEquip = shopGrantPassEquip;
+// 随机武将预览卡 / 开局亮将
+window.rerollRandomChar = rerollRandomChar;
+window.revealConfirm = revealConfirm;
+window.revealReroll = revealReroll;
+window.revealCancel = revealCancel;
 window.shopSetLoadoutSlot = shopSetLoadoutSlot;
 window.shopAddLoadoutItem = shopAddLoadoutItem;
 window.shopRemoveLoadoutItem = shopRemoveLoadoutItem;

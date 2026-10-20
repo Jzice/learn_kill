@@ -994,6 +994,29 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .sc-pass-act{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .sc-pass-lock{color:var(--muted);font-size:9px}
 
+/* ===== 武将完整卡（随机预览 + 开局亮将，v1.8.3） ===== */
+.rcp{background:linear-gradient(160deg,#2a1a10,#120804);border:2px solid var(--gold-dim);border-radius:9px;padding:9px 11px;text-align:left;position:relative}
+.rcp.random{border-color:var(--gold);box-shadow:0 0 16px rgba(245,197,66,.35)}
+.rcp-head{display:flex;align-items:center;gap:9px}
+.rcp-avatar{font-size:30px;width:44px;height:44px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:var(--avatar-bg);border:1px solid var(--gold-dim);border-radius:8px}
+.rcp-id{flex:1;min-width:0}
+.rcp-name{font-size:15px;font-weight:700}
+.rcp-title{font-size:9.5px;color:var(--muted);margin-top:1px}
+.rcp-label{flex:0 0 auto;font-size:9.5px;color:var(--gold);background:rgba(245,197,66,.1);border:1px solid var(--gold-dim);border-radius:20px;padding:2px 9px}
+.rcp-meta{font-size:11px;font-weight:600;margin:6px 0 5px}
+.rcp-skills{border-top:1px solid var(--border);padding-top:5px}
+.rcp-skill{font-size:10px;color:#b8a888;line-height:1.55}
+.rcp-skill b{color:var(--gold);font-size:10.5px}
+.rcp-type{display:inline-block;font-size:8px;color:#1a1206;background:var(--gold-dim);border-radius:4px;padding:0 4px;margin:0 3px;vertical-align:1px}
+.rcp-lord{font-size:9.5px;color:#8fd0ff;margin-top:5px}
+.rcp-lord b{color:#aee2ff}
+.rcp-src{font-size:9px;color:var(--green);margin-top:5px;line-height:1.5}
+.rcp-reroll{margin-top:8px}
+#revealModal .reveal-box{max-width:430px}
+#revealBody{padding:12px 16px}
+.rv-tip{font-size:11px;color:var(--muted);text-align:center;margin-bottom:9px}
+.rv-actions{display:flex;gap:8px;justify-content:center;margin-top:11px;flex-wrap:wrap}
+
 /* ===== 新手学习礼包（v1.8.0） ===== */
 .sc-newbie{margin-bottom:10px;background:linear-gradient(160deg,rgba(39,174,96,.14),rgba(0,0,0,.3));border:1px solid rgba(39,174,96,.45);border-radius:9px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .sc-newbie-t{font-size:11.5px;color:var(--green);font-weight:600}

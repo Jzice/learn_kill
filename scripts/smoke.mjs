@@ -155,6 +155,23 @@ check('角色卡渲染（子界面）', charCards > 0, `${charCards} 名角色`)
 const factions = await page.locator('#factionPicker .faction-card').count();
 check('阵营选择（子界面）', factions === 9, `${factions} 个阵营`);
 
+// 1.45 随机武将预览卡：完整展示（技能/主公技）+ 换将
+const rcpSkills = await page.locator('#charPreview .rcp-skill').count();
+check('随机武将预览卡：技能详情展示', rcpSkills > 0, `${rcpSkills} 个技能`);
+const rcpLord = await page.locator('#charPreview .rcp-lord').count();
+check('随机武将预览卡：主公技展示', rcpLord === 1);
+const rcpMeta = (await page.locator('#charPreview .rcp-meta').textContent()) || '';
+check('随机武将预览卡：阵营与体力展示', rcpMeta.includes('体力'), rcpMeta.trim().slice(0, 24));
+const rcpReroll = await page.locator('#charPreview .rcp-reroll').count();
+check('随机武将预览卡：换将按钮', rcpReroll === 1);
+const rcpNameBefore = (await page.locator('#charPreview .rcp-name').textContent()) || '';
+await page.click('#charPreview .rcp-reroll');
+await page.waitForTimeout(250);
+const rcpNameAfter = (await page.locator('#charPreview .rcp-name').textContent()) || '';
+check('随机武将：换将后重新派发', rcpNameAfter.length > 0 && rcpNameAfter !== rcpNameBefore, `${rcpNameBefore} → ${rcpNameAfter}`);
+const rcpSkillAfter = await page.locator('#charPreview .rcp-skill').count();
+check('随机武将：换将后卡片仍完整', rcpSkillAfter > 0, `${rcpSkillAfter} 个技能`);
+
 // 1.5 玩家总数滑块（子界面）
 const sliderOk = await page.locator('#countSlider').count();
 check('人数滑块存在', sliderOk === 1);
@@ -175,8 +192,13 @@ check('返回主界面且无摘要块', (await page.locator('#setupSummary').cou
 await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 
-// 2. 开始单机对局
+// 2. 开始单机对局（随机模式：先亮将确认）
 await page.click('#startBtn');
+await page.waitForSelector('#revealModal.show', { timeout: 3000 });
+check('开局亮将弹窗（随机模式）', await page.isVisible('#revealModal.show'));
+const rvSkills = await page.locator('#revealBody .rcp-skill').count();
+check('亮将弹窗：完整武将卡', rvSkills > 0, `${rvSkills} 个技能`);
+await page.click('#revealBody button[onclick="revealConfirm()"]');
 await page.waitForSelector('#screenGame.active', { timeout: 5000 });
 await page.waitForTimeout(2500);
 

@@ -24,10 +24,13 @@ import {
   SELECTED_ROLE,
   SELECTED_TIMER_ON,
   SELECTED_TIMER_SEC,
+  USER_CHOSEN,
   ensureCharValid,
   mergedCharPool,
   pickRandomCharIfNotChosen,
+  rerollRandomChar,
 } from '../ui/lobby';
+import { confirmReveal } from '../ui/reveal';
 import { NET, NET_PLAYER_NAMES } from '../net/network';
 import {
   identityFromProfile,
@@ -240,6 +243,11 @@ function readNickname(fallback: string): string {
 
 export async function startSingle(): Promise<void> {
   Sound.init();
+  // 随机模式：开局前亮将确认（可换将 / 返回设置）
+  if (!USER_CHOSEN) {
+    const c = await confirmReveal(SELECTED_CHAR!, () => rerollRandomChar());
+    if (!c) return;
+  }
   pickRandomCharIfNotChosen();
   ensureCharValid();
   await loadGrade(SELECTED_GRADE); // 按需载入选定年级题库
@@ -270,6 +278,11 @@ export async function startSingle(): Promise<void> {
 
 export async function hostStartGame(): Promise<void> {
   Sound.init();
+  // 随机模式：开局前亮将确认（可换将 / 返回设置）
+  if (!USER_CHOSEN) {
+    const c = await confirmReveal(SELECTED_CHAR!, () => rerollRandomChar());
+    if (!c) return;
+  }
   pickRandomCharIfNotChosen();
   ensureCharValid();
   await loadGrade(SELECTED_GRADE); // 按需载入选定年级题库
