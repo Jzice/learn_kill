@@ -199,6 +199,7 @@
     <div class="panel">
       <h3>◈ 选择你的角色 ◈ <span id="charPoolHint" style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;"></span></h3>
       <div class="char-grid" id="charGrid"></div>
+      <div class="char-preview" id="charPreview"></div>
     </div>
     <div class="panel">
       <h3>◈ 局前配装 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（仅可用已解锁装备，最多 2 件 / 道具 3 个，不进牌堆）</span></h3>
@@ -239,9 +240,9 @@
     <button class="btn btn-sm" onclick="openBankMenu()">⚙ 题库管理</button>
   </div>
   <div class="opt-row" id="bankGradePicker"></div>
+  <div class="opt-row" id="bankSubjectPicker"></div>
   <div class="bank-toolbar">
     <input id="bankSearch" placeholder="搜索题干 / 知识点…" maxlength="20">
-    <select id="bankSubjectFilter"><option value="">全部科目</option></select>
   </div>
   <div class="bank-body" id="bankBody">加载中…</div>
 </div>

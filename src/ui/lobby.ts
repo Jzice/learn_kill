@@ -52,6 +52,8 @@ export let SELECTED_MODE: 'single' | 'host' | 'join' = 'single';
 /** 扩展包：决定可选角色的学段（初中/高中/全部），并为角色追加对应学科主题技能 */
 export let SELECTED_PACKET: PacketId = 'all';
 export let USER_CHOSEN = false;
+/** 随机模式预览角色：未手动选择时随机派发，一次预览后保持稳定（开局所见即所得） */
+let RANDOM_CHAR: Character | null = null;
 export let SELECTED_ROLE: Role | 'random' = 'random';
 /** 回合限时：开关 + 档位（10 / 20 / 30 秒），默认开启 20 秒 */
 export let SELECTED_TIMER_ON = true;
@@ -278,6 +280,8 @@ export function renderCharPicker(): void {
   if (hint) hint.textContent = `（当前可选角色池共 ${full.length} 名，含已解锁扩展包角色）`;
   if (!pool.length) {
     grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">该阵营在当前年级暂无角色</div>';
+    const pv0 = document.getElementById('charPreview');
+    if (pv0) pv0.innerHTML = '';
     return;
   }
   if (!SELECTED_CHAR || !pool.some((c) => c.id === SELECTED_CHAR!.id)) SELECTED_CHAR = pool[0];
@@ -294,6 +298,23 @@ export function renderCharPicker(): void {
     </div>`;
     })
     .join('');
+  renderCharPreview();
+}
+
+/** 角色预览：随机派发时展示将使用的角色信息（开局前可见）；手动选择后展示已选角色 */
+export function renderCharPreview(): void {
+  const box = document.getElementById('charPreview');
+  if (!box) return;
+  const c = USER_CHOSEN ? SELECTED_CHAR : randomPreviewChar();
+  if (!c) {
+    box.innerHTML = '';
+    return;
+  }
+  const f = FACTIONS[c.faction];
+  const label = USER_CHOSEN ? '✅ 已选择' : '🎲 随机派发';
+  box.innerHTML =
+    `${label} <b style="color:${f.color}">${escapeHtml(c.avatar)} ${escapeHtml(c.name)}</b>` +
+    `${c.title ? `（${escapeHtml(c.title)}）` : ''} · <span style="color:${f.color}">${escapeHtml(f.name)}</span>`;
 }
 
 export function selectChar(id: string): void {
@@ -378,6 +399,7 @@ const MODE_TITLE: Record<'single' | 'host' | 'join', string> = {
 /** 进入对局设置子界面（选定模式后） */
 export function enterSetup(mode: 'single' | 'host' | 'join'): void {
   SELECTED_MODE = mode;
+  pickRandomCharIfNotChosen(); // 随机模式下进入设置即派发并展示随机角色（开局前可见）
   updateLobbyMode();
   renderSetupSummary();
   document.getElementById('screenLobby')!.classList.remove('active');
@@ -542,15 +564,26 @@ export function ensureCharValid(): void {
   if (!SELECTED_CHAR || !pool.some((c) => c.id === SELECTED_CHAR!.id)) SELECTED_CHAR = pool[0];
 }
 
-/** 未手动选择时随机派发阵营与角色 */
+/** 随机模式预览角色：未手动选择时按当前年级/扩展包随机派发；一次预览后保持稳定，保证开局「所见即所得」 */
+export function randomPreviewChar(): Character | null {
+  if (USER_CHOSEN) return SELECTED_CHAR;
+  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+  if (!pool.length) return null;
+  if (RANDOM_CHAR && pool.some((c) => c.id === RANDOM_CHAR!.id)) return RANDOM_CHAR;
+  const fset = [...new Set(pool.map((c) => c.faction))];
+  const faction = fset[Math.floor(Math.random() * fset.length)];
+  const chars = pool.filter((c) => c.faction === faction);
+  RANDOM_CHAR = chars[Math.floor(Math.random() * chars.length)];
+  return RANDOM_CHAR;
+}
+
+/** 未手动选择时随机派发阵营与角色（复用开局前已预览的随机角色，保证一致） */
 export function pickRandomCharIfNotChosen(): void {
   if (USER_CHOSEN) return;
-  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
-  if (!pool.length) return;
-  const fset = [...new Set(pool.map((c) => c.faction))];
-  SELECTED_FACTION = fset[Math.floor(Math.random() * fset.length)];
-  const chars = pool.filter((c) => c.faction === SELECTED_FACTION);
-  SELECTED_CHAR = chars[Math.floor(Math.random() * chars.length)];
+  const c = randomPreviewChar();
+  if (!c) return;
+  SELECTED_FACTION = c.faction;
+  SELECTED_CHAR = c;
   renderFactionPicker();
   renderCharPicker();
 }

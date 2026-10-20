@@ -157,7 +157,10 @@ await host.waitForSelector('#screenGame.active', { timeout: 10000 });
 await guest.waitForSelector('#screenGame.active', { timeout: 10000 });
 check('双方进入游戏界面', true);
 
-await host.waitForTimeout(3000);
+// 等待双方座位真正渲染完成（房主侧偶发比固定等待更慢，改为按元素出现等待，消除「房主0座位」偶发）
+await host.waitForFunction(() => document.querySelectorAll('#seatRing .p-card').length >= 2, { timeout: 10000 });
+await guest.waitForFunction(() => document.querySelectorAll('#seatRing .p-card').length >= 2, { timeout: 10000 });
+await host.waitForTimeout(500);
 const hostSeats = await host.locator('#seatRing .p-card').count();
 const guestSeats = await guest.locator('#seatRing .p-card').count();
 check('双方座位渲染一致（4人）', hostSeats === 4 && guestSeats === 4, `房主${hostSeats} 客人${guestSeats}`);

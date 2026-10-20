@@ -312,6 +312,7 @@ export function answerReview(pos: number): void {
   });
   const chosen = btns[pos];
   const correct = pos >= 0 && item.order[pos] === item.q.a;
+  Sound.play(correct ? 'correct' : 'wrong'); // 复习答题音效（与局内答题一致）
   if (!correct && chosen) chosen.classList.add('wrong');
   if (correct) {
     reviewCorrect++;

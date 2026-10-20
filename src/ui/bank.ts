@@ -90,13 +90,28 @@ function renderGradePicker(): void {
 }
 
 function renderSubjectFilter(): void {
-  const sel = document.getElementById('bankSubjectFilter') as HTMLSelectElement | null;
-  if (!sel) return;
+  const box = document.getElementById('bankSubjectPicker');
+  if (!box) return;
   const qs = QUESTION_BANK[state.grade] || [];
   const present = [...new Set(qs.map((q) => q.s))];
   const cur = present.includes(state.subject) ? state.subject : '';
-  sel.innerHTML = '<option value="">全部科目</option>' + present.map((s) => `<option>${escapeHtml(s)}</option>`).join('');
-  sel.value = cur;
+  const all = `<button class="opt-btn ${cur === '' ? 'active' : ''}" data-subject="">全部</button>`;
+  box.innerHTML =
+    all +
+    present
+      .map(
+        (s) =>
+          `<button class="opt-btn ${s === cur ? 'active' : ''}" data-subject="${escapeHtml(s)}">${SUBJECT_ICON[s] || '📘'} ${escapeHtml(s)}</button>`,
+      )
+      .join('');
+  box.onclick = (e) => {
+    const b = (e.target as HTMLElement).closest('.opt-btn') as HTMLElement | null;
+    if (!b) return;
+    state.subject = b.dataset.subject || '';
+    Sound.play('click');
+    renderSubjectFilter();
+    renderBody();
+  };
 }
 
 export function openBankBrowser(): void {
@@ -119,14 +134,10 @@ export function closeBankBrowser(): void {
   showScreen(prevScreen && prevScreen !== 'screenBank' ? prevScreen : 'screenLobby');
 }
 
-/** 在 init 中调用一次：绑定搜索框与科目筛选 */
+/** 在 init 中调用一次：绑定搜索框（科目筛选改为选项按钮，事件在 renderSubjectFilter 内委托） */
 export function bindBankBrowser(): void {
   document.getElementById('bankSearch')?.addEventListener('input', (e) => {
     state.search = (e.target as HTMLInputElement).value.trim();
-    renderBody();
-  });
-  document.getElementById('bankSubjectFilter')?.addEventListener('change', (e) => {
-    state.subject = (e.target as HTMLSelectElement).value;
     renderBody();
   });
 }
