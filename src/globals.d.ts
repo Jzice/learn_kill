@@ -71,6 +71,10 @@ declare global {
     startReviewByKey: (key: string) => void;
     answerReview: (pos: number) => void;
     closeReview: () => void;
+    // 题库刷题：开始一组 / 作答 / 关闭
+    startDrill: () => void;
+    answerDrill: (pos: number) => void;
+    closeDrill: () => void;
     // 联机座位：自己换座 / 座主代他人换座 / 随机分配
     requestSeatMove: (toIndex: number) => void;
     pickSeatMember: (peerId: string) => void;

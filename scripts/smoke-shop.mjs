@@ -64,7 +64,7 @@ check('角色卡片渲染', charCards > 0, `${charCards} 张`);
 await page.evaluate(() => window.shopSetTab('equips'));
 await page.waitForTimeout(150);
 const equipCards = await page.locator('#shopBody .shop-card').count();
-check('装备卡片渲染', equipCards === 12, `${equipCards} 张`);
+check('装备卡片渲染', equipCards === 18, `${equipCards} 张`);
 // 3. 解锁一名角色
 await page.evaluate(() => window.shopUnlockChar('ex_0_cn'));
 await page.waitForTimeout(100);

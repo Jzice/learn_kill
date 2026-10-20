@@ -3,7 +3,7 @@
  * 局前配装：renderLoadoutBar() 渲染到开局界面的 #loadoutBar 容器。
  */
 import { escapeHtml } from '../core/dom';
-import { GRADE_ORDER } from '../data/grades';
+import { GRADE_ORDER, gradeSortKey } from '../data/grades';
 import { addLog } from '../game/log';
 import {
   EXPANSION_CHARS,
@@ -40,6 +40,7 @@ import {
   CREDIT_RULE,
   LOADOUT_EQUIP_LIMIT,
   LOADOUT_ITEM_LIMIT,
+  quizCreditFor,
 } from '../profile/credits';
 
 /** 道具学分定价（消耗类，可重复购买） */
@@ -48,7 +49,12 @@ export const ITEM_PRICE: Record<string, number> = {
   it_shield: 60,
   it_draw: 70,
   it_peek: 60,
+  it_peek2: 90,
+  it_wall: 100,
 };
+
+/** 装备档位名 */
+const TIER_NAME: Record<number, string> = { 1: '普通', 2: '精良', 3: '稀有', 4: '史诗' };
 
 type Tab = 'chars' | 'equips' | 'items';
 let curTab: Tab = 'chars';
@@ -66,7 +72,7 @@ function creditOverview(): string {
         <div class="sc-bar-top"><span>今日获取 ${earned} / ${cap}</span>${reached ? '<span class="sc-cap">已达上限</span>' : ''}</div>
         <div class="sc-track"><i style="width:${pct}%"></i></div>
       </div>
-      <div class="sc-tip">答对题 +${CREDIT_RULE.perCorrectQuiz} ｜ 复习 +${CREDIT_RULE.perReview} ｜ 攻克错题 +${CREDIT_RULE.perWrongFixed}（每日上限 ${cap}）</div>
+      <div class="sc-tip">答对题 / 刷题 +${quizCreditFor('初一上')}~${quizCreditFor('高三下')} 学分（随年级递增）｜ 复习 +${CREDIT_RULE.perReview} ｜ 攻克错题 +${CREDIT_RULE.perWrongFixed} ｜ 刷题连对 3 题额外 +2（每日上限 ${cap}）</div>
     </div>`;
 }
 
@@ -113,19 +119,22 @@ function equipCards(): string {
   return `<div class="shop-grid">${EXPANSION_EQUIPS.map((e) => {
     const owned = isEquipUnlocked(e.id);
     const price = EQUIP_PRICE[e.tier] ?? 0;
-    const can = !owned && credits() >= price && !dailyCapReached();
+    // 年级门槛：达到装备要求年级才可购买（未达到时展示为目标激励）
+    const gradeOk = gradeSortKey(e.grade) <= gradeSortKey(curGrade);
+    const can = !owned && gradeOk && credits() >= price && !dailyCapReached();
     return `<div class="shop-card ${owned ? 'unlocked' : ''}">
       <div class="sc-avatar">${e.icon}</div>
       <div class="sc-info">
         <div class="sc-name">${escapeHtml(e.name)} <span class="sc-title">${e.slot === 'weapon' ? '武器' : e.slot === 'armor' ? '防具' : e.slot === 'horsePlus' ? '+1马' : '-1马'}</span></div>
-        <div class="sc-sub">${e.tier === 1 ? '普通' : e.tier === 2 ? '精良' : '稀有'}</div>
+        <div class="sc-sub">${TIER_NAME[e.tier] || '普通'} ｜ ${escapeHtml(e.grade)}起</div>
         <div class="sc-skill">${escapeHtml(e.desc)}</div>
+        ${owned || gradeOk ? '' : `<div class="sc-skill" style="color:#e08a7a">🔒 需达到 ${escapeHtml(e.grade)}（当前 ${escapeHtml(curGrade)}）</div>`}
       </div>
       <div class="sc-action">
         ${
           owned
             ? '<span class="sc-owned">✓ 已拥有</span>'
-            : `<button class="btn btn-sm ${can ? 'btn-accent' : ''}" ${can ? '' : 'disabled'} onclick="shopBuyEquip('${e.id}')">购买 ${price}</button>`
+            : `<button class="btn btn-sm ${can ? 'btn-accent' : ''}" ${can ? '' : 'disabled'} onclick="shopBuyEquip('${e.id}')">${gradeOk ? `购买 ${price}` : `🔒 ${escapeHtml(e.grade)}`}</button>`
         }
       </div>
     </div>`;
@@ -190,7 +199,7 @@ export function shopUnlockChar(id: string): void {
   }
 }
 export function shopBuyEquip(id: string): void {
-  if (buyEquip(id)) {
+  if (buyEquip(id, curGrade)) {
     renderBody();
     window.dispatchEvent(new CustomEvent('credits-updated'));
   }

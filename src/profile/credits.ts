@@ -6,6 +6,7 @@
  * 全部读写走 PROFILE（localStorage 持久化），仅在存档写入时序列化。
  */
 import type { EquipSlot } from '../core/types';
+import { GRADE_ORDER, gradeSortKey } from '../data/grades';
 import { PROFILE, saveProfile } from './profile';
 import {
   CHAR_PRICE,
@@ -20,11 +21,21 @@ import {
 
 /** 学分数值曲线（便于调参） */
 export const CREDIT_RULE: { perCorrectQuiz: number; perReview: number; perWrongFixed: number; dailyCap: number } = {
-  perCorrectQuiz: 2,
-  perReview: 1,
-  perWrongFixed: 1,
-  dailyCap: 200,
+  perCorrectQuiz: 3,
+  perReview: 2,
+  perWrongFixed: 2,
+  dailyCap: 300,
 };
+
+/**
+ * 按年级梯度计算答题学分：年级越高单题学分越高（初中 +0 / 高一高二 +1 / 高三 +2），
+ * 激励向高年级推进；未知年级按基准计。
+ */
+export function quizCreditFor(grade: string): number {
+  const i = GRADE_ORDER.indexOf(grade);
+  const bonus = i < 0 ? 0 : Math.floor(i / 6);
+  return CREDIT_RULE.perCorrectQuiz + bonus;
+}
 
 /** 局前携带上限（决策四：限额避免开局强度失控） */
 export const LOADOUT_EQUIP_LIMIT = 2;
@@ -105,10 +116,12 @@ export function equipPrice(id: string): number {
   const e = expansionEquipById(id);
   return e ? EQUIP_PRICE[e.tier] ?? 0 : 0;
 }
-export function buyEquip(id: string): boolean {
+export function buyEquip(id: string, grade?: string): boolean {
   const e = expansionEquipById(id);
   if (!e) return false;
   if (isEquipUnlocked(id)) return true;
+  // 年级门槛：达到装备要求年级方可购买（不传 grade 则跳过该校验，供内部调用）
+  if (grade !== undefined && gradeSortKey(e.grade) > gradeSortKey(grade)) return false;
   const price = EQUIP_PRICE[e.tier] ?? 0;
   if (!spendCredits(price, `buy:${id}`)) return false;
   PROFILE.unlockedEquips = [...(PROFILE.unlockedEquips || []), id];

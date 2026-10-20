@@ -238,6 +238,7 @@
     <button class="btn btn-sm" onclick="closeBankBrowser()">‹ 返回</button>
     <span class="setup-title">📚 题库浏览</span>
     <button class="btn btn-sm" onclick="openBankMenu()">⚙ 题库管理</button>
+    <button class="btn btn-sm btn-accent" onclick="startDrill()" title="按当前学期/科目刷题，答对赚学分">📝 刷题</button>
   </div>
   <div class="opt-row" id="bankGradePicker"></div>
   <div class="opt-row" id="bankSubjectPicker"></div>
@@ -356,6 +357,23 @@
     <div class="quiz-question" id="reviewQuestion"></div>
     <div id="reviewOptions"></div>
     <div id="reviewFeedback"></div>
+  </div>
+</div>
+
+<!-- 题库刷题弹窗（结构镜像复习弹窗，答对按年级梯度获得学分） -->
+<div id="drillModal">
+  <div class="quiz-box">
+    <div class="quiz-header">
+      <div class="quiz-icon" id="drillIcon">📖</div>
+      <div class="quiz-meta">
+        <div class="quiz-subject" id="drillSubject"></div>
+        <div class="quiz-progress" id="drillProgress"></div>
+      </div>
+    </div>
+    <div class="quiz-kp" id="drillKP"></div>
+    <div class="quiz-question" id="drillQuestion"></div>
+    <div id="drillOptions"></div>
+    <div id="drillFeedback"></div>
   </div>
 </div>
 

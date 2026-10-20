@@ -69,6 +69,7 @@ import {
   viewMemberProfile,
 } from './ui/lobby';
 import { bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
+import { answerDrill, closeDrill, startDrill } from './ui/drill';
 import { clearWrongBook } from './profile/quizbook';
 import {
   answerReview,
@@ -165,6 +166,12 @@ window.startReview = startReview;
 window.startReviewByKey = startReviewByKey;
 window.answerReview = answerReview;
 window.closeReview = closeReview;
+// 题库刷题（答对赚学分）
+window.startDrill = () => {
+  void startDrill();
+};
+window.answerDrill = answerDrill;
+window.closeDrill = closeDrill;
 window.requestSeatMove = requestSeatMove;
 window.pickSeatMember = pickSeatMember;
 window.randomizeSeats = randomizeSeats;

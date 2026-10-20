@@ -531,8 +531,8 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 
 /* 弹窗 */
 /* 答题/标记弹窗：半透明遮罩，使牌桌与角色列表在等待选择时仍可见；仍拦截点击避免误触 */
-#quizModal,#markModal,#reviewModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:350;padding:14px}
-#quizModal.show,#markModal.show,#reviewModal.show{display:flex}
+#quizModal,#markModal,#reviewModal,#drillModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:350;padding:14px}
+#quizModal.show,#markModal.show,#reviewModal.show,#drillModal.show{display:flex}
 .quiz-box{width:100%;max-width:460px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold-dim);box-shadow:0 0 0 2px var(--gold),0 20px 60px rgba(0,0,0,.9);border-radius:10px;padding:16px;color:var(--ink);animation:cardIn .3s ease-out}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
 .quiz-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}

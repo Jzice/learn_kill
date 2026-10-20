@@ -172,23 +172,35 @@ function buildSkill(subject, i) {
   return { arch, topic };
 }
 
-/* ---------- 装备目录（可学分购买，局前配装，不进牌堆） ---------- */
-// tier: 1 普通(80) / 2 精良(200) / 3 稀有(400)
+/* ---------- 装备目录（可学分购买，局前配装，不进牌堆） ----------
+ * grade：解锁所需年级（商店按「当前年级 ≥ 该年级」才可购买），体现年级等级进度与激励。
+ * tier：1 普通(80) / 2 精良(200) / 3 稀有(400) / 4 史诗(800，高年级专属)
+ */
 const EQUIPS = [
-  { id: 'eq_wpn_1', name: '木剑', slot: 'weapon', tier: 1, icon: '🗡️', desc: '攻击距离 +1', fx: { range: 1 } },
-  { id: 'eq_wpn_2', name: '精钢剑', slot: 'weapon', tier: 2, icon: '⚔️', desc: '攻击距离 +1，出杀伤害 +1', fx: { range: 1, dmg: 1 } },
-  { id: 'eq_wpn_3', name: '倚天剑', slot: 'weapon', tier: 3, icon: '🗡', desc: '攻击距离 +2，出杀伤害 +1', fx: { range: 2, dmg: 1 } },
-  { id: 'eq_arm_1', name: '布甲', slot: 'armor', tier: 1, icon: '🥋', desc: '受到的伤害 -1（每回合限一次）', fx: { reduce: 1 } },
-  { id: 'eq_arm_2', name: '锁子甲', slot: 'armor', tier: 2, icon: '🛡', desc: '受到的伤害 -1，开局护盾 +1', fx: { reduce: 1, shield: 1 } },
-  { id: 'eq_arm_3', name: '金丝甲', slot: 'armor', tier: 3, icon: '🛡️', desc: '受到的伤害 -1，开局护盾 +2', fx: { reduce: 1, shield: 2 } },
-  { id: 'eq_hp_1', name: '黄骠马', slot: 'horsePlus', tier: 1, icon: '🐎', desc: '其他角色计算与你的距离 +1', fx: { distPlus: 1 } },
-  { id: 'eq_hp_2', name: '赤兔马', slot: 'horsePlus', tier: 2, icon: '🐴', desc: '其他角色计算与你的距离 +1', fx: { distPlus: 1 } },
-  { id: 'eq_hp_3', name: '的卢', slot: 'horsePlus', tier: 3, icon: '🐎', desc: '其他角色计算与你的距离 +1，你计算距离 -1', fx: { distPlus: 1, distMinus: 1 } },
-  { id: 'eq_hm_1', name: '青骢马', slot: 'horseMinus', tier: 1, icon: '🐎', desc: '你计算与其他角色的距离 -1', fx: { distMinus: 1 } },
-  { id: 'eq_hm_2', name: '照夜玉狮子', slot: 'horseMinus', tier: 2, icon: '🐴', desc: '你计算与其他角色的距离 -1', fx: { distMinus: 1 } },
-  { id: 'eq_hm_3', name: '绝影', slot: 'horseMinus', tier: 3, icon: '🐎', desc: '你计算与其他角色的距离 -1，开局护盾 +1', fx: { distMinus: 1, shield: 1 } },
+  // —— 普通（初一上起）——
+  { id: 'eq_wpn_1', name: '木剑', slot: 'weapon', tier: 1, grade: '初一上', icon: '🗡️', desc: '攻击距离 +1', fx: { range: 1 } },
+  { id: 'eq_arm_1', name: '布甲', slot: 'armor', tier: 1, grade: '初一上', icon: '🥋', desc: '受到的伤害 -1（每回合限一次）', fx: { reduce: 1 } },
+  { id: 'eq_hp_1', name: '黄骠马', slot: 'horsePlus', tier: 1, grade: '初一上', icon: '🐎', desc: '其他角色计算与你的距离 +1', fx: { distPlus: 1 } },
+  { id: 'eq_hm_1', name: '青骢马', slot: 'horseMinus', tier: 1, grade: '初一上', icon: '🐎', desc: '你计算与其他角色的距离 -1', fx: { distMinus: 1 } },
+  // —— 精良（初三上起）——
+  { id: 'eq_wpn_2', name: '精钢剑', slot: 'weapon', tier: 2, grade: '初三上', icon: '⚔️', desc: '攻击距离 +1，出杀伤害 +1', fx: { range: 1, dmg: 1 } },
+  { id: 'eq_arm_2', name: '锁子甲', slot: 'armor', tier: 2, grade: '初三上', icon: '🛡', desc: '受到的伤害 -1，开局护盾 +1', fx: { reduce: 1, shield: 1 } },
+  { id: 'eq_hp_2', name: '赤兔马', slot: 'horsePlus', tier: 2, grade: '初三上', icon: '🐴', desc: '其他角色计算与你的距离 +1', fx: { distPlus: 1 } },
+  { id: 'eq_hm_2', name: '照夜玉狮子', slot: 'horseMinus', tier: 2, grade: '初三上', icon: '🐴', desc: '你计算与其他角色的距离 -1', fx: { distMinus: 1 } },
+  // —— 稀有（高三上起）——
+  { id: 'eq_wpn_3', name: '倚天剑', slot: 'weapon', tier: 3, grade: '高三上', icon: '🗡', desc: '攻击距离 +2，出杀伤害 +1', fx: { range: 2, dmg: 1 } },
+  { id: 'eq_arm_3', name: '金丝甲', slot: 'armor', tier: 3, grade: '高三上', icon: '🛡️', desc: '受到的伤害 -1，开局护盾 +2', fx: { reduce: 1, shield: 2 } },
+  { id: 'eq_hp_3', name: '的卢', slot: 'horsePlus', tier: 3, grade: '高三上', icon: '🐎', desc: '其他角色计算与你的距离 +1，你计算距离 -1', fx: { distPlus: 1, distMinus: 1 } },
+  { id: 'eq_hm_3', name: '绝影', slot: 'horseMinus', tier: 3, grade: '高三上', icon: '🐎', desc: '你计算与其他角色的距离 -1，开局护盾 +1', fx: { distMinus: 1, shield: 1 } },
+  // —— 史诗（高三上 / 高三下，新增：更强复合效果）——
+  { id: 'eq_wpn_4', name: '方天画戟', slot: 'weapon', tier: 4, grade: '高三上', icon: '🔱', desc: '攻击距离 +2，出杀伤害 +1，开局护盾 +1', fx: { range: 2, dmg: 1, shield: 1 } },
+  { id: 'eq_arm_4', name: '永动盾', slot: 'armor', tier: 4, grade: '高三上', icon: '🛡', desc: '受到的伤害 -1，开局护盾 +3', fx: { reduce: 1, shield: 3 } },
+  { id: 'eq_hp_4', name: '神行靴', slot: 'horsePlus', tier: 4, grade: '高三上', icon: '👟', desc: '其他角色计算与你的距离 +2', fx: { distPlus: 2 } },
+  { id: 'eq_hm_4', name: '缩地符', slot: 'horseMinus', tier: 4, grade: '高三上', icon: '🌀', desc: '你计算与其他角色的距离 -2', fx: { distMinus: 2 } },
+  { id: 'eq_wpn_5', name: '青釭剑·真', slot: 'weapon', tier: 4, grade: '高三下', icon: '⚔️', desc: '攻击距离 +2，出杀伤害 +2', fx: { range: 2, dmg: 2 } },
+  { id: 'eq_arm_5', name: '金丝软甲', slot: 'armor', tier: 4, grade: '高三下', icon: '🥋', desc: '受到的伤害 -1，开局护盾 +2，其他角色计算与你的距离 +1', fx: { reduce: 1, shield: 2, distPlus: 1 } },
 ];
-const EQUIP_PRICE = { 1: 80, 2: 200, 3: 400 };
+const EQUIP_PRICE = { 1: 80, 2: 200, 3: 400, 4: 800 };
 
 /* ---------- 道具目录（消耗类，局末清空） ---------- */
 const ITEMS = [
@@ -196,6 +208,9 @@ const ITEMS = [
   { id: 'it_shield', name: '护身符', icon: '🛡', desc: '获得 1 点护盾（抵挡一次伤害）', maxCarry: 3, effects: [{ kind: 'shield', n: 1 }] },
   { id: 'it_draw', name: '灵感符', icon: '✨', desc: '立即摸两张牌', maxCarry: 3, effects: [{ kind: 'selfDraw', n: 2 }] },
   { id: 'it_peek', name: '锦囊符', icon: '📜', desc: '令一名角色弃一张手牌', maxCarry: 2, effects: [{ kind: 'targetDiscard', n: 1 }] },
+  // 新增道具
+  { id: 'it_peek2', name: '拆弹符', icon: '💣', desc: '令一名角色弃两张手牌', maxCarry: 2, effects: [{ kind: 'targetDiscard', n: 2 }] },
+  { id: 'it_wall', name: '铁壁符', icon: '🧱', desc: '获得 2 点护盾', maxCarry: 2, effects: [{ kind: 'shield', n: 2 }] },
 ];
 
 /* ---------- 生成 108 角色 ---------- */
@@ -258,6 +273,8 @@ for (const e of allEffects) if (!EFFECT_KINDS.has(e.kind)) errors.push(`非法�
 // 装备/道具 id 唯一
 const eqIds = new Set(EQUIPS.map((e) => e.id));
 if (eqIds.size !== EQUIPS.length) errors.push('装备 id 不唯一');
+for (const e of EQUIPS) if (!GRADES.includes(e.grade)) errors.push(`装备 ${e.id} 年级门槛非法: ${e.grade}`);
+for (const e of EQUIPS) if (!(e.tier in EQUIP_PRICE)) errors.push(`装备 ${e.id} 档位无定价: ${e.tier}`);
 const itIds = new Set(ITEMS.map((i) => i.id));
 if (itIds.size !== ITEMS.length) errors.push('道具 id 不唯一');
 for (const it of ITEMS) if (!it.effects.every((e) => EFFECT_KINDS.has(e.kind))) errors.push(`道具 ${it.id} 含非法原语`);
@@ -294,7 +311,9 @@ export interface EquipDef {
   id: string;
   name: string;
   slot: EquipSlot;
-  tier: 1 | 2 | 3;
+  tier: 1 | 2 | 3 | 4;
+  /** 解锁所需年级（商店按年级门槛展示 / 购买） */
+  grade: string;
   icon: string;
   desc: string;
   /** 装备效果（在 setup 时折算为玩家加成） */
@@ -314,8 +333,8 @@ export const CHAR_PRICE: Record<string, number> = {
 ${chars.map((c) => `  '${c.id}': ${charPrice(c)},`).join('\n')}
 };
 
-/** 装备学分定价（按 tier：普通80 / 精良200 / 稀有400） */
-export const EQUIP_PRICE: Record<number, number> = { 1: 80, 2: 200, 3: 400 };
+/** 装备学分定价（按 tier：普通80 / 精良200 / 稀有400 / 史诗800） */
+export const EQUIP_PRICE: Record<number, number> = ${JSON.stringify(EQUIP_PRICE)};
 
 export function expansionCharById(id: string): Character | undefined {
   return EXPANSION_CHARS.find((c) => c.id === id);

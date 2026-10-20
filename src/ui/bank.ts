@@ -134,6 +134,11 @@ export function closeBankBrowser(): void {
   showScreen(prevScreen && prevScreen !== 'screenBank' ? prevScreen : 'screenLobby');
 }
 
+/** 刷题入口上下文：当前浏览的学期与科目筛选（供 drill.ts 抽题） */
+export function bankDrillContext(): { grade: string; subject: string } {
+  return { grade: state.grade, subject: state.subject };
+}
+
 /** 在 init 中调用一次：绑定搜索框（科目筛选改为选项按钮，事件在 renderSubjectFilter 内委托） */
 export function bindBankBrowser(): void {
   document.getElementById('bankSearch')?.addEventListener('input', (e) => {
