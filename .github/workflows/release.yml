@@ -1,5 +1,5 @@
-# 推送 v* 版本标签时自动发布 GitHub Release
-# 流程：类型检查 → 构建双模式产物 → 产物校验 → 无头浏览器冒烟（门禁）→ 创建 Release 并上传 HTML
+# 推送 v* 版本标签时自动发布 GitHub Release，并同步镜像到 Gitee Release
+# 流程：类型检查 → 构建双模式产物 → 产物校验 → 无头浏览器冒烟（门禁）→ 创建 GitHub Release 并上传 → 同步 Gitee Release（需 secrets.GITEE_TOKEN）
 name: Release
 
 on:
@@ -87,3 +87,31 @@ jobs:
           else
             gh release create "$TAG" "${ASSETS[@]}" --title "学堂杀 $TAG" --generate-notes
           fi
+
+      - name: 同步发布到 Gitee Release（镜像）
+        # 未配置 GITEE_TOKEN 时自动跳过，不影响 GitHub 发布
+        if: ${{ secrets.GITEE_TOKEN != '' }}
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd release
+          # 题库打成一个 zip，避免上百个中文名文件逐个上传（也规避 GitHub 重命名问题）
+          zip -r banks.zip banks >/dev/null
+          API="https://gitee.com/api/v5/repos/justice/learn_kill"
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          # 幂等：标签对应的 Release 已存在则先删后建，避免重复附件
+          RID=$(curl -sf "${API}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}" | jq -r '.id // empty')
+          if [ -n "$RID" ]; then
+            curl -sf -X DELETE "${API}/releases/${RID}?access_token=${GITEE_TOKEN}" || true
+          fi
+          RID=$(curl -sf -X POST "${API}/releases?access_token=${GITEE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\":\"${TAG}\",\"name\":\"学堂杀 ${TAG}\",\"target_commitish\":\"main\",\"prerelease\":false,\"body\":\"自动同步自 GitHub Actions\"}" \
+            | jq -r '.id')
+          echo "Gitee release id = ${RID}"
+          for f in xuetangsha.html xuetangsha.bundled.html banks.zip; do
+            curl -sf -X POST "${API}/releases/${RID}/attach_files?access_token=${GITEE_TOKEN}" \
+              -F "file=@${f}"
+            echo "已上传 ${f}"
+          done
