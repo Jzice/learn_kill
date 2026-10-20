@@ -1,0 +1,6 @@
+气体溶解度	浓硫酸	contrast	溶解性与吸水性
+浓硫酸	pH	apply	酸溶液的 pH 小于 7
+pH	消化	apply	消化液有各自的酸碱环境
+元素	维生素	contrast	无机营养与有机营养
+维生素	消化	apply	维生素经消化吸收
+材料	元素	apply	材料由元素组成

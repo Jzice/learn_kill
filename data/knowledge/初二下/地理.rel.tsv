@@ -1,0 +1,6 @@
+北方地区	东北三省	contains	东北三省属于北方地区
+北方地区	北京	contains	北京位于北方地区
+南方地区	北方地区	contrast	南北自然与农业差异
+西北地区	新疆	contains	新疆属于西北地区
+西北地区	南方地区	contrast	干旱与湿热
+新疆	台湾	contrast	内陆边疆与海岛
