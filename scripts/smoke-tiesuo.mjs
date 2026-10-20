@@ -77,7 +77,9 @@ await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 await page.click('#startBtn');
 await page.waitForSelector('#screenGame.active', { timeout: 5000 });
-await page.waitForTimeout(1500);
+// 等待对局玩家初始化完成（默认 5 人比原先 4 人略久，避免固定等待在负载下偶发不足）
+await page.waitForFunction(() => window.__game && window.__game.G.players.length >= 3, { timeout: 8000 });
+await page.waitForTimeout(400);
 
 // 通过调试钩子直接驱动机制（暂停主循环避免 AI 干扰）
 const out = await page.evaluate(async () => {

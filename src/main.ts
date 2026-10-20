@@ -54,6 +54,7 @@ import {
   renderRolePicker,
   renderSetupSummary,
   renderTopBar,
+  restoreSetupPrefs,
   selectAvatar,
   selectChar,
   selectFaction,
@@ -274,6 +275,7 @@ function bindPlayLogRelayout(): void {
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
   applyTheme();
+  restoreSetupPrefs(); // 恢复上次选择的玩家总数 / 回合限时（须在渲染选择器与绑定滑块前）
   loadSoundPref();
   updateSoundButtons();
   refreshSoundSwitch();

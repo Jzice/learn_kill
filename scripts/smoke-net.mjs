@@ -148,6 +148,9 @@ check(
   hostListHtml.includes('客人心情：冲呀') ? '房主可见客人心情' : '缺少心情',
 );
 
+// 固定人数为 4，避免受默认人数（现为 5）变动影响，保证断言确定性（与单机 smoke 一致显式设值）
+await host.evaluate(() => window.setPlayerCount(4));
+
 // 房主开始游戏
 await host.click('#hostStartBtn');
 await host.waitForSelector('#screenGame.active', { timeout: 10000 });

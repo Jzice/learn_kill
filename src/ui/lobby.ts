@@ -45,7 +45,7 @@ import { DEFAULT_TIMER_SEC, TIMER_OPTIONS } from '../game/timer';
 
 /* ---- 大厅选择状态（原版全局变量，仅本模块写入，其他模块只读） ---- */
 export let SELECTED_GRADE = '初二上';
-export let SELECTED_COUNT = 4;
+export let SELECTED_COUNT = 5;
 export let SELECTED_CHAR: Character | null = null;
 export let SELECTED_FACTION: FactionId = 'chinese';
 export let SELECTED_MODE: 'single' | 'host' | 'join' = 'single';
@@ -53,9 +53,43 @@ export let SELECTED_MODE: 'single' | 'host' | 'join' = 'single';
 export let SELECTED_PACKET: PacketId = 'all';
 export let USER_CHOSEN = false;
 export let SELECTED_ROLE: Role | 'random' = 'random';
-/** 回合限时：开关 + 档位（10 / 20 / 30 秒），默认关闭 */
-export let SELECTED_TIMER_ON = false;
+/** 回合限时：开关 + 档位（10 / 20 / 30 秒），默认开启 20 秒 */
+export let SELECTED_TIMER_ON = true;
 export let SELECTED_TIMER_SEC: number = DEFAULT_TIMER_SEC;
+
+/** 开局选择本地记忆：玩家总数 / 回合限时（开关与秒数），写入 localStorage 记住上一次选择 */
+const SETUP_PREFS_KEY = 'xuetangsha_setup_v1';
+interface SetupPrefs {
+  count?: number;
+  timerOn?: boolean;
+  timerSec?: number;
+}
+
+/** 读取上一次的开局选择并套用（须在渲染选择器 / 绑定滑块之前调用） */
+export function restoreSetupPrefs(): void {
+  try {
+    const raw = localStorage.getItem(SETUP_PREFS_KEY);
+    if (!raw) return;
+    const p = JSON.parse(raw) as SetupPrefs;
+    if (typeof p.count === 'number') SELECTED_COUNT = Math.max(2, Math.min(8, Math.round(p.count)));
+    if (typeof p.timerOn === 'boolean') SELECTED_TIMER_ON = p.timerOn;
+    if (typeof p.timerSec === 'number') SELECTED_TIMER_SEC = Math.max(5, Math.min(120, Math.round(p.timerSec)));
+  } catch {
+    /* 忽略损坏的本地数据，沿用默认值 */
+  }
+}
+
+/** 保存当前开局选择到 localStorage（每次改动人数 / 限时后调用） */
+export function saveSetupPrefs(): void {
+  try {
+    localStorage.setItem(
+      SETUP_PREFS_KEY,
+      JSON.stringify({ count: SELECTED_COUNT, timerOn: SELECTED_TIMER_ON, timerSec: SELECTED_TIMER_SEC }),
+    );
+  } catch {
+    /* 隐私模式 / 存储不可用时静默忽略 */
+  }
+}
 
 export function renderGradePicker(): void {
   const grid = document.getElementById('gradePicker');
@@ -122,6 +156,7 @@ export function renderTimerPicker(): void {
 export function setTimerOn(on: boolean): void {
   Sound.play('click');
   SELECTED_TIMER_ON = on;
+  saveSetupPrefs();
   renderTimerPicker();
   renderSetupSummary();
 }
@@ -130,6 +165,7 @@ export function setTimerSec(sec: number): void {
   Sound.play('click');
   SELECTED_TIMER_SEC = sec;
   SELECTED_TIMER_ON = true;
+  saveSetupPrefs();
   renderTimerPicker();
   renderSetupSummary();
 }
@@ -881,6 +917,7 @@ export function setPlayerCount(n: number): void {
   if (label) label.textContent = v + ' 人';
   updateAIHint();
   renderRolePicker();
+  saveSetupPrefs();
   Sound.play('click');
 }
 
@@ -888,6 +925,8 @@ export function bindCountSlider(): void {
   const slider = document.getElementById('countSlider') as HTMLInputElement | null;
   if (!slider) return;
   slider.value = String(SELECTED_COUNT);
+  const label = document.getElementById('countValue');
+  if (label) label.textContent = SELECTED_COUNT + ' 人';
   slider.addEventListener('input', () => {
     setPlayerCount(Number(slider.value));
   });
