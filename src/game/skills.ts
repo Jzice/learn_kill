@@ -14,6 +14,7 @@ import { dealDamage } from './damage';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { NET, syncStateToClients } from '../net/network';
+import { isExpansionActive, runSkillEffects } from './skillfx';
 
 export async function useActiveSkill(idx: number, skillId: string): Promise<void> {
   const p = G.players[idx];
@@ -24,6 +25,27 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
   p.flags.skillUsed = true;
   const sk = p.skills.find((s) => s.id === skillId);
   if (!sk) return;
+  // 扩展包技能（带原语组合）：答题通过后由原语分派器统一执行，不再走 legacy switch
+  if (isExpansionActive(sk)) {
+    addLog(`【${sk.name}】${p.name} 发起挑战…`, 'hl');
+    render();
+    const ok = await askQuizForPlayer(p, true);
+    if (!ok) {
+      addLog(`${p.name} 知识不足，【${sk.name}】失败`, 'dmg');
+      floatTextFx(idx, '技能失败', '#8a8070');
+      render();
+      if (NET.isHost) syncStateToClients();
+      return;
+    }
+    addPlayLog(p.name, 'skill', sk.name, '');
+    addLog(`📘 玩法·【${sk.name}】：${sk.desc || '（暂无说明）'}`, 'explain');
+    showPlayHint('技能', sk.name, sk.desc || '');
+    aiSpeak(p, 'skill');
+    FX.skillWave(idx);
+    showPlayCard({ name: sk.name, suit: '✦', num: '', type: 'trick' }, p.name, FACTIONS[p.faction].color);
+    await runSkillEffects(idx, p, sk.effects!);
+    return;
+  }
   const isLord = Object.values(FACTIONS).some((f) => f.lordSkill.id === skillId);
   addLog(isLord ? `【主公技·${sk.name}】${p.name} 发起挑战…` : `【${sk.name}】${p.name} 发起挑战…`, 'hl');
   render();

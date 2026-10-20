@@ -9,6 +9,7 @@ import { G, quizStats } from './state';
 import { addPlayLog } from './log';
 import { drawCards } from './rules';
 import { PROFILE, saveProfile } from '../profile/profile';
+import { addCredits, CREDIT_RULE } from '../profile/credits';
 import {
   MASTER_STREAK,
   isMastered,
@@ -147,6 +148,8 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
               PROFILE.subjects[q.s] = (PROFILE.subjects[q.s] || 0) + 1;
               saveProfile();
             }
+            // 学分产出：答对 +2（受每日上限约束，触顶静默截断）
+            addCredits(CREDIT_RULE.perCorrectQuiz, 'quiz');
             const rec = recordAnswer(q, true, q.g || G.grade);
             bookNote =
               rec.c >= MASTER_STREAK

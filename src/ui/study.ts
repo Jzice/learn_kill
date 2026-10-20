@@ -7,6 +7,7 @@
  */
 import type { Question, QuizRec } from '../core/types';
 import { escapeHtml } from '../core/dom';
+import { addCredits, CREDIT_RULE } from '../profile/credits';
 import { Sound } from '../core/sound';
 import { shuffledIndices } from '../core/shuffle';
 import { SUBJECT_ICON } from '../data/factions';
@@ -201,6 +202,7 @@ export function toggleMasteredWrongs(): void {
 export function markStudyReviewed(key: string): void {
   const r = markReviewed(key);
   if (!r) return;
+  addCredits(CREDIT_RULE.perWrongFixed, 'wrongfix');
   expanded.delete(key);
   shuffleCache.delete(key);
   Sound.play('click');
@@ -311,7 +313,10 @@ export function answerReview(pos: number): void {
   const chosen = btns[pos];
   const correct = pos >= 0 && item.order[pos] === item.q.a;
   if (!correct && chosen) chosen.classList.add('wrong');
-  if (correct) reviewCorrect++;
+  if (correct) {
+    reviewCorrect++;
+    addCredits(CREDIT_RULE.perReview, 'review');
+  }
   const fb = document.getElementById('reviewFeedback')!;
   fb.style.color = correct ? '#1e7a3a' : '#a02020';
   fb.innerHTML = correct

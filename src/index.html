@@ -47,6 +47,7 @@
         <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
       </span>
       <span class="tb-actions">
+        <button class="tb-icon" onclick="openShop('chars')" title="学分商店">🪙</button>
         <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
         <button class="tb-icon" onclick="openRules()" title="规则说明">📖</button>
         <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
@@ -116,6 +117,10 @@
   <div class="panel">
     <h3>◈ 我的学习情况 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（知识点掌握与错题复习，点击错题可展开解析）</span></h3>
     <div id="studyPanel"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 学分商店 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">学得越多，解锁越多</span></h3>
+    <div id="shopEntryBox"></div>
   </div>
 </div>
 
@@ -194,6 +199,10 @@
     <div class="panel">
       <h3>◈ 选择你的角色 ◈ <span id="charPoolHint" style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;"></span></h3>
       <div class="char-grid" id="charGrid"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 局前配装 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（仅可用已解锁装备，最多 2 件 / 道具 3 个，不进牌堆）</span></h3>
+      <div id="loadoutBar"></div>
     </div>
     <div class="lobby-btns">
       <button class="btn btn-accent btn-cta" id="startBtn" onclick="startSingle()">开始单机对局</button>
@@ -291,6 +300,7 @@
   <div class="center-area" id="centerArea">
     <div class="action-hint" id="actionHint"></div>
     <div class="action-btns" id="actionBtns"></div>
+    <div class="item-bar" id="itemBar"></div>
     <span class="timer-chip" id="timerChip"></span>
   </div>
   <div class="hand-row" id="handRow"></div>
@@ -354,6 +364,17 @@
     <div class="mark-title">标记 <span id="markTargetName"></span> 的身份</div>
     <div class="mark-options" id="markOptions"></div>
     <button class="btn btn-sm" onclick="closeMarkMenu()" style="width:100%">取消</button>
+  </div>
+</div>
+
+<!-- 学分商店（全屏弹窗） -->
+<div id="shopModal" class="rules-modal">
+  <div class="rules-box shop-box">
+    <div class="shop-head">
+      <span class="shop-title">🪙 学分商店</span>
+      <button class="rules-close" onclick="closeShop()">✕</button>
+    </div>
+    <div id="shopBody"></div>
   </div>
 </div>
 

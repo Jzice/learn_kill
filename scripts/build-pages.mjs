@@ -36,6 +36,13 @@ for (const f of downloads) {
   fs.copyFileSync(path.join(distDir, f), path.join(outDir, f));
 }
 
+// 题库资源目录：站点入口以相对路径 banks/... 按需加载，必须一并发布
+const bankSrc = path.join(distDir, 'banks');
+if (!fs.existsSync(bankSrc)) {
+  fail(`${distDir}/banks 缺失，请先执行 npm run build:banks && npm run build`);
+}
+fs.cpSync(bankSrc, path.join(outDir, 'banks'), { recursive: true });
+
 // 自检：站点入口必须是完整单文件（内联脚本 + 标题）
 const entry = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8');
 if (!/<title>[^<]+<\/title>/.test(entry)) fail('站点 index.html 缺少 <title>，产物可能不完整');

@@ -45,6 +45,58 @@ export interface Skill {
   name: string;
   type: SkillType;
   desc: string;
+  /** 扩展包技能的原语组合（仅扩展包技能有；基础技能走 skills.ts 的 switch 分发） */
+  effects?: SkillEffect[];
+}
+
+/**
+ * 技能效果原语：108 个扩展包技能均由有限原语组合声明，避免 108 个独立分支。
+ * 由 src/game/skillfx.ts 统一分派执行（主动技在 useActiveSkill 拦截，触发技在规则钩子聚合）。
+ */
+export type SkillEffect =
+  | { kind: 'selfDraw'; n: number }
+  | { kind: 'targetDiscard'; n: number }
+  | { kind: 'targetLoseHp'; n: number }
+  | { kind: 'targetDamage'; n: number }
+  | { kind: 'targetHeal'; n: number }
+  | { kind: 'targetDraw'; n: number }
+  | { kind: 'gainHand'; n: number }
+  | { kind: 'allDiscard'; n: number }
+  | { kind: 'allDraw'; n: number }
+  | { kind: 'extraDraw'; n: number }
+  | { kind: 'handLimit'; n: number }
+  | { kind: 'distMod'; delta: number }
+  | { kind: 'damageMod'; delta: number }
+  | { kind: 'shield'; n: number }
+  /** 主动技消耗手牌数（在结算其他原语前先弃置） */
+  | { kind: 'costCard'; n: number };
+
+/** 消耗类道具定义（局末清空，不进牌堆，不可被顺手牵羊等卡牌影响） */
+export interface ItemDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  /** 携带上限 */
+  maxCarry: number;
+  effects: SkillEffect[];
+}
+
+/** 学分规则：产出与上限集中配置，便于调数值 */
+export interface CreditRule {
+  perCorrectQuiz: number;
+  perReview: number;
+  perWrongFixed: number;
+  dailyCap: number;
+}
+
+/** 局前配装：携带的装备（按槽位）与道具（id → 数量） */
+export interface Loadout {
+  weapon: string | null;
+  armor: string | null;
+  horsePlus: string | null;
+  horseMinus: string | null;
+  items: Record<string, number>;
 }
 
 export interface Faction {
@@ -86,6 +138,44 @@ export interface Question {
 }
 
 export type QuestionBank = Record<string, Question[]>;
+
+/** 知识点讲解（与 Question.kp 对齐，按「学期 + 学科」随题库一起懒加载） */
+export interface KnowledgeNote {
+  /** 学科 */
+  s: string;
+  /** 单元 */
+  u: string;
+  /** 知识点（与 Question.kp 同名，用于互跳） */
+  kp: string;
+  /** 概要 */
+  summary: string;
+  /** 要点条目 */
+  points: string[];
+  /** 易错提示 */
+  pitfall?: string;
+  /** 学科扩展：英语 phrases/tenses/translations、数学 formulas/theorems、语文 classics 等 */
+  ext?: Record<string, unknown>;
+}
+
+/** 知识点关系类型：前置 / 包含 / 应用 / 易混 */
+export type KpRelationType = 'prereq' | 'contains' | 'apply' | 'contrast';
+
+export interface KpRelation {
+  /** 学科 */
+  s: string;
+  from: string;
+  to: string;
+  type: KpRelationType;
+  note?: string;
+}
+
+/** 单个「学期 + 学科」分片：题目 + 讲解 + 关系 */
+export interface SubjectBankSlice {
+  q: Question[];
+  /** 知识点名 → 讲解 */
+  k: Record<string, KnowledgeNote>;
+  r: KpRelation[];
+}
 
 /** 出题范围：本年级本学期 / 本学期及以前年级 / 初中阶段 / 高中阶段 */
 export type QuizScope = 'grade' | 'past' | 'junior' | 'senior';
@@ -149,6 +239,10 @@ export interface PlayerFlags {
   noSha: boolean;
   /** 本回合是否已使用过【酒】（每回合限一次，与额外伤害一起在回合初重置） */
   jiuUsed: boolean;
+  /** 局前装备加成（由配装注入，整局有效）：护甲减伤次数 */
+  dmgReduce?: number;
+  /** 局前武器加成：出杀/伤害 +n（整局） */
+  bonusDmg?: number;
 }
 
 export interface Player {
@@ -182,6 +276,8 @@ export interface Player {
   chained?: boolean;
   /** 翻面：跳过一个回合（严格原版：与连环相互独立，不由铁索连环触发） */
   turned?: boolean;
+  /** 局内携带的消耗类道具：道具 id → 数量（局末清空，不进牌堆） */
+  items?: Record<string, number>;
 }
 
 export interface ChoiceOption {
@@ -275,6 +371,18 @@ export interface Profile {
   quizScope: QuizScope;
   /** 个人错题本：题干哈希 → 答题记录（掌握度） */
   quizRec: Record<string, QuizRec>;
+  /** 学分：仅由学习行为产出、仅用于解锁/购买，不参与对局胜负 */
+  credits: number;
+  /** 学分每日获取累计（防刷）：{ date: 'YYYY-MM-DD', earned } */
+  creditDaily: { date: string; earned: number };
+  /** 已解锁的扩展包角色 id 列表 */
+  unlockedChars: string[];
+  /** 已解锁（购买）的装备 id 列表 */
+  unlockedEquips: string[];
+  /** 拥有的消耗类道具：道具 id → 数量 */
+  items: Record<string, number>;
+  /** 局前配装 */
+  loadout: Loadout;
 }
 
 export interface PublicProfile extends PlayerIdentity {
@@ -290,6 +398,10 @@ export interface PublicProfile extends PlayerIdentity {
 export interface PlayerPref {
   faction: FactionId;
   charId: string | null;
+  /** 局前配装：携带的装备（按槽位）与道具（房主据此为远程玩家注入装备） */
+  loadout?: Loadout;
+  /** 该玩家已解锁的装备 id 列表（房主据此校验其配装合法性，非解锁件一律回退） */
+  unlockedEquips?: string[];
   /** 加入方的出题范围（房主为该玩家抽题时按其偏好覆盖年级） */
   scope?: QuizScope;
 }

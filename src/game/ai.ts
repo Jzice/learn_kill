@@ -23,6 +23,13 @@ export function aiQuiz(rate = 0.6): boolean {
 
 /** AI 主动技可用性：判断该技能的费用（手牌数门槛）当前能否支付 */
 export function aiSkillUsable(p: Player, id: string): boolean {
+  const sk = p.skills.find((s) => s.id === id);
+  // 扩展包技能：按原语 costCard 判定费用门槛
+  if (sk?.effects) {
+    const cost = sk.effects.find((e) => e.kind === 'costCard');
+    if (cost && cost.kind === 'costCard') return p.hand.length >= cost.n;
+    return true;
+  }
   const need2 = id === 'wenyan' || id === 'youjihuaxue';
   const need1 = ['beisong', 'daoshu', 'tingxie', 'zhexue', 'dianci', 'chaodai', 'shiliao', 'fazhi', 'youshu'].includes(id);
   if (need2) return p.hand.length >= 2;

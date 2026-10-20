@@ -16,6 +16,7 @@ import { askQuizForPlayer } from './quiz';
 import { aiPlayPhase, aiQuiz, aiSpeak } from './ai';
 import { dealDamage, onLoseArmor } from './damage';
 import { useActiveSkill } from './skills';
+import { triggerExtraDraw } from './skillfx';
 import { useSha, useTao, useJiu, useTrick } from './actions';
 import { NET, scheduleSync } from '../net/network';
 
@@ -50,6 +51,8 @@ export async function runTurn(idx: number): Promise<void> {
   let drawN = 2;
   // 「光合」生物·初中：摸牌阶段额外摸一张（「优选法」youxuan 原有逻辑不变：摸后需弃一张）
   if (hasSkill(p, 'youxuan') || hasSkill(p, 'guanghe')) drawN += 1;
+  // 扩展包触发技：摸牌阶段额外摸牌原语（生物「光合产能」extraDraw: +1 等）
+  drawN += triggerExtraDraw(p);
   drawCards(p, drawN);
   addLog(`${p.name} 摸 ${drawN} 张牌`);
   if (hasSkill(p, 'youxuan') && p.hand.length > 0) {
@@ -126,9 +129,12 @@ export async function playPhase(idx: number): Promise<void> {
     return;
   }
   while (p.alive && !G.gameOver) {
+    // 本回合是否还能出【杀】：连弩无限；否则每回合限一次；noSha 时本回合禁止
+    const canSha =
+      !p.flags.noSha && (p.equip.weapon?.skill === 'liannu' || (p.flags.shaUsed || 0) < 1);
     const opts: ChoiceOption[] = [];
     for (const c of p.hand) {
-      if (SHA_SUBS.includes(c.sub)) opts.push({ label: `【${c.name}】${c.suit}${c.num}`, value: 'sha_' + c.id });
+      if (SHA_SUBS.includes(c.sub) && canSha) opts.push({ label: `【${c.name}】${c.suit}${c.num}`, value: 'sha_' + c.id });
       else if (c.sub === 'tao' && p.hp < p.maxHp) opts.push({ label: `【桃】`, value: 'tao_' + c.id });
       else if (c.sub === 'jiu' && !p.flags.jiuUsed) opts.push({ label: `【酒】`, value: 'jiu_' + c.id });
       else if (c.type === 'trick' && c.sub !== 'wuxie') opts.push({ label: `【${c.name}】`, value: 'trick_' + c.id });
@@ -147,7 +153,7 @@ export async function playPhase(idx: number): Promise<void> {
         }
       });
     }
-    if (p.equip.weapon?.skill === 'zhangba' && p.hand.length >= 2) {
+    if (canSha && p.equip.weapon?.skill === 'zhangba' && p.hand.length >= 2) {
       opts.push({ label: '【丈八蛇矛】两张手牌当杀', value: 'zhangba' });
     }
     opts.push({ label: '结束出牌', value: 'end' });

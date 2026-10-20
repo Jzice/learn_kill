@@ -1,0 +1,109 @@
+id	name	type	kind(s)	desc
+ex_0_cn_sk	默写·春	active	costCard,selfDraw	弃 1 张手牌，摸 1 张牌
+ex_0_ma_sk	有理数	active	costCard,targetLoseHp	弃 1 张手牌，令一名角色失去 1 点体力
+ex_0_en_sk	Letters&Sounds	active	costCard,gainHand	弃 1 张手牌，获得一名角色 1 张手牌
+ex_0_ph_sk	声现象	active	costCard,targetDamage	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_0_ch_sk	物质变化	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_0_bi_sk	细胞	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_0_hi_sk	史前·元谋	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_0_ge_sk	地球地图	trigger	distMod	计算距离 − 1（触发）
+ex_0_po_sk	中学时代	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_1_cn_sk	标点·陋室铭	active	costCard,selfDraw	弃 1 张手牌，摸 1 张牌
+ex_1_ma_sk	实数	active	costCard,targetLoseHp	弃 1 张手牌，令一名角色失去 1 点体力
+ex_1_en_sk	DailyTalk	active	costCard,gainHand	弃 1 张手牌，获得一名角色 1 张手牌
+ex_1_ph_sk	光现象	active	costCard,targetDamage	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_1_ch_sk	空气氧气	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_1_bi_sk	植物	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_1_hi_sk	隋唐	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_1_ge_sk	气候	trigger	distMod	计算距离 − 1（触发）
+ex_1_po_sk	青春	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_2_cn_sk	文言·三峡	active	costCard,selfDraw	弃 1 张手牌，摸 1 张牌
+ex_2_ma_sk	全等三角形	active	costCard,targetLoseHp	弃 1 张手牌，令一名角色失去 1 点体力
+ex_2_en_sk	SchoolLife	active	costCard,gainHand	弃 1 张手牌，获得一名角色 1 张手牌
+ex_2_ph_sk	运动学	active	costCard,targetDamage	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_2_ch_sk	水与溶液	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_2_bi_sk	人体营养	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_2_hi_sk	近代抗争	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_2_ge_sk	中国地形	trigger	distMod	计算距离 − 1（触发）
+ex_2_po_sk	法律	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_3_cn_sk	诗词·茅屋	active	costCard,selfDraw	弃 1 张手牌，摸 1 张牌
+ex_3_ma_sk	一次函数	active	costCard,targetLoseHp	弃 1 张手牌，令一名角色失去 1 点体力
+ex_3_en_sk	Stories	active	costCard,gainHand	弃 1 张手牌，获得一名角色 1 张手牌
+ex_3_ph_sk	力与压强	active	costCard,targetDamage	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_3_ch_sk	碳与燃料	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_3_bi_sk	神经调节	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_3_hi_sk	民主共和	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_3_ge_sk	河流	trigger	distMod	计算距离 − 1（触发）
+ex_3_po_sk	公民	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_4_cn_sk	议论·敬业	active	costCard,selfDraw	弃 1 张手牌，摸 2 张牌
+ex_4_ma_sk	二次函数	active	costCard,targetLoseHp	弃 1 张手牌，令一名角色失去 1 点体力
+ex_4_en_sk	Grammar	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_4_ph_sk	电学	active	costCard,targetDamage	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_4_ch_sk	酸碱盐	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_4_bi_sk	遗传	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_4_hi_sk	工业革命	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_4_ge_sk	世界分区	trigger	distMod	计算距离 − 1（触发）
+ex_4_po_sk	国情	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_5_cn_sk	戏剧·威尼斯	active	costCard,selfDraw	弃 1 张手牌，摸 2 张牌
+ex_5_ma_sk	圆	active	costCard,targetLoseHp	弃 1 张手牌，令一名角色失去 1 点体力
+ex_5_en_sk	Writing	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_5_ph_sk	电磁	active	costCard,targetDamage	弃 1 张手牌，对一名角色造成 1 点伤害
+ex_5_ch_sk	金属	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_5_bi_sk	生态	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_5_hi_sk	二战	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_5_ge_sk	经济发展	trigger	distMod	计算距离 − 1（触发）
+ex_5_po_sk	世界舞台	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_6_cn_sk	现代文·故都	active	costCard,selfDraw	弃 1 张手牌，摸 2 张牌
+ex_6_ma_sk	集合	trigger	handLimit	手牌上限 +1（触发）
+ex_6_en_sk	Reading	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_6_ph_sk	运动定律	trigger	damageMod	出杀/伤害 +1（触发）
+ex_6_ch_sk	物质的量	trigger	handLimit	手牌上限 +1（触发）
+ex_6_bi_sk	分子与细胞	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_6_hi_sk	古代中国	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_6_ge_sk	宇宙地球	trigger	distMod	计算距离 − 1（触发）
+ex_6_po_sk	经济生活	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_7_cn_sk	诗歌·氓	active	costCard,selfDraw	弃 1 张手牌，摸 2 张牌
+ex_7_ma_sk	三角函数	trigger	handLimit	手牌上限 +1（触发）
+ex_7_en_sk	Culture	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_7_ph_sk	曲线运动	trigger	damageMod	出杀/伤害 +1（触发）
+ex_7_ch_sk	元素周期	trigger	handLimit	手牌上限 +1（触发）
+ex_7_bi_sk	代谢	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_7_hi_sk	世界近代	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_7_ge_sk	人文地理	trigger	distMod	计算距离 − 1（触发）
+ex_7_po_sk	政治生活	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_8_cn_sk	小说·祝福	active	costCard,selfDraw	弃 1 张手牌，摸 3 张牌
+ex_8_ma_sk	立体几何	trigger	handLimit	手牌上限 +1（触发）
+ex_8_en_sk	Argument	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_8_ph_sk	电场	trigger	damageMod	出杀/伤害 +1（触发）
+ex_8_ch_sk	反应速率	trigger	handLimit	手牌上限 +1（触发）
+ex_8_bi_sk	稳态	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_8_hi_sk	中国近现代	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_8_ge_sk	区域生态	trigger	distMod	计算距离 − 1（触发）
+ex_8_po_sk	哲学	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_9_cn_sk	散文·荷塘	active	costCard,selfDraw	弃 1 张手牌，摸 3 张牌
+ex_9_ma_sk	导数	trigger	handLimit	手牌上限 +1（触发）
+ex_9_en_sk	Translation	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_9_ph_sk	电磁感应	trigger	damageMod	出杀/伤害 +1（触发）
+ex_9_ch_sk	有机基础	trigger	handLimit	手牌上限 +1（触发）
+ex_9_bi_sk	生物工程	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_9_hi_sk	世界现代	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_9_ge_sk	国土整治	trigger	distMod	计算距离 − 1（触发）
+ex_9_po_sk	文化	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_10_cn_sk	古文·劝学	active	costCard,selfDraw	弃 1 张手牌，摸 3 张牌
+ex_10_ma_sk	数列	trigger	handLimit	手牌上限 +1（触发）
+ex_10_en_sk	Cloze	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_10_ph_sk	动量	trigger	damageMod	出杀/伤害 +1（触发）
+ex_10_ch_sk	电化学	trigger	handLimit	手牌上限 +1（触发）
+ex_10_bi_sk	进化	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_10_hi_sk	改革	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_10_ge_sk	自然地理	trigger	distMod	计算距离 − 1（触发）
+ex_10_po_sk	辩证法	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力
+ex_11_cn_sk	论述·拿来	active	costCard,selfDraw	弃 1 张手牌，摸 3 张牌
+ex_11_ma_sk	概率统计	trigger	handLimit	手牌上限 +1（触发）
+ex_11_en_sk	Summary	active	costCard,gainHand	弃 1 张手牌，获得一名角色 2 张手牌
+ex_11_ph_sk	波与光	trigger	damageMod	出杀/伤害 +1（触发）
+ex_11_ch_sk	物质结构	trigger	handLimit	手牌上限 +1（触发）
+ex_11_bi_sk	生态工程	trigger	extraDraw	摸牌阶段额外摸 1 张牌（触发）
+ex_11_hi_sk	全球化	active	costCard,allDiscard	弃 1 张手牌，令所有其他角色各弃 1 张牌
+ex_11_ge_sk	区域发展	trigger	distMod	计算距离 − 1（触发）
+ex_11_po_sk	人生价值	active	costCard,targetHeal	弃 1 张手牌，令一名角色回复 1 点体力

@@ -42,6 +42,9 @@ function renameOutput(): Plugin {
 
 export default defineConfig({
   root: path.resolve(dirname, 'src'),
+  // 题库资源目录：dev 下以 /banks/... 提供，build 时原样拷入 dist/，
+  // 产物用相对路径 banks/... 引用，因此 file:// 双击打开同样可用
+  publicDir: path.resolve(dirname, 'public'),
   plugins: [peerjsCdnTag(), renameOutput(), viteSingleFile()],
   // 构建期把版本号替换进源码常量，顶栏无需手写版本字符串
   define: {

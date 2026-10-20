@@ -16,6 +16,11 @@ import { NET } from '../net/network';
 
 const PROFILE_KEY = 'xuetangsha_profile_v1';
 
+function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /* ==================== 个性化选项 ==================== */
 export const DEFAULT_AVATAR = '🧑‍🎓';
 export const DEFAULT_MOOD_ICON = '🙂';
@@ -97,6 +102,15 @@ function defaultProfile(): Profile {
     themeStyle: 'gold',
     quizScope: 'grade',
     quizRec: {},
+    // 学分体系（仅由学习行为产出，仅用于解锁/购买）
+    credits: 0,
+    creditDaily: { date: todayStr(), earned: 0 },
+    // 已解锁（购买）内容
+    unlockedChars: [],
+    unlockedEquips: [],
+    items: {},
+    // 局前配装
+    loadout: { weapon: null, armor: null, horsePlus: null, horseMinus: null, items: {} },
   };
 }
 
@@ -116,6 +130,23 @@ function loadProfile(): Profile {
         // 兼容旧档案：补齐学习档案字段（出题范围 / 错题本）
         quizScope: p.quizScope === 'past' || p.quizScope === 'junior' || p.quizScope === 'senior' ? p.quizScope : 'grade',
         quizRec: p.quizRec && typeof p.quizRec === 'object' ? p.quizRec : {},
+        // 兼容旧档案：补齐学分体系字段（旧档缺字段绝不能白屏）
+        credits: typeof p.credits === 'number' ? p.credits : 0,
+        creditDaily: p.creditDaily && typeof p.creditDaily === 'object' && typeof p.creditDaily.date === 'string'
+          ? p.creditDaily
+          : { date: todayStr(), earned: 0 },
+        unlockedChars: Array.isArray(p.unlockedChars) ? p.unlockedChars : [],
+        unlockedEquips: Array.isArray(p.unlockedEquips) ? p.unlockedEquips : [],
+        items: p.items && typeof p.items === 'object' ? p.items : {},
+        loadout: p.loadout && typeof p.loadout === 'object'
+          ? {
+              weapon: p.loadout.weapon ?? null,
+              armor: p.loadout.armor ?? null,
+              horsePlus: p.loadout.horsePlus ?? null,
+              horseMinus: p.loadout.horseMinus ?? null,
+              items: p.loadout.items && typeof p.loadout.items === 'object' ? p.loadout.items : {},
+            }
+          : { weapon: null, armor: null, horsePlus: null, horseMinus: null, items: {} },
       });
     }
   } catch (e) {

@@ -61,7 +61,14 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const bankReqs = [];
 page.on('request', (r) => {
   const u = r.url();
-  if (/banks[/\\]g\d+\.ts/.test(u) || /g\d+\.js/.test(u)) bankReqs.push(u.split('/').pop());
+  // 题库分片：public/banks/<学期>/<学科>.js（URL 中中文已编码，需解码回显）
+  if (/\/banks\/.+\.js(\?|$)/.test(u)) {
+    try {
+      bankReqs.push(decodeURIComponent(u.split('/').pop()));
+    } catch {
+      bankReqs.push(u.split('/').pop());
+    }
+  }
 });
 
 await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle' });

@@ -18,12 +18,13 @@ export async function dealDamage(
   tgtIdx: number,
   amount: number,
   type: DamageType = 'normal',
+  ignoreArmor = false,
 ): Promise<void> {
   const tgt = G.players[tgtIdx];
   if (!tgt || !tgt.alive) return;
   // AI 信念事件：谁攻击了谁（所有存活 AI 观察，受害者记仇）
   if (srcIdx >= 0) noteAttack(srcIdx, tgtIdx);
-  await applyDamage(tgtIdx, amount, type, true, srcIdx);
+  await applyDamage(tgtIdx, amount, type, true, srcIdx, ignoreArmor);
   render();
   checkWin();
 }
@@ -38,19 +39,31 @@ async function applyDamage(
   type: DamageType,
   allowChain: boolean,
   srcIdx: number,
+  ignoreArmor = false,
 ): Promise<void> {
   const tgt = G.players[tgtIdx];
   if (!tgt || !tgt.alive) return;
   let dmg = amount;
   // 防具修正：白银狮子（每次受到的伤害最多 1 点）/ 藤甲（火焰伤害 +1）
+  // 青釭剑（ignoreArmor）无视目标防具，上述修正整体失效
   const armor = tgt.equip.armor?.skill;
-  if (armor === 'baiyin' && dmg > 1) {
-    addLog(`【白银狮子】${tgt.name} 受到的伤害限制为 1 点`, 'heal');
-    dmg = 1;
+  if (!ignoreArmor) {
+    if (armor === 'baiyin' && dmg > 1) {
+      addLog(`【白银狮子】${tgt.name} 受到的伤害限制为 1 点`, 'heal');
+      dmg = 1;
+    }
+    if (armor === 'tengjia' && type === 'fire') {
+      dmg += 1;
+      addLog(`【藤甲】${tgt.name} 受到火焰伤害 +1`, 'dmg');
+    }
+  } else if (armor) {
+    addLog(`【青釭剑】无视 ${tgt.name} 的防具（${armor}）`, 'hl');
   }
-  if (armor === 'tengjia' && type === 'fire') {
-    dmg += 1;
-    addLog(`【藤甲】${tgt.name} 受到火焰伤害 +1`, 'dmg');
+  // 局前护甲：减少受到的伤害（由配装注入，整局有效，每次伤害事件生效一次）
+  if (tgt.flags.dmgReduce && dmg > 0) {
+    const cut = Math.min(dmg, tgt.flags.dmgReduce);
+    dmg -= cut;
+    addLog(`【护甲】${tgt.name} 减伤 ${cut}`, 'heal');
   }
   while (dmg > 0 && (tgt.shield || 0) > 0) {
     tgt.shield--;

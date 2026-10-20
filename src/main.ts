@@ -80,6 +80,21 @@ import { initTimerTicker } from './ui/timer';
 import { closeSettle, requestRematch, startSingleGame } from './ui/settle';
 import { closeRoom, createRoom, joinRoom, leaveRoom } from './net/rooms';
 import { EXTERNAL_BANK_URLS, loadBankFromUrl } from './data/questionBank';
+import {
+  closeShop,
+  openShop,
+  renderLoadoutBar,
+  shopAddLoadoutItem,
+  shopBuyEquip,
+  shopBuyItem,
+  shopClearLoadout,
+  shopRemoveLoadoutItem,
+  shopSetGrade,
+  shopSetLoadoutSlot,
+  shopSetTab,
+  shopUnlockChar,
+} from './ui/shop';
+import { useItem } from './game/actions';
 
 /* ---- 1. window 全局挂载（供 HTML 内联 onclick / 动态模板调用） ---- */
 window.togglePanel = togglePanel;
@@ -155,6 +170,20 @@ window.selectFaction = (k: string) => selectFaction(k as FactionId);
 window.selectChar = selectChar;
 window.openBankBrowser = openBankBrowser;
 window.closeBankBrowser = closeBankBrowser;
+// 学分商店 & 局前配装 & 消耗类道具
+window.openShop = openShop;
+window.closeShop = closeShop;
+window.shopSetTab = shopSetTab;
+window.shopSetGrade = shopSetGrade;
+window.shopUnlockChar = shopUnlockChar;
+window.shopBuyEquip = shopBuyEquip;
+window.shopBuyItem = shopBuyItem;
+window.shopSetLoadoutSlot = shopSetLoadoutSlot;
+window.shopAddLoadoutItem = shopAddLoadoutItem;
+window.shopRemoveLoadoutItem = shopRemoveLoadoutItem;
+window.shopClearLoadout = shopClearLoadout;
+window.renderLoadoutBar = renderLoadoutBar;
+window.useItem = useItem;
 
 /** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位；
  *  并实测切换布局模式：单行放得下=单行(品牌左, 等级积分+按钮+个人信息靠右)；

@@ -9,6 +9,8 @@ import { displayOrder, handLimit } from '../game/rules';
 import { isCardClickable, cardClickHint } from './hand';
 import { ROLE_MARKS } from '../game/marks';
 import { updateNetChatVisible } from './netchat';
+import { useItem } from '../game/actions';
+import { expansionItemById } from '../data/expansion';
 import { NET, scheduleSync } from '../net/network';
 
 const EQUIP_ICON: Record<string, string> = {
@@ -273,6 +275,26 @@ export function render(): void {
   hintEl.innerHTML = hintText;
   hintEl.className = 'action-hint ' + (hintClass || '');
   document.getElementById('actionBtns')!.innerHTML = btnHtml;
+  // 局内携带的消耗类道具栏（仅本地玩家，点击即使用）
+  const itemEl = document.getElementById('itemBar');
+  if (itemEl) {
+    const items = me.items || {};
+    const ids = Object.keys(items).filter((k) => items[k] > 0);
+    if (ids.length) {
+      itemEl.innerHTML =
+        `<span class="ib-label">道具</span>` +
+        ids
+          .map((id) => {
+            const d = expansionItemById(id);
+            return `<button class="ib-chip" onclick="useItem(${G.myPlayerIdx},'${id}')" title="${d ? d.desc : ''}">${d ? d.icon : '🎒'} ${d ? d.name : id} ×${items[id]}</button>`;
+          })
+          .join('');
+      itemEl.style.display = 'flex';
+    } else {
+      itemEl.innerHTML = '';
+      itemEl.style.display = 'none';
+    }
+  }
   // 操作提示区始终保留占位（不再 display:none），避免手牌区随其显隐上下跳动。
   // 内容由上面的 hintText 决定：本地方有决策→显示操作提示；否则→显示其他角色的操作信息。
   const centerArea = document.getElementById('centerArea');

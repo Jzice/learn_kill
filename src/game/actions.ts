@@ -13,9 +13,12 @@ import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { aiQuiz, aiSpeak } from './ai';
 import { aiQuizRate, aiShouldCounter } from './aibrain';
 import { dealDamage, onLoseArmor } from './damage';
+import { triggerDamageMod } from './skillfx';
+import { runSkillEffects } from './skillfx';
+import { expansionItemById } from '../data/expansion';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
-import { NET, scheduleSync } from '../net/network';
+import { NET, scheduleSync, syncStateToClients } from '../net/network';
 
 /** 结算一次【杀】的伤害值（精忠 / 古锭刀 / 酒·额外伤害），并消耗额外伤害 */
 function shaDamage(a: Player, t: Player): number {
@@ -23,6 +26,10 @@ function shaDamage(a: Player, t: Player): number {
   if (hasSkill(a, 'jingzhong')) dmg += 1;
   // 古锭刀：目标没有手牌时伤害 +1
   if (a.equip.weapon?.skill === 'guding' && t.hand.length === 0) dmg += 1;
+  // 扩展包触发技：出杀/伤害加成原语（物理「力大无穷」damageMod: +1 等）
+  dmg += triggerDamageMod(a);
+  // 局前武器加成：出杀/伤害 +n（由配装注入，整局有效）
+  if (a.flags.bonusDmg) dmg += a.flags.bonusDmg;
   if (a.flags.extraDamage) {
     dmg += a.flags.extraDamage;
     a.flags.extraDamage = 0;
@@ -128,14 +135,18 @@ export async function useSha(
         dumpHand(a, 2);
         addLog(`${a.name} 贯石斧：弃两张牌，此杀不可闪避`, 'hl');
         render();
-        await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType);
+        await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType, ignoreArmor);
         return;
       }
     }
     // 青龙偃月刀：杀被闪后可对同目标再出一张杀
+    // 规则：需消耗一张手牌中的【杀】；该杀不计入出杀次数上限；若被再次闪避可继续发动（链式）
     if (a.equip.weapon?.skill === 'qinglong' && t.alive) {
-      const again = a.isAI
-        ? a.hand.some((c) => SHA_SUBS.includes(c.sub)) && inRange(attackerIdx, targetIdx)
+      const shaInHand = inRange(attackerIdx, targetIdx)
+        ? a.hand.find((c) => SHA_SUBS.includes(c.sub))
+        : undefined;
+      const again = !!shaInHand && (a.isAI
+        ? true
         : (await waitChoice(
             attackerIdx,
             [
@@ -143,9 +154,14 @@ export async function useSha(
               { label: '不发动', value: 'no' },
             ],
             'list',
-          )) === 'yes';
-      if (again) {
-        await useSha(attackerIdx, targetIdx, { fromQinglong: true, suit });
+          )) === 'yes');
+      if (again && shaInHand) {
+        discardCard(a, shaInHand);
+        await useSha(attackerIdx, targetIdx, {
+          fromQinglong: true,
+          suit: shaInHand.suit,
+          damageType: shaInHand.damageType,
+        });
         return;
       }
     }
@@ -167,7 +183,7 @@ export async function useSha(
       return;
     }
   }
-  await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType);
+  await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType, ignoreArmor);
 }
 
 export async function useTao(idx: number): Promise<void> {
@@ -583,6 +599,25 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
   }
   render();
   if (NET.isHost) scheduleSync();
+}
+
+/* ==================== 消耗类道具 ==================== */
+/**
+ * 使用局内携带的消耗类道具（不进牌堆，不可被顺手牵羊等卡牌影响，局末清空）。
+ * 消耗来自玩家「局内携带」计数（player.items），不影响个人档案库存与配装。
+ */
+export async function useItem(idx: number, itemId: string): Promise<void> {
+  const p = G.players[idx];
+  if (!p || !p.alive || !p.items || !(p.items[itemId] > 0)) return;
+  const def = expansionItemById(itemId);
+  if (!def) return;
+  p.items[itemId] -= 1;
+  if (p.items[itemId] <= 0) delete p.items[itemId];
+  addLog(`🎒 ${p.name} 使用了【${def.name}】`, 'reward');
+  floatTextFx(idx, def.name, '#ffd479');
+  await runSkillEffects(idx, p, def.effects);
+  render();
+  if (NET.isHost) syncStateToClients();
 }
 
 /* ==================== 出闪 ==================== */

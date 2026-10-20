@@ -5,6 +5,7 @@ import { shuffle } from '../data/cards';
 import { CHAR_GENDER } from '../data/characters';
 import { Sound } from '../core/sound';
 import { discardFx, drawFx } from '../core/fx';
+import { triggerDistMod, triggerHandLimit } from './skillfx';
 
 export function hasSkill(p: Player, id: string): boolean {
   return !!p.skills && p.skills.some((s) => s.id === id);
@@ -37,6 +38,8 @@ export function distBetween(fi: number, ti: number): number {
   if (from.equip.horseMinus) d -= 1;
   // 「浮力」(生物?) 物理·初中 / 「经纬」地理·初中：计算距离-1（扩展包触发技）
   if (hasSkill(from, 'wanyou') || hasSkill(from, 'tanxian') || hasSkill(from, 'fuli') || hasSkill(from, 'jingwei')) d -= 1;
+  // 扩展包触发技：距离修正原语（地理「经纬」distMod: -1 等）
+  d += triggerDistMod(from);
   return Math.max(1, d);
 }
 
@@ -85,6 +88,8 @@ export function handLimit(p: Player): number {
   if (hasSkill(p, 'yichuan')) l += 2; // 生物·高中「遗传」
   if (hasSkill(p, 'yuansu')) l += 1;
   if (hasSkill(p, 'fangchengshi')) l += 1; // 化学·初中「方程式」
+  // 扩展包触发技：手牌上限原语（数学/化学「厚积薄发」handLimit: +1 等）
+  l += triggerHandLimit(p);
   return l;
 }
 

@@ -6,6 +6,10 @@ import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../data/characters';
 import { PACKETS, charPoolForPacket, packetName } from '../data/packets';
 import type { PacketId } from '../data/packets';
+import { EXPANSION_CHARS } from '../data/expansion';
+import { gradeSortKey } from '../data/grades';
+import { isCharUnlocked, credits } from '../profile/credits';
+import { openShop, renderLoadoutBar } from './shop';
 import { NET } from '../net/network';
 import {
   EXTERNAL_STATS,
@@ -232,9 +236,10 @@ export function selectFaction(k: FactionId): void {
 export function renderCharPicker(): void {
   const grid = document.getElementById('charGrid');
   if (!grid) return;
-  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === SELECTED_FACTION);
+  const full = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+  const pool = full.filter((c) => c.faction === SELECTED_FACTION);
   const hint = document.getElementById('charPoolHint');
-  if (hint) hint.textContent = `（当前可选角色池共 ${charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).length} 名）`;
+  if (hint) hint.textContent = `（当前可选角色池共 ${full.length} 名，含已解锁扩展包角色）`;
   if (!pool.length) {
     grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">该阵营在当前年级暂无角色</div>';
     return;
@@ -258,9 +263,21 @@ export function renderCharPicker(): void {
 export function selectChar(id: string): void {
   Sound.play('click');
   USER_CHOSEN = true;
-  SELECTED_CHAR = CHARACTERS.find((c) => c.id === id) || null;
+  SELECTED_CHAR =
+    CHARACTERS.find((c) => c.id === id) || EXPANSION_CHARS.find((c) => c.id === id) || null;
   renderCharPicker();
   pushGuestPref();
+}
+
+/** 选角池 = 基础角色（按年级/扩展包）+ 已学分解锁的扩展包角色（年级不超过当前所选） */
+export function mergedCharPool(grade: string, packet: PacketId): Character[] {
+  const base = charPoolForPacket(grade, packet);
+  const lim = gradeSortKey(grade);
+  const extra = EXPANSION_CHARS.filter(
+    (c) => isCharUnlocked(c.id) && gradeSortKey(c.grade) <= lim && gradeSortKey(c.grade) > 0,
+  );
+  const ids = new Set(base.map((c) => c.id));
+  return [...base, ...extra.filter((c) => !ids.has(c.id))];
 }
 
 /* ==================== 加入档：阵营 / 角色选择（同步给房主） ==================== */
@@ -303,7 +320,14 @@ export function pushGuestPref(): void {
   if (NET.isHost) return; // 仅客户端发送
   NET.sendToHost({
     type: 'guest_pref',
-    pref: { faction: SELECTED_FACTION, charId: SELECTED_CHAR ? SELECTED_CHAR.id : null, scope: quizScope() },
+    pref: {
+      faction: SELECTED_FACTION,
+      charId: SELECTED_CHAR ? SELECTED_CHAR.id : null,
+      scope: quizScope(),
+      // 联机配装同步：上报本局携带的装备与道具，以及已解锁装备列表供房主校验
+      loadout: PROFILE.loadout,
+      unlockedEquips: PROFILE.unlockedEquips,
+    },
   });
   renderJoinPickers();
 }
@@ -322,6 +346,9 @@ export function enterSetup(mode: 'single' | 'host' | 'join'): void {
   renderSetupSummary();
   document.getElementById('screenLobby')!.classList.remove('active');
   document.getElementById('screenSetup')!.classList.add('active');
+  renderLoadoutBar();
+  // 加入方进入设置界面即同步一次偏好（含局前配装），确保房主开局时已收到
+  if (mode === 'join') pushGuestPref();
   Sound.play('click');
 }
 
@@ -467,9 +494,9 @@ export function updateAIHint(): void {
 
 /** 保证当前选角在年级/阵营池内合法 */
 export function ensureCharValid(): void {
-  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === SELECTED_FACTION);
+  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === SELECTED_FACTION);
   if (!pool.length) {
-    const allPool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
+    const allPool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
     if (allPool.length) {
       SELECTED_FACTION = allPool[0].faction;
       SELECTED_CHAR = allPool[0];
@@ -482,7 +509,7 @@ export function ensureCharValid(): void {
 /** 未手动选择时随机派发阵营与角色 */
 export function pickRandomCharIfNotChosen(): void {
   if (USER_CHOSEN) return;
-  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
+  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
   if (!pool.length) return;
   const fset = [...new Set(pool.map((c) => c.faction))];
   SELECTED_FACTION = fset[Math.floor(Math.random() * fset.length)];
@@ -522,6 +549,26 @@ export function bindLobbyEvents(): void {
     renderAchievements();
     renderStudyPanel();
   });
+  // 学分变动（解锁/购买）后刷新选角池与商店入口
+  window.addEventListener('credits-updated', () => {
+    renderCharPicker();
+    renderPacketPicker();
+    renderShopEntry();
+  });
+  renderShopEntry();
+}
+
+/** 大厅「学分商店」入口：展示当前学分与解锁数，点击进入商店 */
+export function renderShopEntry(): void {
+  const box = document.getElementById('shopEntryBox');
+  if (!box) return;
+  const unlocked = EXPANSION_CHARS.filter((c) => isCharUnlocked(c.id)).length;
+  box.innerHTML = `
+    <div class="shop-entry">
+      <span class="se-credit">🪙 学分 <b>${credits()}</b></span>
+      <span class="se-unlocked">已解锁角色 ${unlocked}/${EXPANSION_CHARS.length}</span>
+      <button class="btn btn-accent" onclick="openShop('chars')">🛒 进入学分商店</button>
+    </div>`;
 }
 
 /* ==================== 房间成员列表 ==================== */
@@ -594,6 +641,8 @@ export function updateGuestRoomInfo(state: RoomStateLike): void {
   lb!.style.display = 'inline-block';
   jb!.style.display = 'none';
   renderSeatPanel();
+  // 连接已建立：补发偏好（含局前配装），确保房主开局时收到（此前未连接时的发送会丢失）
+  pushGuestPref();
 }
 
 /* ==================== 座位分配（默认随机 / 手动调整） ==================== */
