@@ -375,8 +375,10 @@ export interface Profile {
   quizRec: Record<string, QuizRec>;
   /** 学分：仅由学习行为产出、仅用于解锁/购买，不参与对局胜负 */
   credits: number;
-  /** 学分每日获取累计（防刷）：{ date: 'YYYY-MM-DD', earned } */
-  creditDaily: { date: string; earned: number };
+  /** 学分每日获取累计（防刷）：答题类 earned（上限 300）+ 任务类 missionEarned（上限 100），sources 按来源分项 */
+  creditDaily: { date: string; earned: number; missionEarned: number; sources: Record<string, number> };
+  /** 每日学习任务进度（跨日重置；claimed 为已领取的任务 id） */
+  missionDaily: { date: string; quiz: number; review: number; wrongFixed: number; combo: number; claimed: string[] };
   /** 已解锁的扩展包角色 id 列表 */
   unlockedChars: string[];
   /** 已解锁（购买）的装备 id 列表 */

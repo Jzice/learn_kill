@@ -304,6 +304,41 @@ check('学分商店：装备高档位按钮禁用', eqLocked > 0, `${eqLocked} �
 await page.click('#shopModal .rules-close');
 await page.waitForTimeout(200);
 
+// 8.8 每日学习任务：进度达标可领取、奖励入账（档案直写模拟学习行为后重载）
+await page.evaluate(() => {
+  const p = JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}');
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  p.missionDaily = { date, quiz: 12, review: 3, wrongFixed: 2, combo: 5, claimed: [] };
+  localStorage.setItem('xuetangsha_profile_v1', JSON.stringify(p));
+});
+await page.reload({ waitUntil: 'networkidle' });
+await page.click('#topBar button[onclick="openShop(\'chars\')"]');
+await page.waitForSelector('#shopModal.show', { timeout: 3000 });
+await page.locator('#shopBody .shop-tabs .shop-tab').nth(3).click();
+await page.waitForTimeout(200);
+const missionCards = await page.locator('#shopBody .sc-mission').count();
+check('学分商店：学习任务页渲染', missionCards === 4, `${missionCards} 个任务`);
+const claimBtns = await page.locator('#shopBody .sc-mission .btn-accent').count();
+check('学分商店：任务达标后可领取', claimBtns === 4, `${claimBtns} 个可领`);
+const creditBefore = await page.evaluate(
+  () => JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}').credits || 0,
+);
+await page.locator('#shopBody .sc-mission .btn-accent').first().click();
+await page.waitForTimeout(300);
+const profileAfter = await page.evaluate(() =>
+  JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}'),
+);
+check(
+  '学分商店：领取任务奖励入账',
+  (profileAfter.credits || 0) === creditBefore + 30,
+  `${creditBefore} → ${profileAfter.credits}`,
+);
+check('学分商店：已领取任务标记', (await page.locator('#shopBody .sc-mission.claimed').count()) === 1);
+const srcShown = await page.locator('#shopBody .sc-src').count();
+check('学分商店：学分来源统计展示', srcShown > 0, `${srcShown} 个来源`);
+await page.click('#shopModal .rules-close');
+
 // 9. 控制台错误
 check('控制台零错误', errors.length === 0, errors.slice(0, 3).join(' ; '));
 

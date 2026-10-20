@@ -10,6 +10,7 @@ import { addPlayLog } from './log';
 import { drawCards } from './rules';
 import { PROFILE, saveProfile } from '../profile/profile';
 import { addCredits, quizCreditFor } from '../profile/credits';
+import { bumpMission } from '../profile/missions';
 import {
   MASTER_STREAK,
   isMastered,
@@ -150,6 +151,7 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
             }
             // 学分产出：答对按年级梯度加分（受每日上限约束，触顶静默截断）
             addCredits(quizCreditFor(q.g || G.grade), 'quiz');
+            bumpMission('quiz'); // 每日任务埋点（日课·答对）
             const rec = recordAnswer(q, true, q.g || G.grade);
             bookNote =
               rec.c >= MASTER_STREAK

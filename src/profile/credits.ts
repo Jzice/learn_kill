@@ -21,11 +21,13 @@ import {
 import { charConditions, condsOk, equipConditions, masterySnapshot } from './unlockCondition';
 
 /** 学分数值曲线（便于调参） */
-export const CREDIT_RULE: { perCorrectQuiz: number; perReview: number; perWrongFixed: number; dailyCap: number } = {
+export const CREDIT_RULE: { perCorrectQuiz: number; perReview: number; perWrongFixed: number; dailyCap: number; missionDailyCap: number } = {
   perCorrectQuiz: 3,
   perReview: 2,
   perWrongFixed: 2,
   dailyCap: 300,
+  /** 每日任务宝箱独立额度（防止刷任务绕开答题类日限） */
+  missionDailyCap: 100,
 };
 
 /**
@@ -54,30 +56,57 @@ export function credits(): number {
 
 /** 今日已获学分（跨日自动归零） */
 export function earnedToday(): number {
-  if (PROFILE.creditDaily.date !== todayStr()) {
-    PROFILE.creditDaily = { date: todayStr(), earned: 0 };
-    saveProfile();
-  }
+  ensureCreditDay();
   return PROFILE.creditDaily.earned || 0;
+}
+
+/** 今日任务类已获学分（独立额度） */
+export function missionEarnedToday(): number {
+  ensureCreditDay();
+  return PROFILE.creditDaily.missionEarned || 0;
+}
+
+/** 今日学分来源分项（quiz / review / wrongfix / drill / mission / pass） */
+export function creditSources(): Record<string, number> {
+  ensureCreditDay();
+  return PROFILE.creditDaily.sources || {};
 }
 
 export function dailyCapReached(): boolean {
   return earnedToday() >= CREDIT_RULE.dailyCap;
 }
 
+export function missionCapReached(): boolean {
+  return missionEarnedToday() >= CREDIT_RULE.missionDailyCap;
+}
+
+function ensureCreditDay(): void {
+  if (PROFILE.creditDaily.date !== todayStr()) {
+    PROFILE.creditDaily = { date: todayStr(), earned: 0, missionEarned: 0, sources: {} };
+    saveProfile();
+  }
+}
+
 /**
  * 增加学分（受每日上限约束）。返回实际入账数量（触顶后多余部分丢弃）。
+ * reason = 'mission' | 'pass' 走任务类独立额度，其余（quiz/review/wrongfix/drill）走答题类额度。
  */
-export function addCredits(n: number, _reason?: string): number {
+export function addCredits(n: number, reason = ''): number {
   if (n <= 0) return 0;
-  if (PROFILE.creditDaily.date !== todayStr()) {
-    PROFILE.creditDaily = { date: todayStr(), earned: 0 };
-  }
-  const room = Math.max(0, CREDIT_RULE.dailyCap - (PROFILE.creditDaily.earned || 0));
-  const add = Math.min(n, room);
+  ensureCreditDay();
+  const isMission = reason === 'mission' || reason === 'pass';
+  const cap = isMission ? CREDIT_RULE.missionDailyCap : CREDIT_RULE.dailyCap;
+  const used = isMission ? PROFILE.creditDaily.missionEarned || 0 : PROFILE.creditDaily.earned || 0;
+  const add = Math.min(n, Math.max(0, cap - used));
   if (add <= 0) return 0;
-  PROFILE.creditDaily.earned = (PROFILE.creditDaily.earned || 0) + add;
+  if (isMission) PROFILE.creditDaily.missionEarned = used + add;
+  else PROFILE.creditDaily.earned = used + add;
   PROFILE.credits = (PROFILE.credits || 0) + add;
+  if (reason) {
+    const src = PROFILE.creditDaily.sources || {};
+    src[reason] = (src[reason] || 0) + add;
+    PROFILE.creditDaily.sources = src;
+  }
   saveProfile();
   return add;
 }

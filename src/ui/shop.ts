@@ -28,12 +28,15 @@ import {
   credits,
   dailyCapReached,
   earnedToday,
+  creditSources,
   equipPrice,
   grantEquip,
   isCharUnlocked,
   isEquipUnlocked,
   loadoutEquipCount,
   loadoutItemCount,
+  missionCapReached,
+  missionEarnedToday,
   removeLoadoutItem,
   setLoadoutSlot,
   spendCredits,
@@ -52,6 +55,7 @@ import {
   masterySnapshot,
 } from '../profile/unlockCondition';
 import { openBankBrowser } from './bank';
+import { claimMission, missionProgress } from '../profile/missions';
 
 /** 道具学分定价（消耗类，可重复购买） */
 export const ITEM_PRICE: Record<string, number> = {
@@ -66,23 +70,47 @@ export const ITEM_PRICE: Record<string, number> = {
 /** 装备档位名 */
 const TIER_NAME: Record<number, string> = { 1: '普通', 2: '精良', 3: '稀有', 4: '史诗' };
 
-type Tab = 'chars' | 'equips' | 'items';
+/** 学分来源标识 → 展示名 */
+const SOURCE_LABEL: Record<string, string> = {
+  quiz: '答题',
+  review: '复习',
+  wrongfix: '攻克错题',
+  drill: '刷题',
+  mission: '任务',
+  pass: '战令',
+};
+
+type Tab = 'chars' | 'equips' | 'items' | 'missions';
 let curTab: Tab = 'chars';
 let curGrade = GRADE_ORDER[0];
 
 function creditOverview(): string {
   const earned = earnedToday();
+  const missionEarned = missionEarnedToday();
   const cap = CREDIT_RULE.dailyCap;
+  const mcap = CREDIT_RULE.missionDailyCap;
   const pct = Math.min(100, Math.round((earned / cap) * 100));
+  const mpct = Math.min(100, Math.round((missionEarned / mcap) * 100));
   const reached = dailyCapReached();
+  const src = creditSources();
+  const srcHtml = Object.keys(src).length
+    ? Object.entries(src)
+        .map(([k, v]) => `<span class="sc-src">${SOURCE_LABEL[k] || k} +${v}</span>`)
+        .join('')
+    : '<span class="sc-src">今日暂无学习记录</span>';
   return `
     <div class="shop-credit">
       <div class="sc-main"><span class="sc-num" id="shopCreditNum">${credits()}</span><span class="sc-label">学分</span></div>
       <div class="sc-bar">
-        <div class="sc-bar-top"><span>今日获取 ${earned} / ${cap}</span>${reached ? '<span class="sc-cap">已达上限</span>' : ''}</div>
+        <div class="sc-bar-top"><span>今日答题获取 ${earned} / ${cap}</span>${reached ? '<span class="sc-cap">已达上限</span>' : ''}</div>
         <div class="sc-track"><i style="width:${pct}%"></i></div>
       </div>
-      <div class="sc-tip">答对题 / 刷题 +${quizCreditFor('初一上')}~${quizCreditFor('高三下')} 学分（随年级递增）｜ 复习 +${CREDIT_RULE.perReview} ｜ 攻克错题 +${CREDIT_RULE.perWrongFixed} ｜ 刷题连对 3 题额外 +2（每日上限 ${cap}）</div>
+      <div class="sc-bar">
+        <div class="sc-bar-top"><span>今日任务宝箱 ${missionEarned} / ${mcap}</span>${missionCapReached() ? '<span class="sc-cap">已达上限</span>' : ''}</div>
+        <div class="sc-track"><i class="mission" style="width:${mpct}%"></i></div>
+      </div>
+      <div class="sc-srcs">${srcHtml}</div>
+      <div class="sc-tip">答对题 / 刷题 +${quizCreditFor('初一上')}~${quizCreditFor('高三下')} 学分（随年级递增，日上限 ${cap}）｜ 复习 +${CREDIT_RULE.perReview} ｜ 攻克错题 +${CREDIT_RULE.perWrongFixed} ｜ 每日任务宝箱额外上限 ${mcap}（见「🎯 学习任务」页签）</div>
     </div>`;
 }
 
@@ -95,7 +123,33 @@ function gradeCapsules(): string {
 function tabBar(): string {
   const mk = (t: Tab, label: string) =>
     `<button class="shop-tab ${curTab === t ? 'active' : ''}" onclick="shopSetTab('${t}')">${label}</button>`;
-  return `<div class="shop-tabs">${mk('chars', '角色')}${mk('equips', '装备')}${mk('items', '道具')}</div>`;
+  return `<div class="shop-tabs">${mk('chars', '角色')}${mk('equips', '装备')}${mk('items', '道具')}${mk('missions', '🎯 学习任务')}</div>`;
+}
+
+/** 每日学习任务页（固定 4 项，零随机；奖励走任务类独立额度） */
+function missionCards(): string {
+  const rows = missionProgress();
+  const claimable = rows.filter((m) => m.done && !m.claimed).length;
+  return `<div class="sc-missions">
+    <div class="sc-mission-tip">每日 0 点重置 ｜ 奖励走任务类独立额度（${CREDIT_RULE.missionDailyCap} 学分/日）${
+      claimable ? ` ｜ <b style="color:var(--green)">${claimable} 个可领取</b>` : ''
+    }</div>
+    ${rows
+      .map(
+        (m) => `<div class="sc-mission ${m.claimed ? 'claimed' : m.done ? 'done' : ''}">
+      <div class="sc-mission-l">${escapeHtml(m.def.label)}</div>
+      <div class="sc-mission-p"><i style="width:${Math.round((m.cur / m.def.target) * 100)}%"></i><span>${m.cur}/${m.def.target}</span></div>
+      <div class="sc-mission-a">${
+        m.claimed
+          ? '<span class="sc-owned">✓ 已领取</span>'
+          : m.done
+            ? `<button class="btn btn-sm btn-accent" onclick="shopClaimMission('${m.def.id}')">领取 ${m.def.reward} 学分</button>`
+            : '进行中'
+      }</div>
+    </div>`,
+      )
+      .join('')}
+  </div>`;
 }
 
 /** 单条解锁条件行（credit/must 必须满足；either 组内任一满足即可，行首标「或」） */
@@ -217,6 +271,7 @@ function renderBody(): void {
   let html = creditOverview() + newbieGiftHtml() + gradeCapsules() + tabBar();
   if (curTab === 'chars') html += charCards(snap);
   else if (curTab === 'equips') html += equipCards(snap);
+  else if (curTab === 'missions') html += missionCards();
   else html += itemCards();
   body.innerHTML = html;
 }
@@ -283,6 +338,13 @@ export function shopGrantNewbie(id: string): void {
 export function shopJumpBank(): void {
   closeShop();
   openBankBrowser();
+}
+
+/** 领取每日任务奖励（固定学分档位） */
+export function shopClaimMission(id: string): void {
+  claimMission(id as 'quiz' | 'review' | 'wrongFixed' | 'combo');
+  renderBody();
+  window.dispatchEvent(new CustomEvent('credits-updated'));
 }
 
 function flashUnlock(name: string): void {

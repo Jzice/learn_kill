@@ -8,6 +8,7 @@
 import type { Question, QuizRec } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { addCredits, CREDIT_RULE } from '../profile/credits';
+import { bumpMission } from '../profile/missions';
 import { Sound } from '../core/sound';
 import { shuffledIndices } from '../core/shuffle';
 import { SUBJECT_ICON } from '../data/factions';
@@ -203,6 +204,7 @@ export function markStudyReviewed(key: string): void {
   const r = markReviewed(key);
   if (!r) return;
   addCredits(CREDIT_RULE.perWrongFixed, 'wrongfix');
+  bumpMission('wrongFixed'); // 每日任务埋点（日课·攻克错题）
   expanded.delete(key);
   shuffleCache.delete(key);
   Sound.play('click');
@@ -317,6 +319,7 @@ export function answerReview(pos: number): void {
   if (correct) {
     reviewCorrect++;
     addCredits(CREDIT_RULE.perReview, 'review');
+    bumpMission('review'); // 每日任务埋点（日课·复习）
   }
   const fb = document.getElementById('reviewFeedback')!;
   fb.style.color = correct ? '#1e7a3a' : '#a02020';

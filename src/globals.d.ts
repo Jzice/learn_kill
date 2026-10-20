@@ -98,7 +98,7 @@ declare global {
     backToLobby: () => void;
     enterSetup: (mode: 'single' | 'host' | 'join') => void;
     // 学分商店 & 局前配装 & 消耗类道具
-    openShop: (tab?: 'chars' | 'equips' | 'items') => void;
+    openShop: (tab?: 'chars' | 'equips' | 'items' | 'missions') => void;
     closeShop: () => void;
     shopSetTab: (t: 'chars' | 'equips' | 'items') => void;
     shopSetGrade: (g: string) => void;
@@ -107,6 +107,7 @@ declare global {
     shopBuyItem: (id: string, n?: number) => void;
     shopGrantNewbie: (id: string) => void;
     shopJumpBank: () => void;
+    shopClaimMission: (id: string) => void;
     shopSetLoadoutSlot: (slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus', value: string) => void;
     shopAddLoadoutItem: (id: string, n?: number) => void;
     shopRemoveLoadoutItem: (id: string, n?: number) => void;

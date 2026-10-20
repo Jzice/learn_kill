@@ -959,6 +959,24 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .sc-cond-jump{background:transparent;border:1px solid var(--gold-dim);border-radius:4px;color:var(--gold);font-size:8px;padding:1px 5px;margin-left:4px;cursor:pointer;font-family:inherit}
 .sc-cond-jump:hover{background:var(--gold-dim);color:#1a1206}
 
+/* ===== 学分来源统计 + 每日学习任务（v1.8.1） ===== */
+.sc-srcs{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.sc-src{font-size:9px;color:#8fd0ff;background:rgba(143,208,255,.08);border:1px solid rgba(143,208,255,.25);border-radius:5px;padding:2px 7px;font-variant-numeric:tabular-nums}
+.sc-track i.mission{background:linear-gradient(90deg,#2e8b57,#3fbf7f);box-shadow:0 0 8px rgba(63,191,127,.5)}
+.se-dot{font-size:10.5px;color:var(--green);background:rgba(39,174,96,.12);border:1px solid rgba(39,174,96,.4);border-radius:20px;padding:3px 10px;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.tb-dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#e74c3c;border-radius:50%;border:1.5px solid var(--surface);box-shadow:0 0 6px rgba(231,76,60,.8);animation:pulse 1.6s infinite}
+.sc-missions{display:flex;flex-direction:column;gap:8px}
+.sc-mission-tip{font-size:10px;color:var(--muted);background:var(--surface-2);border:1px solid var(--gold-dim);border-radius:7px;padding:7px 10px}
+.sc-mission{display:grid;grid-template-columns:1fr 130px 92px;gap:10px;align-items:center;background:linear-gradient(160deg,#2a1a10,#140804);border:1px solid var(--gold-dim);border-radius:9px;padding:10px 12px}
+.sc-mission.done{border-color:rgba(39,174,96,.5)}
+.sc-mission.claimed{opacity:.6}
+.sc-mission-l{font-size:12px;color:var(--text);font-weight:600}
+.sc-mission-p{position:relative;height:14px;background:#0a0402;border:1px solid var(--gold-dim);border-radius:8px;overflow:hidden}
+.sc-mission-p i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--gold-dim),var(--gold));opacity:.55}
+.sc-mission-p span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text);font-variant-numeric:tabular-nums}
+.sc-mission-a{display:flex;justify-content:flex-end;font-size:10px;color:var(--muted)}
+
 /* ===== 新手学习礼包（v1.8.0） ===== */
 .sc-newbie{margin-bottom:10px;background:linear-gradient(160deg,rgba(39,174,96,.14),rgba(0,0,0,.3));border:1px solid rgba(39,174,96,.45);border-radius:9px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .sc-newbie-t{font-size:11.5px;color:var(--green);font-weight:600}

@@ -97,6 +97,7 @@ import {
   shopClearLoadout,
   shopGrantNewbie,
   shopJumpBank,
+  shopClaimMission,
   shopRemoveLoadoutItem,
   shopSetGrade,
   shopSetLoadoutSlot,
@@ -198,6 +199,7 @@ window.shopBuyEquip = shopBuyEquip;
 window.shopBuyItem = shopBuyItem;
 window.shopGrantNewbie = shopGrantNewbie;
 window.shopJumpBank = shopJumpBank;
+window.shopClaimMission = shopClaimMission;
 window.shopSetLoadoutSlot = shopSetLoadoutSlot;
 window.shopAddLoadoutItem = shopAddLoadoutItem;
 window.shopRemoveLoadoutItem = shopRemoveLoadoutItem;

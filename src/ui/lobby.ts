@@ -9,6 +9,7 @@ import type { PacketId } from '../data/packets';
 import { EXPANSION_CHARS } from '../data/expansion';
 import { gradeSortKey } from '../data/grades';
 import { isCharUnlocked, credits } from '../profile/credits';
+import { claimableCount } from '../profile/missions';
 import { openShop, renderLoadoutBar } from './shop';
 import { NET } from '../net/network';
 import {
@@ -636,20 +637,30 @@ export function bindLobbyEvents(): void {
     renderPacketPicker();
     renderShopEntry();
   });
+  // 每日任务进度变动（答对/复习/攻克/领取）后刷新商店入口红点
+  window.addEventListener('missions-updated', () => {
+    renderShopEntry();
+  });
   renderShopEntry();
 }
 
 /** 大厅「学分商店」入口：展示当前学分与解锁数，点击进入商店 */
 export function renderShopEntry(): void {
   const box = document.getElementById('shopEntryBox');
-  if (!box) return;
-  const unlocked = EXPANSION_CHARS.filter((c) => isCharUnlocked(c.id)).length;
-  box.innerHTML = `
+  const claimable = claimableCount();
+  if (box) {
+    const unlocked = EXPANSION_CHARS.filter((c) => isCharUnlocked(c.id)).length;
+    box.innerHTML = `
     <div class="shop-entry">
       <span class="se-credit">🪙 学分 <b>${credits()}</b></span>
       <span class="se-unlocked">已解锁角色 ${unlocked}/${EXPANSION_CHARS.length}</span>
+      ${claimable ? `<span class="se-dot">🔔 ${claimable} 个每日任务可领</span>` : ''}
       <button class="btn btn-accent" onclick="openShop('chars')">🛒 进入学分商店</button>
     </div>`;
+  }
+  // 顶栏学分图标红点（有可领任务时提示）
+  const dot = document.getElementById('tbShopDot');
+  if (dot) dot.style.display = claimable ? '' : 'none';
 }
 
 /* ==================== 房间成员列表 ==================== */

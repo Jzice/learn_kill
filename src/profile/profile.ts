@@ -104,7 +104,9 @@ function defaultProfile(): Profile {
     quizRec: {},
     // 学分体系（仅由学习行为产出，仅用于解锁/购买）
     credits: 0,
-    creditDaily: { date: todayStr(), earned: 0 },
+    creditDaily: { date: todayStr(), earned: 0, missionEarned: 0, sources: {} },
+    // 每日学习任务（v1.8.1）
+    missionDaily: { date: todayStr(), quiz: 0, review: 0, wrongFixed: 0, combo: 0, claimed: [] },
     // 已解锁（购买）内容
     unlockedChars: [],
     unlockedEquips: [],
@@ -136,8 +138,28 @@ function loadProfile(): Profile {
         // 兼容旧档案：补齐学分体系字段（旧档缺字段绝不能白屏）
         credits: typeof p.credits === 'number' ? p.credits : 0,
         creditDaily: p.creditDaily && typeof p.creditDaily === 'object' && typeof p.creditDaily.date === 'string'
-          ? p.creditDaily
-          : { date: todayStr(), earned: 0 },
+          ? {
+              date: p.creditDaily.date,
+              earned: p.creditDaily.earned || 0,
+              missionEarned: p.creditDaily.missionEarned || 0,
+              sources:
+                p.creditDaily.sources && typeof p.creditDaily.sources === 'object'
+                  ? p.creditDaily.sources
+                  : {},
+            }
+          : { date: todayStr(), earned: 0, missionEarned: 0, sources: {} },
+        // 兼容旧档案：补每日学习任务字段（v1.8.1）
+        missionDaily:
+          p.missionDaily && typeof p.missionDaily === 'object' && typeof p.missionDaily.date === 'string'
+            ? {
+                date: p.missionDaily.date,
+                quiz: p.missionDaily.quiz || 0,
+                review: p.missionDaily.review || 0,
+                wrongFixed: p.missionDaily.wrongFixed || 0,
+                combo: p.missionDaily.combo || 0,
+                claimed: Array.isArray(p.missionDaily.claimed) ? p.missionDaily.claimed : [],
+              }
+            : { date: todayStr(), quiz: 0, review: 0, wrongFixed: 0, combo: 0, claimed: [] },
         unlockedChars: Array.isArray(p.unlockedChars) ? p.unlockedChars : [],
         unlockedEquips: Array.isArray(p.unlockedEquips) ? p.unlockedEquips : [],
         items: p.items && typeof p.items === 'object' ? p.items : {},

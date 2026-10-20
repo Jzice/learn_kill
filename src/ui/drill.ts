@@ -18,6 +18,7 @@ import {
   quizCreditFor,
 } from '../profile/credits';
 import { bankDrillContext } from './bank';
+import { bumpMission } from '../profile/missions';
 
 /** 每组题数 */
 export const DRILL_SIZE = 10;
@@ -122,6 +123,8 @@ export function answerDrill(pos: number): void {
   if (ok) {
     correct++;
     combo++;
+    bumpMission('quiz'); // 每日任务埋点（日课·答对）
+    bumpMission('combo', combo); // 日课·连对（取当日最大值）
     let add = quizCreditFor(item.q.g || grade);
     let bonus = 0;
     if (combo % COMBO_STEP === 0) {
