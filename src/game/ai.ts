@@ -100,13 +100,16 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     await useTrick(idx, wugu, null);
     await sleep(300);
   }
-  // 铁索连环：优先横置一名敌方目标，无可乘之机则重铸
+  // 铁索连环：优先横置最多两名敌方目标，无乘之机则按概率重铸
   const tiesuo = p.hand.find((c) => c.sub === 'tiesuo');
   if (tiesuo && p.alive) {
-    const ci = pickAiTarget(idx);
-    if (ci >= 0 && !G.players[ci].chained) {
+    const enemies = G.players
+      .map((q, i) => ({ q, i }))
+      .filter(({ q, i }) => i !== idx && q.alive && !sameFaction(q, p) && !q.chained)
+      .map(({ i }) => i);
+    if (enemies.length) {
       discardCard(p, tiesuo);
-      await useTrick(idx, tiesuo, ci);
+      await useTrick(idx, tiesuo, enemies[0], enemies[1] ?? null);
       await sleep(300);
     } else if (Math.random() < 0.4) {
       discardCard(p, tiesuo);

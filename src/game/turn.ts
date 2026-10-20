@@ -234,7 +234,15 @@ export async function playPhase(idx: number): Promise<void> {
           continue;
         }
       }
-      if (['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo'].includes(card.sub)) {
+      if (card.sub === 'tiesuo') {
+        const tgts = await pickTieSuoTargets(idx);
+        if (!tgts.length) {
+          addLog('无合法目标');
+          continue;
+        }
+        tgt = tgts[0];
+        second = tgts[1] ?? null;
+      } else if (['guohe', 'shunshou', 'juedou', 'lebu', 'huogong'].includes(card.sub)) {
         const targets: ChoiceOption[] = [];
         for (let i = 0; i < G.players.length; i++) {
           if (i === idx || !G.players[i].alive) continue;
@@ -368,8 +376,7 @@ async function pickShaTarget(idx: number): Promise<number> {
 }
 
 /** 依次选择两张手牌（丈八蛇矛用），任意一步取消则返回空 */
-async function pickTwoCards(idx: number): Promise<Card[]> {
-  const p = G.players[idx];
+async function pickTwoCards(idx: number): Promise<Card[]> {  const p = G.players[idx];
   const firstOpts = p.hand.map((c) => ({ label: `${c.name} ${c.suit}${c.num}`, value: c.id }));
   firstOpts.push({ label: '取消', value: -1 });
   const f = await waitChoice(idx, firstOpts, 'list');
@@ -387,4 +394,30 @@ async function pickTwoCards(idx: number): Promise<Card[]> {
   const sc = p.hand.find((c) => c.id === sid);
   if (!sc) return [];
   return [fc, sc];
+}
+
+/** 铁索连环：选择 1–2 名其他存活角色进行横置 / 重置（原版可指定最多两名） */
+async function pickTieSuoTargets(idx: number): Promise<number[]> {
+  const picked: number[] = [];
+  const rest = G.players
+    .map((p, i) => ({ p, i }))
+    .filter((x) => x.i !== idx && x.p.alive)
+    .map((x) => x.i);
+  if (!rest.length) return [];
+  while (picked.length < 2 && rest.length) {
+    const opts: ChoiceOption[] = rest.map((i) => ({
+      label: `${G.players[i].name}（${G.players[i].chained ? '已横置→重置' : '横置'}）`,
+      value: i,
+    }));
+    opts.push({ label: picked.length ? '确认（完成选择）' : '取消', value: -1 });
+    const t = await waitChoice(idx, opts, 'target');
+    const v = Number(t);
+    if (v < 0) {
+      if (!picked.length) return []; // 首次即取消
+      break;
+    }
+    picked.push(v);
+    rest.splice(rest.indexOf(v), 1);
+  }
+  return picked;
 }

@@ -465,8 +465,10 @@ export async function useTrick(
       break;
     }
     case 'tiesuo': {
-      if (targetIdx != null) {
-        const t = G.players[targetIdx];
+      const ids = [targetIdx, secondTarget].filter((x): x is number => x != null && x >= 0);
+      for (const ti of ids) {
+        const t = G.players[ti];
+        if (!t || !t.alive) continue;
         t.chained = !t.chained;
         addLog(
           t.chained

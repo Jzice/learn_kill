@@ -4,6 +4,10 @@
  */
 import './style.css';
 
+import { G } from './game/state';
+import { dealDamage } from './game/damage';
+import { useTrick } from './game/actions';
+
 import type { FactionId } from './core/types';
 import { togglePanel } from './core/dom';
 import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
@@ -317,3 +321,14 @@ function init(): void {
 }
 
 init();
+
+// 调试钩子：仅在 URL 带 ?debug=1 时暴露内部状态/函数，供自动化测试驱动（生产构建无此对象）
+if (new URLSearchParams(location.search).has('debug')) {
+  (window as unknown as { __game: unknown }).__game = {
+    get G() {
+      return G;
+    },
+    dealDamage,
+    useTrick,
+  };
+}

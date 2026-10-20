@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "smoke:net": "node scripts/smoke-net.mjs",
+    "smoke:tiesuo": "node scripts/smoke-tiesuo.mjs",
     "repro:net": "node scripts/repro-net.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
     "verify:lazy": "node scripts/verify-lazy.mjs",
