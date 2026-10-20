@@ -992,3 +992,43 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .bank-item .bo{font-size:11px;margin:1px 0}
 .bank-item .ans{color:#27ae60;font-weight:700}
 .bank-item .bkp{font-size:9px;color:var(--muted);margin-top:3px}
+
+/* ===== 知识图谱：知识点讲解 + 脑图 ===== */
+.kp-tip{font-size:10.5px;color:var(--muted);line-height:1.5;margin:2px 0 8px}
+.kp-subject{margin-bottom:12px}
+.kp-subject h4{color:var(--gold);font-size:13px;margin:6px 0}
+.kp-unit{margin-bottom:6px}
+.kp-unit h5{color:#8fd0ff;font-size:11px;margin:4px 0}
+.kp-card{background:rgba(0,0,0,.25);border-left:3px solid var(--gold-dim);border-radius:0 6px 6px 0;margin-bottom:4px;padding:6px 8px}
+.kp-card summary{cursor:pointer;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text);list-style:none}
+.kp-card summary::-webkit-details-marker{display:none}
+.kp-card summary::before{content:'▸';color:var(--gold-dim);font-size:10px}
+.kp-card[open] summary::before{content:'▾'}
+.kp-card .kpct{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kp-badge{flex-shrink:0;font-size:9px;color:var(--gold-dim);border:1px solid var(--gold-dim);border-radius:8px;padding:0 5px;line-height:15px}
+.kp-badge.ok{color:#5fe08a;border-color:#5fe08a}
+.kp-badge.bad{color:#e88b7f;border-color:#e88b7f}
+.kp-body{margin-top:5px;font-size:11px;line-height:1.6}
+.kp-sum{color:#d8d8d8}
+.kp-points{margin:3px 0 3px 16px;color:var(--muted);font-size:10.5px}
+.kp-points li{margin:1px 0}
+.kp-pit{margin-top:3px;font-size:10.5px;color:#e8c07f}
+.kp-rels{margin-top:4px;font-size:10px}
+.kp-rel{margin-right:6px}
+.kp-ops{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+.kp-map-wrap{background:rgba(0,0,0,.3);border:1px solid var(--gold-dim);border-radius:8px;padding:4px;overflow:auto}
+.kp-map{display:block}
+.kpnode{cursor:pointer}
+.kpnode rect{fill:#161616;stroke:var(--gold-dim);stroke-width:1.6}
+.kpnode text{fill:var(--text);font-size:12px;pointer-events:none}
+.kpnode:hover rect{stroke:var(--gold)}
+.kpnode.done rect{stroke:#5fe08a}
+.kpnode.warn rect{stroke:#e88b7f}
+.kpnode.active rect{fill:#2a2208;stroke:var(--gold);stroke-width:2.4}
+.kpnode.active text{fill:#ffe9a8}
+.kp-legend{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0;font-size:10px;color:var(--muted)}
+.kp-lg{display:inline-flex;align-items:center;gap:4px}
+.kp-lg i{width:14px;height:0;border-top:2px solid;display:inline-block}
+.kp-detail{margin-top:8px;padding:8px;min-height:64px;background:rgba(0,0,0,.28);border:1px solid var(--gold-dim);border-radius:8px;font-size:11px;line-height:1.6}
+.kp-detail-title{display:flex;align-items:center;gap:6px;color:var(--gold);font-size:12px;font-weight:700;margin-bottom:2px}
+.kp-detail-unit{font-size:9.5px;color:var(--muted);margin-bottom:4px}

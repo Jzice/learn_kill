@@ -246,6 +246,36 @@ await page.fill('#bankSearch', '');
 await page.waitForTimeout(300);
 const bankQ3 = await page.locator('#bankBody .bank-item').count();
 check('题库浏览：搜索可还原', bankQ3 > 0, `${bankQ3} 题`);
+// 8.6 知识图谱：知识点讲解 + 知识脑图
+await page.click('#bankViewPicker .opt-btn[data-view="k"]');
+await page.waitForFunction(
+  () => (document.getElementById('bankBody')?.querySelectorAll('.kp-card').length || 0) > 0,
+  { timeout: 8000 },
+);
+const kpCards = await page.locator('#bankBody .kp-card').count();
+check('知识图谱：讲解卡片渲染', kpCards > 0, `${kpCards} 个知识点`);
+await page.click('#bankViewPicker .opt-btn[data-view="map"]');
+await page.waitForFunction(
+  () => (document.getElementById('bankBody')?.querySelectorAll('.kpnode').length || 0) > 0,
+  { timeout: 8000 },
+);
+const kpNodes = await page.locator('#bankBody .kpnode').count();
+const kpEdges = await page.locator('#bankBody .kp-edge').count();
+check('知识图谱：脑图节点渲染', kpNodes > 0, `${kpNodes} 个节点`);
+check('知识图谱：脑图关系边渲染', kpEdges > 0, `${kpEdges} 条关系`);
+await page.locator('#bankBody .kpnode').first().click();
+await page.waitForTimeout(200);
+const kpDetail = (await page.locator('#kpMapDetail').textContent()) || '';
+check(
+  '知识图谱：点击节点显示讲解',
+  kpDetail.length > 10 && !kpDetail.includes('点击任意节点'),
+  kpDetail.trim().slice(0, 20),
+);
+await page.click('#bankViewPicker .opt-btn[data-view="q"]');
+await page.waitForTimeout(400);
+const bankQ4 = await page.locator('#bankBody .bank-item').count();
+check('知识图谱：可切回题目视图', bankQ4 > 0, `${bankQ4} 题`);
+
 await page.click('#screenBank .setup-top button'); // 返回主界面
 await page.waitForSelector('#screenGame.active', { timeout: 3000 });
 

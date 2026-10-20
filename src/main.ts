@@ -68,8 +68,9 @@ import {
   updateLobbyMode,
   viewMemberProfile,
 } from './ui/lobby';
-import { bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
+import { bankSearchKp, bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
 import { answerDrill, closeDrill, startDrill } from './ui/drill';
+import { selectKpNode } from './ui/knowledge';
 import { clearWrongBook } from './profile/quizbook';
 import {
   answerReview,
@@ -172,6 +173,9 @@ window.startDrill = () => {
 };
 window.answerDrill = answerDrill;
 window.closeDrill = closeDrill;
+// 知识图谱：点击脑图节点 / 由知识点跳回题目视图
+window.selectKpNode = selectKpNode;
+window.bankSearchKp = bankSearchKp;
 window.requestSeatMove = requestSeatMove;
 window.pickSeatMember = pickSeatMember;
 window.randomizeSeats = randomizeSeats;

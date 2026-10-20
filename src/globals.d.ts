@@ -75,6 +75,9 @@ declare global {
     startDrill: () => void;
     answerDrill: (pos: number) => void;
     closeDrill: () => void;
+    // 知识图谱：点击脑图节点查看讲解 / 由知识点跳回题目视图搜索
+    selectKpNode: (kp: string) => void;
+    bankSearchKp: (kp: string) => void;
     // 联机座位：自己换座 / 座主代他人换座 / 随机分配
     requestSeatMove: (toIndex: number) => void;
     pickSeatMember: (peerId: string) => void;

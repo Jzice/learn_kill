@@ -7,8 +7,16 @@ import { escapeHtml } from '../core/dom';
 import { Sound } from '../core/sound';
 import { QUESTION_BANK, loadGrade, sortedGrades } from '../data/bankLoader';
 import { SUBJECT_ICON } from '../data/factions';
+import { renderKpMap, renderKpNotes } from './knowledge';
 
-const state = { grade: '', search: '', subject: '' as string };
+/** 题库页视图：题目 / 知识点讲解 / 知识脑图 */
+type BankView = 'q' | 'k' | 'map';
+const VIEWS: { id: BankView; label: string }[] = [
+  { id: 'q', label: '📖 题目' },
+  { id: 'k', label: '📘 讲解' },
+  { id: 'map', label: '🧠 脑图' },
+];
+const state = { grade: '', search: '', subject: '' as string, view: 'q' as BankView };
 
 /** 打开题库浏览前的界面（用于返回按钮回到原界面） */
 let prevScreen = 'screenLobby';
@@ -26,7 +34,18 @@ function bankItemHtml(q: Question, i: number): string {
     `<div class="bkp">${escapeHtml(q.u || '综合')} · ${escapeHtml(q.kp || '')}</div></div>`;
 }
 
-function renderBody(): void {
+async function renderBody(): Promise<void> {
+  // 讲解 / 脑图视图：展示知识图谱（讲解随题库分片一起懒加载）
+  if (state.view !== 'q') {
+    const body = document.getElementById('bankBody');
+    if (!body) return;
+    body.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center">加载中…</div>';
+    body.innerHTML =
+      state.view === 'k'
+        ? await renderKpNotes(state.grade, state.subject)
+        : await renderKpMap(state.grade, state.subject);
+    return;
+  }
   const list = (QUESTION_BANK[state.grade] || []).filter((q) => {
     if (state.subject && q.s !== state.subject) return false;
     if (state.search) {
@@ -84,9 +103,33 @@ function renderGradePicker(): void {
     renderGradePicker();
     void loadGrade(state.grade).then(() => {
       renderSubjectFilter();
-      renderBody();
+      void renderBody();
     });
   };
+}
+
+/** 视图切换：题目 / 知识点讲解 / 知识脑图 */
+function renderViewPicker(): void {
+  const box = document.getElementById('bankViewPicker');
+  if (!box) return;
+  box.innerHTML = VIEWS.map(
+    (v) => `<button class="opt-btn ${v.id === state.view ? 'active' : ''}" data-view="${v.id}">${v.label}</button>`,
+  ).join('');
+  box.onclick = (e) => {
+    const b = (e.target as HTMLElement).closest('.opt-btn') as HTMLElement | null;
+    if (!b || !b.dataset.view) return;
+    state.view = b.dataset.view as BankView;
+    Sound.play('click');
+    renderViewPicker();
+    syncToolbar();
+    void renderBody();
+  };
+}
+
+/** 搜索框只在题目视图下有意义 */
+function syncToolbar(): void {
+  const bar = document.getElementById('bankToolbar');
+  if (bar) bar.style.display = state.view === 'q' ? '' : 'none';
 }
 
 function renderSubjectFilter(): void {
@@ -110,7 +153,7 @@ function renderSubjectFilter(): void {
     state.subject = b.dataset.subject || '';
     Sound.play('click');
     renderSubjectFilter();
-    renderBody();
+    void renderBody();
   };
 }
 
@@ -121,10 +164,24 @@ export function openBankBrowser(): void {
   if (cur && cur.id !== 'screenBank') prevScreen = cur.id;
   showScreen('screenBank');
   renderGradePicker();
+  renderViewPicker();
+  syncToolbar();
   void loadGrade(state.grade).then(() => {
     renderSubjectFilter();
-    renderBody();
+    void renderBody();
   });
+}
+
+/** 从知识点讲解 / 脑图跳回题目视图并搜索该知识点（由 knowledge.ts 的卡片按钮调用） */
+export function bankSearchKp(kp: string): void {
+  state.search = kp;
+  state.view = 'q';
+  const input = document.getElementById('bankSearch') as HTMLInputElement | null;
+  if (input) input.value = kp;
+  Sound.play('click');
+  renderViewPicker();
+  syncToolbar();
+  void renderBody();
 }
 
 /** 返回打开题库前的界面（大厅或游戏） */
@@ -143,6 +200,6 @@ export function bankDrillContext(): { grade: string; subject: string } {
 export function bindBankBrowser(): void {
   document.getElementById('bankSearch')?.addEventListener('input', (e) => {
     state.search = (e.target as HTMLInputElement).value.trim();
-    renderBody();
+    void renderBody();
   });
 }
