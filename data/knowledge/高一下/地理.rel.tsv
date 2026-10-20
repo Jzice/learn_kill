@@ -1,0 +1,6 @@
+人口增长模式	人口迁移	contains	
+人口迁移	城市功能区	prereq	
+城市功能区	城市化	contains	
+农业区位	工业区位	contrast	
+工业区位	可持续发展	apply	
+可持续发展	农业区位	apply	生态农业
