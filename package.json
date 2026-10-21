@@ -1,7 +1,7 @@
 {
   "name": "xuetangsha",
   "private": true,
-  "version": "1.8.3",
+  "version": "1.9.0",
   "type": "module",
   "description": "学堂杀 · 九科争鸣 —— TypeScript 工程化重构，构建产出单 HTML 文件",
   "scripts": {

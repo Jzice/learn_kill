@@ -52,6 +52,22 @@ export const CHARACTERS: Character[] = [
   /* —— 高三下 —— */
   { id: 'lishizhen', name: '李时珍', title: '药圣', faction: 'biology', subject: '生物', hp: 4, avatar: '🌿', grade: '高三下', skills: [{ id: 'cuihua', name: '本草纲目', type: 'active', desc: '令一名角色回复1点体力（已满则改为摸一张牌）' }, { id: 'shizhe', name: '行医', type: 'trigger', desc: '受到伤害后摸一张牌' }] },
   { id: 'luosefu', name: '卢瑟福', title: '核物理之父', faction: 'chemistry', subject: '化学', hp: 4, avatar: '⚛️', grade: '高三下', skills: [{ id: 'yinli', name: '核模型', type: 'active', desc: '对一名角色造成1点伤害' }, { id: 'yuansu', name: '散射实验', type: 'trigger', desc: '手牌上限+1' }] },
+
+  /* —— 扩充：补足每学科≥5名基础角色（v1.9.0） —— */
+  /* 英语 +2 */
+  { id: 'dickens', name: '狄更斯', title: '批判现实主义大师', faction: 'english', subject: '英语', hp: 3, avatar: '📚', grade: '初一上', skills: [{ id: 'shisihang', name: '双城记', type: 'active', desc: '令一名角色交给你一张手牌或失去1点体力' }, { id: 'jiaohua', name: '讽刺小说', type: 'trigger', desc: '使用锦囊牌时摸一张牌' }] },
+  { id: 'shelley', name: '雪莱', title: '浪漫派诗人', faction: 'english', subject: '英语', hp: 3, avatar: '🕊️', grade: '初二下', skills: [{ id: 'yishu', name: '西风颂', type: 'active', desc: '获得一名角色一张手牌' }, { id: 'jiaohua', name: '诗辩', type: 'trigger', desc: '使用锦囊牌时摸一张牌' }] },
+  /* 生物 +1 */
+  { id: 'baside', name: '巴斯德', title: '微生物学之父', faction: 'biology', subject: '生物', hp: 4, avatar: '🦠', grade: '初二上', skills: [{ id: 'jinhualun', name: '巴氏灭菌', type: 'active', desc: '摸两张牌然后弃一张牌' }, { id: 'shizhe', name: '免疫', type: 'trigger', desc: '受到伤害后摸一张牌' }] },
+  /* 历史 +1 */
+  { id: 'zhugeliang', name: '诸葛亮', title: '卧龙', faction: 'history', subject: '历史', hp: 3, avatar: '🪶', grade: '初一下', skills: [{ id: 'mingjian', name: '隆中对', type: 'active', desc: '令一名角色弃一张手牌' }, { id: 'moxuyou', name: '鞠躬尽瘁', type: 'trigger', desc: '受到伤害后摸一张牌' }] },
+  /* 地理 +2 */
+  { id: 'zhangheng', name: '张衡', title: '科圣', faction: 'geography', subject: '地理', hp: 4, avatar: '🌐', grade: '初一上', skills: [{ id: 'tansuo', name: '地动仪', type: 'active', desc: '令所有角色各摸一张牌' }, { id: 'tanxian', name: '浑天说', type: 'trigger', desc: '计算距离-1' }] },
+  { id: 'lidayaun', name: '郦道元', title: '水经注作者', faction: 'geography', subject: '地理', hp: 4, avatar: '🗺️', grade: '初二下', skills: [{ id: 'youji', name: '水经注', type: 'active', desc: '令一名角色弃一张牌或让你摸一张牌' }, { id: 'tanxian', name: '舆地', type: 'trigger', desc: '计算距离-1' }] },
+  /* 政治 +3 */
+  { id: 'mengzi', name: '孟子', title: '亚圣', faction: 'politics', subject: '政治', hp: 4, avatar: '📜', grade: '高一上', skills: [{ id: 'lunyu', name: '仁政', type: 'active', desc: '令一名角色回复1点体力并摸一张牌' }, { id: 'jiaohua', name: '王道', type: 'trigger', desc: '使用锦囊牌时摸一张牌' }] },
+  { id: 'mozi', name: '墨子', title: '兼爱非攻', faction: 'politics', subject: '政治', hp: 4, avatar: '☯️', grade: '初二上', skills: [{ id: 'xunjie', name: '非攻', type: 'active', desc: '令一名角色弃一张牌或交给你一张牌' }, { id: 'moxuyou', name: '尚同', type: 'trigger', desc: '受到伤害后摸一张牌' }] },
+  { id: 'sunzi', name: '孙子', title: '兵圣', faction: 'politics', subject: '政治', hp: 3, avatar: '⚔️', grade: '初三上', skills: [{ id: 'mingjian', name: '兵法', type: 'active', desc: '令一名角色弃一张手牌' }, { id: 'moxuyou', name: '虚实', type: 'trigger', desc: '受到伤害后摸一张牌' }] },
 ];
 
 export const ROLES: Record<Role, { name: string; color: string }> = {
