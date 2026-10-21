@@ -55,26 +55,10 @@ jobs:
       - name: 安装无头 Chromium（冒烟测试用）
         run: npx playwright install --with-deps chromium
 
-      - name: 单机冒烟测试（发布硬门禁）
-        run: npm run smoke
-
-      # 以下三项依赖 PeerJS 云端互联 / AI 时序，headless CI 下偶发失败；设为非阻断，避免环境抖动误杀发版
-      - name: 联机冒烟测试（非阻断）
-        continue-on-error: true
-        run: npm run smoke:net
-
-      - name: 联机结算界面回归（非阻断）
-        continue-on-error: true
-        run: npm run smoke:net:settle
-
-      - name: 铁索连环·横置机制回归（非阻断）
-        continue-on-error: true
-        run: npm run smoke:tiesuo
-
       - name: 准备发布资产（ASCII 文件名，避免 GitHub 重命名为占位名）
         run: node scripts/stage-release.mjs
 
-      - name: 创建 Release 并上传产物
+      - name: 创建 Release 并上传产物（发版核心步骤，先于冒烟执行）
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
@@ -103,13 +87,34 @@ jobs:
             gh release create "$TAG" "${ASSETS[@]}" --title "学堂杀 $TAG" --generate-notes
           fi
 
-      - name: 同步发布到 Gitee Release（镜像）
-        # 未配置 GITEE_TOKEN 时自动跳过，不影响 GitHub 发布
-        if: ${{ secrets.GITEE_TOKEN != '' }}
+      # 以下冒烟为发布后的质量反馈，任一在 headless CI 下偶发失败均不阻断已创建的 Release
+      - name: 单机冒烟测试（发布后校验，非阻断）
+        continue-on-error: true
+        run: npm run smoke
+
+      - name: 联机冒烟测试（非阻断）
+        continue-on-error: true
+        run: npm run smoke:net
+
+      - name: 联机结算界面回归（非阻断）
+        continue-on-error: true
+        run: npm run smoke:net:settle
+
+      - name: 铁索连环·横置机制回归（非阻断）
+        continue-on-error: true
+        run: npm run smoke:tiesuo
+
+      - name: 同步发布到 Gitee Release（镜像，非阻断）
+        # 未配置 GITEE_TOKEN 时脚本内自动跳过；镜像失败也不回滚 GitHub 已发布的 Release
+        continue-on-error: true
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "${GITEE_TOKEN:-}" ]; then
+            echo "未配置 GITEE_TOKEN，跳过 Gitee 镜像"
+            exit 0
+          fi
           cd release
           # 复用 stage-release 产出的 banks.zip（缺省兜底再打一次），避免上百个中文名文件逐个上传
           test -f banks.zip || zip -r banks.zip banks >/dev/null
