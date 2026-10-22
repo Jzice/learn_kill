@@ -15,6 +15,8 @@ import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { aiPlayPhase, aiQuiz, aiSpeak } from './ai';
 import { aiQuizRate } from './aibrain';
+import { AIPOLICY } from './aipolicy';
+import { pickDiscardCard } from './aieval';
 import { dealDamage, onLoseArmor } from './damage';
 import { useActiveSkill } from './skills';
 import { useSha, useTao, useJiu, useTrick } from './actions';
@@ -515,7 +517,18 @@ export async function discardPhase(p: (typeof G.players)[number]): Promise<void>
   const limit = handLimit(p);
   while (p.hand.length > limit && p.hand.length > 0) {
     if (p.isAI) {
-      const c = p.hand.pop()!;
+      // EV：弃「保留价值最低」的牌（保闪 / 桃 / 杀）；基线版沿用 pop() 随机弃牌
+      let c: Card | null = null;
+      if (AIPOLICY.useEv) {
+        c = pickDiscardCard(p);
+        if (c) {
+          const i = p.hand.indexOf(c);
+          if (i >= 0) p.hand.splice(i, 1);
+        }
+      } else {
+        c = p.hand.pop()!;
+      }
+      if (!c) break;
       // 缀术 / 低温提取：符合条件的弃牌改为置于牌堆顶
       if (!redirectToDeckTop(p, c)) G.discard.push(c);
     } else {

@@ -156,12 +156,20 @@ declare global {
       charOf: (idx: number) => string;
       players: () => Player[];
     };
+    /** AI 策略参数读写（A/B 对比与 scripts/tune-ai.mjs 参数校准） */
+    xtsSetAiPolicy: (patch: Partial<import('./game/aipolicy').AiPolicy> | null) => import('./game/aipolicy').AiPolicy;
+    xtsGetAiPolicy: () => import('./game/aipolicy').AiPolicy;
+    xtsResetAiPolicy: () => import('./game/aipolicy').AiPolicy;
     xtsAutoRun: (
       n: number,
       seats?: number,
+      policy?: Partial<import('./game/aipolicy').AiPolicy> | null,
+      seed?: number | null,
     ) => Promise<{
       games: number;
       stalls: number;
+      turns: number;
+      avgTurns: number;
       byChar: Record<string, { games: number; wins: number; alive: number }>;
       byRole: Record<string, { games: number; wins: number }>;
       byCharRole: Record<string, Record<string, { games: number; wins: number; alive: number }>>;

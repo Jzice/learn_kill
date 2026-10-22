@@ -27,6 +27,8 @@ import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { aiQuiz, aiSpeak } from './ai';
 import { aiQuizRate, aiShouldCounter } from './aibrain';
+import { AIPOLICY } from './aipolicy';
+import { shouldConvertToShan } from './aieval';
 import { llmChooseAction, llmShouldCounter } from '../llm/agent';
 import { llmReady } from '../llm/config';
 import { dealDamage, onLoseArmor } from './damage';
@@ -811,8 +813,12 @@ async function requestOneShan(
   // 启发式 AI（或未真正开启大模型的接管座位）：确定性优先级，有闪必出
   if (t.isAI && !(t.aiMode === 'llm' && llmReady())) {
     // 转化技：老舍【骆驼祥子】装备当闪 / 孙子【虚实】杀当闪
+    // EV 门控：真【闪】必出；「转化」仅在值得时才做，避免满血时白扔一张【杀】
+    const natural = t.hand.find((c) => c.sub === 'shan');
+    const conv = t.hand.find((c) => c.sub !== 'shan' && canConvertAs(t, c, 'shan', outside));
     const shan =
-      t.hand.find((c) => c.sub === 'shan') || t.hand.find((c) => canConvertAs(t, c, 'shan', outside));
+      natural ||
+      (conv && (!AIPOLICY.useEv || shouldConvertToShan(targetIdx, 1, conv)) ? conv : null);
     if (shan) {
       if (shan.sub !== 'shan') markConvertUse(t, shan, 'shan', outside);
       discardCard(t, shan);

@@ -25,6 +25,10 @@ import {
 import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
 
 import { exitGame, hostStartGame, startSingle } from './game/setup';
+import { activeLoopCount } from './game/loop';
+import { aiTurnsOf } from './game/aibrain';
+import { getPolicy, resetPolicy, setPolicy } from './game/aipolicy';
+import type { AiPolicy } from './game/aipolicy';
 import { clickHandCard, clickTargetSeat } from './ui/hand';
 import { handleLocalChoice, resolveChoice } from './game/choice';
 import { defaultChoiceFor } from './game/timer';
@@ -297,6 +301,10 @@ window.nativeShare = nativeShare;
 
 /* ---- 无头模拟 / 技能自检（scripts/balance.mjs、scripts/smoke-skills.mjs 用） ---- */
 window.xtsSim = (on: boolean) => setSim(!!on);
+// AI 策略参数（A/B 对比与 scripts/tune-ai.mjs 参数校准入口）
+window.xtsSetAiPolicy = (patch: Partial<AiPolicy> | null) => setPolicy(patch);
+window.xtsGetAiPolicy = () => getPolicy();
+window.xtsResetAiPolicy = () => resetPolicy();
 window.xtsMakeAllAI = () => {
   G.players.forEach((p) => {
     p.isAI = true;
@@ -336,9 +344,11 @@ window.xtsSkillAudit = () => {
  * 无头批量 AI 对战（scripts/balance.mjs 用）。
  * 每局随机角色开局并把所有座位交 AI 托管，跑到 gameOver 后统计胜率 / 存活率。
  * 返回各角色与各身份的累计战绩，供平衡微调。
+ * @param seed 每局独立重置的可复现种子（base + 局序）；传 null 则走页面真实随机
  */
-window.xtsAutoRun = async (n: number, seats = 5) => {
+window.xtsAutoRun = async (n: number, seats = 5, policy?: Partial<AiPolicy> | null, seed?: number | null) => {
   setSim(true);
+  if (policy) setPolicy(policy); // A/B 与 CEM 校准：批量跑局前切换策略参数
   // 选最高年级，确保角色池覆盖全部 46 名（AI 座位从 mergedCharPool 取角色）
   setGrade('高三下');
   const charIds = CHARACTERS.map((c) => c.id);
@@ -351,7 +361,9 @@ window.xtsAutoRun = async (n: number, seats = 5) => {
     spy: { games: 0, wins: 0 },
   };
   let stalls = 0;
+  let turns = 0;
   for (let i = 0; i < n; i++) {
+    if (seed !== null && seed !== undefined) (window as unknown as { __xtsSeed?: (v: number) => void }).__xtsSeed?.(seed + i);
     setPlayerCount(seats);
     selectChar(charIds[Math.floor(Math.random() * charIds.length)]);
     await startSingle(); // 建局并启动 gameLoop（fire-and-forget）
@@ -365,6 +377,14 @@ window.xtsAutoRun = async (n: number, seats = 5) => {
       stalls++;
       G.gameOver = true; // 防止死循环：强制结束本局
     }
+    // 等待上一局的 gameLoop 彻底收尾再开下一局：否则旧循环会因为
+    // G.gameOver 被新局重置而「复活」，导致 N 个循环并发驱动同一局（耗时 O(N²) 劣化）。
+    let w = 0;
+    while (activeLoopCount() > 0 && w < 200000) {
+      await sleep(0);
+      w++;
+    }
+    turns += aiTurnsOf(); // 局长度量（AI 回合数，resetBrain 于开局清零）
     const winner = G.winnerText;
     const winRoles: string[] =
       winner === '内奸获胜'
@@ -391,7 +411,7 @@ window.xtsAutoRun = async (n: number, seats = 5) => {
       }
     }
   }
-  return { games: n, stalls, byChar, byRole, byCharRole };
+  return { games: n, stalls, turns, avgTurns: n ? turns / n : 0, byChar, byRole, byCharRole };
 };
 
 /**

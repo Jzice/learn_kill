@@ -24,7 +24,20 @@ import {
   shaExtraCost,
   shaLimitOf,
 } from './skillEngine';
-import { noteAiTurn, pickAiTarget } from './aibrain';
+import { noteAiTurn } from './aibrain';
+import { AIPOLICY } from './aipolicy';
+import {
+  cardKeepValue,
+  evAoe,
+  evDuel,
+  evHuogong,
+  evSha,
+  evTiesuo,
+  pickTarget,
+  softmaxPick,
+  targetScore,
+  tauNow,
+} from './aieval';
 import { SHA_SUBS } from '../data/cards';
 
 export function aiQuiz(rate = 0.6): boolean {
@@ -86,8 +99,14 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       // 收益启发式：优先挑付得起费用且估值最高的技能，保留一定随机性
       const usable = acts.filter((s) => aiSkillUsable(p, s.id));
       const pool = usable.length ? usable : acts;
-      const best = pool.reduce((a, b) => (aiSkillValue(p, b.id) > aiSkillValue(p, a.id) ? b : a));
-      const act = Math.random() < 0.7 ? best : pool[Math.floor(Math.random() * pool.length)];
+      let act: (typeof pool)[number];
+      if (AIPOLICY.useEv) {
+        // 博弈：softmax over 估值（差异大→确定，差异小→随机化，避免被读牌剥削）
+        act = softmaxPick(pool, (s) => aiSkillValue(p, s.id), tauNow());
+      } else {
+        const best = pool.reduce((a, b) => (aiSkillValue(p, b.id) > aiSkillValue(p, a.id) ? b : a));
+        act = Math.random() < 0.7 ? best : pool[Math.floor(Math.random() * pool.length)];
+      }
       await useActiveSkill(idx, act.id);
       await sleep(400);
     }
@@ -149,9 +168,12 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       .map((q, i) => ({ q, i }))
       .filter(({ q, i }) => i !== idx && q.alive && !sameFaction(q, p) && !q.chained)
       .map(({ i }) => i);
-    if (enemies.length) {
+    // 按目标价值排序取前二（原逻辑只是取数组前两个）
+    const ranked = enemies.slice().sort((a, b) => targetScore(idx, b) - targetScore(idx, a));
+    const picks = ranked.slice(0, 2);
+    if (enemies.length && (!AIPOLICY.useEv || evTiesuo(idx, picks) >= AIPOLICY.tiesuoMin)) {
       discardCard(p, tiesuo);
-      await useTrick(idx, tiesuo, enemies[0], enemies[1] ?? null);
+      await useTrick(idx, tiesuo, picks[0], picks[1] ?? null);
       await sleep(300);
     } else if (Math.random() < 0.4) {
       discardCard(p, tiesuo);
@@ -163,11 +185,14 @@ export async function aiPlayPhase(idx: number): Promise<void> {
   // 火攻：对敌方目标使用（目标须有手牌，否则必败）
   const huogong = p.hand.find((c) => c.sub === 'huogong');
   if (huogong && p.alive) {
-    const hi = pickAiTarget(idx);
+    const hi = pickTarget(idx);
+    // 机会节点：火攻需「我方能弃出与目标展示牌同花色的牌」，按未见牌花色分布估成功概率
     if (hi >= 0 && G.players[hi].hand.length > 0) {
-      discardCard(p, huogong);
-      await useTrick(idx, huogong, hi);
-      await sleep(300);
+      if (!AIPOLICY.useEv || evHuogong(idx, hi) >= AIPOLICY.huogongMin) {
+        discardCard(p, huogong);
+        await useTrick(idx, huogong, hi);
+        await sleep(300);
+      }
     }
   }
   // 借刀杀人：优先借「敌方」的武器，并让受害者优先是非同阵营角色
@@ -209,19 +234,21 @@ export async function aiPlayPhase(idx: number): Promise<void> {
   // 决斗：对敌方目标使用
   const juedou = p.hand.find((c) => c.sub === 'juedou');
   if (juedou && p.alive) {
-    const di = pickAiTarget(idx);
-    if (di >= 0) {
+    const di = pickTarget(idx);
+    // 子博弈闭式解：对方杀数 K~Bin(n,q)，我方胜 ⇔ K ≤ 我方杀数
+    if (di >= 0 && (!AIPOLICY.useEv || evDuel(idx, di) >= AIPOLICY.duelMin)) {
       discardCard(p, juedou);
       await useTrick(idx, juedou, di);
       await sleep(300);
     }
   }
-  // AOE：仅当场上没有同阵营的其他存活角色时才使用，避免误伤
+  // AOE：EV 版逐座位累加期望收益（天然处理误伤队友）；基线版沿用「有同阵营就不放」
   const allyAlive = G.players.some((q, i) => i !== idx && q.alive && q.faction === p.faction);
-  if (!allyAlive) {
-    for (const sub of ['nanman', 'wanjian']) {
-      const aoe = p.hand.find((c) => c.sub === sub);
-      if (aoe && p.alive) {
+  for (const sub of ['nanman', 'wanjian'] as const) {
+    const aoe = p.hand.find((c) => c.sub === sub);
+    if (aoe && p.alive) {
+      const ok = AIPOLICY.useEv ? evAoe(idx, sub) >= AIPOLICY.aoeMin : !allyAlive;
+      if (ok) {
         discardCard(p, aoe);
         await useTrick(idx, aoe, null);
         await sleep(300);
@@ -247,7 +274,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     const chainOn = G.players.some((q) => q.alive && q.chained);
     if (shas.length) {
       // 博弈式目标选择：基于信念推断与身份策略（可能观望/佯攻）
-      let ti = pickAiTarget(idx);
+      let ti = pickTarget(idx);
       if (chainOn) {
         const ci = G.players.findIndex(
           (q, i) => i !== idx && q.alive && q.chained && inRange(idx, i) && !sameFaction(q, p),
@@ -267,14 +294,18 @@ export async function aiPlayPhase(idx: number): Promise<void> {
           const multi = p.equip.weapon?.skill === 'fangtian' && p.hand.length === 1;
           const targets: number[] = [ti];
           if (multi) {
+            // 附加目标按「出杀 EV」排序（含闪避概率与敌我信念），天然回避队友
+            const elemental = sha.damageType === 'fire' || sha.damageType === 'thunder';
             const rest = G.players.map((_, i) => i)
               .filter((i) => i !== idx && i !== ti && G.players[i].alive && inRange(idx, i))
-              .sort(
-                (x, y) =>
-                  (sameFaction(G.players[x], p) ? 1 : 0) - (sameFaction(G.players[y], p) ? 1 : 0),
+              .sort((x, y) =>
+                AIPOLICY.useEv
+                  ? evSha(idx, y, 1, elemental) - evSha(idx, x, 1, elemental)
+                  : (sameFaction(G.players[x], p) ? 1 : 0) - (sameFaction(G.players[y], p) ? 1 : 0),
               );
             for (const i of rest) {
               if (targets.length >= 3) break;
+              if (AIPOLICY.useEv && evSha(idx, i, 1, elemental) <= 0) continue;
               targets.push(i);
             }
           }
@@ -302,12 +333,15 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     p.equip.weapon?.skill === 'zhangba' &&
     p.hand.length >= 2
   ) {
-    const ti = pickAiTarget(idx);
+    const ti = pickTarget(idx);
     if (ti >= 0) {
       // 优先拿价值最低的两张（桃/闪/杀/装备之外）
-      const junk = p.hand.filter(
-        (c) => !SHA_SUBS.includes(c.sub) && c.sub !== 'tao' && c.sub !== 'shan' && c.type !== 'equip',
-      );
+      const junk = AIPOLICY.useEv
+        ? // EV 版：按「保留价值」升序取两张（保留价值最低的先用掉）
+          [...p.hand].sort((a, b) => cardKeepValue(p, a) - cardKeepValue(p, b)).slice(0, 2)
+        : p.hand.filter(
+            (c) => !SHA_SUBS.includes(c.sub) && c.sub !== 'tao' && c.sub !== 'shan' && c.type !== 'equip',
+          );
       const src = junk.length >= 2 ? junk : p.hand;
       const two = src.slice(0, 2);
       if (two.length === 2) {

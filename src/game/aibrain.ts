@@ -18,6 +18,7 @@
 import type { Player } from '../core/types';
 import { G } from './state';
 import { inRange } from './rules';
+import { resetCounts } from './aicounts';
 
 type RoleKey = 'lord' | 'loyal' | 'rebel' | 'spy';
 /** 对某玩家身份的对数得分（log-odds 风格，可为负；softmax 归一化后为信念概率） */
@@ -97,6 +98,11 @@ function aliveCount(): number {
 
 function roundApprox(): number {
   return aiTurns / Math.max(1, aliveCount());
+}
+
+/** 近似轮次（对外暴露，供 aieval 的 softmax 温度 / 佯攻概率使用） */
+export function roundOf(): number {
+  return roundApprox();
 }
 
 function addGrudge(victim: number, attacker: number): void {
@@ -205,6 +211,12 @@ export function resetBrain(): void {
   grudges.clear();
   favors.clear();
   aiTurns = 0;
+  resetCounts(); // 牌堆 / 未见牌计数缓存一并清空
+}
+
+/** 自对弈度量：本局已进行的 AI 回合数（近似局长） */
+export function aiTurnsOf(): number {
+  return aiTurns;
 }
 
 /**
