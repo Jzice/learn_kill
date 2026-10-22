@@ -1,9 +1,9 @@
 {
   "name": "xuetangsha",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
-  "description": "学堂杀 · 九科争鸣 —— v2.1 技能创意重设计（20 名学科名人机制改写：免疫/转移/距离陷阱/装备失效/马政），构建产出单 HTML 文件",
+  "description": "学堂杀 · 九科争鸣 —— v2.2 接入大模型接管 AI（OpenAI 兼容 + ProviderAdapter 可扩展，出牌/目标/无懈/答题/救援由模型驱动，失败回退启发式），构建产出单 HTML 文件",
   "scripts": {
     "dev": "node scripts/dev.mjs cdn",
     "dev:bundled": "node scripts/dev.mjs bundled",

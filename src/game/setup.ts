@@ -41,6 +41,7 @@ import {
 } from '../profile/profile';
 import { LOADOUT_EQUIP_LIMIT, LOADOUT_ITEM_LIMIT } from '../profile/credits';
 import { Sound } from '../core/sound';
+import { llmEnabledForSeat } from '../llm/config';
 
 /** 应用开局选项：回合限时（开关 + 秒数），联机由房主下发给客人 */
 function applyTimerSetting(): void {
@@ -228,7 +229,10 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       G.players.push(pl);
     } else {
       const ch = aiChars.length ? aiChars[i % aiChars.length] : pool[0];
-      G.players.push(newPlayer(i, 'AI·' + (ch ? ch.name : '同学'), ch, roleAtSeat[i], true, null));
+      const pl = newPlayer(i, 'AI·' + (ch ? ch.name : '同学'), ch, roleAtSeat[i], true, null);
+      // 大模型接管：配置开启且本座位在接管范围内时，标记为由大模型驱动
+      if (llmEnabledForSeat(i)) pl.aiMode = 'llm';
+      G.players.push(pl);
     }
   }
   resetBrain(); // 新对局：清空 AI 信念/恩怨

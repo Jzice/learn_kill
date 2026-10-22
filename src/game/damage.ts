@@ -8,6 +8,14 @@ import { ROLES } from '../data/characters';
 import { addLog, addPlayLog } from './log';
 import { discardCard } from './rules';
 import { aiShouldSave, noteAttack, noteSave } from './aibrain';
+import { llmShouldSave } from '../llm/agent';
+
+/** 某 AI 是否愿意救援 idx：大模型接管座位走 llmShouldSave，否则用原启发式（意愿>0 视为救） */
+async function saveWillingness(i: number, idx: number): Promise<boolean> {
+  const q = G.players[i];
+  if (q.aiMode === 'llm') return llmShouldSave(i, idx);
+  return aiShouldSave(i, idx) > 0;
+}
 import { canConvertAs, fire, markConvertUse, reduceDamageOf, tryRevive } from './skillEngine';
 import { render } from '../ui/render';
 import { waitChoice } from './choice';
@@ -157,8 +165,19 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
       }
       let saved = false;
       // AI 博弈救援：按信念/身份策略计算各 AI 施救意愿（含欺骗性救援），按意愿排序尝试
-      const will = G.players
-        .map((q, i) => ({ q, i, w: q.alive && q.isAI && i !== idx ? aiShouldSave(i, idx) : 0 }))
+      // 大模型接管座位改用 llmShouldSave 决策（失败自动回退原启发式）
+      const savers = G.players
+        .map((q, i) => ({ q, i }))
+        .filter(({ q }) => q.alive && q.isAI && q !== G.players[idx]);
+      const will = (
+        await Promise.all(
+          savers.map(async ({ q, i }) => ({
+            q,
+            i,
+            w: (await saveWillingness(i, idx)) ? 1 : 0,
+          })),
+        )
+      )
         .filter((x) => x.w > 0)
         .sort((a, b) => b.w - a.w);
       for (const { q, i } of will) {

@@ -121,6 +121,17 @@ import {
   shopUnlockChar,
 } from './ui/shop';
 import { rerollRandomChar } from './ui/lobby';
+import {
+  closeLlmSettings,
+  llmSetEnabled,
+  llmSetField,
+  llmSetProvider,
+  llmSetTakeoverAll,
+  llmTestConn,
+  llmToggleSeat,
+  openLlmSettings,
+  renderLlmSetupPanel,
+} from './ui/llmSettings';
 import { revealCancel, revealConfirm, revealReroll } from './ui/reveal';
 import { useItem } from './game/actions';
 
@@ -231,6 +242,15 @@ window.shopRemoveLoadoutItem = shopRemoveLoadoutItem;
 window.shopClearLoadout = shopClearLoadout;
 window.renderLoadoutBar = renderLoadoutBar;
 window.useItem = useItem;
+// 大模型接管设置
+window.openLlmSettings = openLlmSettings;
+window.closeLlmSettings = closeLlmSettings;
+window.llmSetProvider = llmSetProvider;
+window.llmSetEnabled = llmSetEnabled;
+window.llmSetTakeoverAll = llmSetTakeoverAll;
+window.llmToggleSeat = llmToggleSeat;
+window.llmSetField = llmSetField;
+window.llmTestConn = llmTestConn;
 
 /** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位；
  *  并实测切换布局模式：单行放得下=单行(品牌左, 等级积分+按钮+个人信息靠右)；
@@ -460,6 +480,7 @@ function init(): void {
   renderCharPicker();
   renderRolePicker();
   updateAIHint();
+  renderLlmSetupPanel();
   updateLobbyMode();
   updateBankInfo();
   renderSetupSummary();

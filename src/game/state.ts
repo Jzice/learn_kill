@@ -23,6 +23,8 @@ export const G: GameState = {
   timerOn: false,
   timerSec: 20,
   timerEnd: null,
+  // 大模型「思考中」座位（默认无）
+  thinkingSeat: null,
 };
 
 /** 答题统计（const 对象，字段 mutate；setup 重置时逐字段清零） */

@@ -121,6 +121,15 @@ declare global {
     shopClearLoadout: () => void;
     renderLoadoutBar: () => void;
     useItem: (idx: number, itemId: string) => void;
+    // 大模型接管 AI 设置
+    openLlmSettings: () => void;
+    closeLlmSettings: () => void;
+    llmSetProvider: (p: 'openai' | 'deepseek' | 'qwen' | 'zhipu' | 'ollama' | 'custom') => void;
+    llmSetEnabled: (on: boolean) => void;
+    llmSetTakeoverAll: (on: boolean) => void;
+    llmToggleSeat: (i: number) => void;
+    llmSetField: (field: 'baseURL' | 'apiKey' | 'model' | 'temperature' | 'timeoutMs', value: string) => void;
+    llmTestConn: () => Promise<void>;
     // 游戏内交互
     clickHandCard: (cardId: number) => void;
     clickTargetSeat: (idx: number) => void;

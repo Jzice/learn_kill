@@ -31,6 +31,8 @@ function buildPlayerCard(p: Player, i: number): string {
   // 当前出牌（回合）角色：游戏进行中高亮其座位；对局结束不再标识
   const isTurn = i === G.current && !G.gameOver;
   const isSelf = i === G.myPlayerIdx;
+  // 大模型接管座位正在「思考中」：显示呼吸式指示，随 state_sync 下发到联机客人端
+  const isThinking = G.thinkingSeat === i;
   const mark = ROLE_MARKS[i];
   const isMarked = !!mark && !isSelf && !p.roleRevealed;
   // 身份展示：自己/已公开 → 真实身份；被自己标记且未公开 → 标记身份（虚线框区分）；否则未知
@@ -89,10 +91,10 @@ function buildPlayerCard(p: Player, i: number): string {
   if (p.chained) badges += `<span class="badge badge-chain" title="铁索连环·横置：受属性伤害时传导">🔗连环</span>`;
   if (p.turned) badges += `<span class="badge badge-turned" title="翻面：跳过下一个回合">🔄翻面</span>`;
   const markBtn = isSelf || !p.alive ? '' : `<button class="p-mark-btn" title="标记身份" onclick="event.stopPropagation();openMarkMenu(${i})">🏷️</button>`;
-  return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''} ${isMarked ? 'role-marked' : ''}" style="--faction-color:${fColor};${isMarked ? 'border:2px dashed ' + roleColor + ';' : ''}">
+  return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''} ${isMarked ? 'role-marked' : ''} ${isThinking ? 'thinking' : ''}" style="--faction-color:${fColor};${isMarked ? 'border:2px dashed ' + roleColor + ';' : ''}">
     <div class="faction-icon" style="border-color:${fColor};color:${fColor};">${faction.icon}</div>
     ${markBtn}
-    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${isTurn && p.alive ? '<span class="turn-arrow">▶</span>' : ''}${p.name} ${genderIconHtml}${aiTag}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
+    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${isTurn && p.alive ? '<span class="turn-arrow">▶</span>' : ''}${p.name} ${genderIconHtml}${aiTag}${isThinking ? '<span class="seat-thinking">🤖 思考中…</span>' : ''}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
     <div class="pknow">🔮${p.knowledge}</div>
     <div class="php-bar">${hpGems}</div>
     <div class="pequip-slots">${equipSlots}</div>

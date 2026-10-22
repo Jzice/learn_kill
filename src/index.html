@@ -45,6 +45,7 @@
       <span class="tb-actions">
         <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
         <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
+        <button class="tb-icon" onclick="openLlmSettings()" title="大模型接管 AI 设置">🤖</button>
       </span>
       <span class="tb-actions">
         <button class="tb-icon" onclick="openShop('chars')" title="学分商店">🪙<i class="tb-dot" id="tbShopDot" style="display:none"></i></button>
@@ -167,6 +168,7 @@
       </div>
       <div id="aiCountHint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;"></div>
     </div>
+    <div class="panel" id="llmSetupPanel"></div>
     <div class="panel" id="roomConfig" style="display:none;">
       <h3>◈ 联机配置 ◈</h3>
       <!-- 房间信息与操作按钮同一行：未建房时（无 has-room）内容居中，roomInfo 空态不占位，
@@ -445,6 +447,14 @@
 </div>
 
 
+
+<!-- 大模型接管设置弹窗 -->
+<div id="llmSettingsModal" class="rules-modal">
+  <div class="rules-box" style="max-width:560px">
+    <div class="rules-header"><span>🤖 大模型接管 AI 设置</span><button onclick="closeLlmSettings()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="llmSettingsBody"></div>
+  </div>
+</div>
 
 <!-- 规则弹窗 -->
 <div id="rulesModal" class="rules-modal">

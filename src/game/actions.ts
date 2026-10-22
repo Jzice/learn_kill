@@ -27,6 +27,7 @@ import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { aiQuiz, aiSpeak } from './ai';
 import { aiQuizRate, aiShouldCounter } from './aibrain';
+import { llmShouldCounter } from '../llm/agent';
 import { dealDamage, onLoseArmor } from './damage';
 import { triggerDamageMod } from './skillfx';
 import { runSkillEffects } from './skillfx';
@@ -670,7 +671,7 @@ async function counterChain(
     if (!p.hand.some((c) => c.sub === 'wuxie')) continue;
     let want = false;
     if (p.isAI) {
-      want = aiShouldCounter(pid, srcIdx, countered, sub, primary, lastCounterer);
+      want = p.aiMode === 'llm' ? await llmShouldCounter(pid, srcIdx, countered, sub, primary, lastCounterer) : aiShouldCounter(pid, srcIdx, countered, sub, primary, lastCounterer);
     } else {
       const ch = await waitChoice(
         pid,

@@ -1,5 +1,5 @@
 /* ==================== 回合流程 ==================== */
-import type { Card, ChoiceOption, DamageType } from '../core/types';
+import type { Card, ChoiceOption, DamageType, PendingType } from '../core/types';
 import { G } from './state';
 import { FX } from '../core/fx';
 import { FACTIONS } from '../data/factions';
@@ -40,6 +40,8 @@ import {
   tryReplaceJudge,
 } from './skillEngine';
 import { NET, scheduleSync } from '../net/network';
+import { llmChooseAction, llmQuizDecide, llmReady } from '../llm/agent';
+import type { LlmDecisionKind } from '../llm/types';
 
 /** 徐霞客【探险】距离陷阱：与目标距离 > min 的角色不能对其使用【杀】 */
 function distTrapBlocks(attackerIdx: number, targetIdx: number): boolean {
@@ -92,7 +94,8 @@ export async function runTurn(idx: number): Promise<void> {
   if (!raid) await fire('onDraw', { idx });
   render();
   if (p.isAI) {
-    if (aiQuiz(0.6)) {
+    const quiz = p.aiMode === 'llm' ? await llmQuizDecide(idx) : aiQuiz(0.6);
+    if (quiz) {
       const ok = await askQuizForPlayer(p, false);
       if (ok) {
         drawCards(p, 1);
@@ -163,7 +166,8 @@ export async function judgePhase(p: (typeof G.players)[number]): Promise<void> {
 
 export async function playPhase(idx: number): Promise<void> {
   const p = G.players[idx];
-  if (p.isAI) {
+  // 启发式 AI 走原 aiPlayPhase；真人 / 大模型接管 走统一的「选项→决策→执行」循环
+  if (p.isAI && p.aiMode !== 'llm') {
     await aiPlayPhase(idx);
     return;
   }
@@ -224,7 +228,7 @@ export async function playPhase(idx: number): Promise<void> {
       opts.push({ label: '【丈八蛇矛】两张手牌当杀', value: 'zhangba' });
     }
     opts.push({ label: '结束出牌', value: 'end' });
-    const ch = await waitChoice(idx, opts, 'play');
+    const ch = await choosePlay(idx, opts);
     if (ch === 'end' || !ch) break;
     if (!p.alive || G.gameOver) break;
     if (ch === 'zhangba') {
@@ -495,6 +499,39 @@ export async function discardPhase(p: (typeof G.players)[number]): Promise<void>
   render();
 }
 
+/**
+ * 出牌阶段决策路由：真人走 waitChoice；大模型接管座位走 llmChooseAction。
+ * 大模型决策失败时回退「结束出牌」，避免卡死。
+ */
+async function choosePlay(idx: number, opts: ChoiceOption[]): Promise<string | number> {
+  const p = G.players[idx];
+  // 大模型接管座位：可用则问模型，否则回退「结束出牌」；绝不走 waitChoice（会卡死）
+  if (p.isAI && p.aiMode === 'llm') {
+    if (llmReady()) {
+      const v = await llmChooseAction(idx, opts, 'play');
+      if (v !== null && v !== undefined) return v;
+    }
+    return 'end';
+  }
+  return waitChoice(idx, opts, 'play');
+}
+
+/** 通用决策路由（目标选择 / 选牌等）：真人 waitChoice，大模型 llmChooseAction */
+async function chooseAmong(idx: number, opts: ChoiceOption[], type: PendingType): Promise<string | number> {
+  const p = G.players[idx];
+  // 大模型接管座位：可用则问模型，失败/不可用回退「取消项」等安全默认；
+  // 绝不回退到 waitChoice（对本地 AI 会永久等待输入而卡死）
+  if (p.isAI && p.aiMode === 'llm') {
+    if (llmReady()) {
+      const v = await llmChooseAction(idx, opts, type as LlmDecisionKind);
+      if (v !== null && v !== undefined) return v;
+    }
+    const cancel = opts.find((o) => o.value === -1 || String(o.value) === 'skip');
+    return cancel ? cancel.value : opts[0]?.value ?? -1;
+  }
+  return waitChoice(idx, opts, type);
+}
+
 /** 依次选择【杀】的目标：max>1 时可多选（方天画戟最多 3 个），返回已选目标 */
 async function pickShaTargets(idx: number, cand: number[], max: number): Promise<number[]> {
   const picked: number[] = [];
@@ -502,7 +539,7 @@ async function pickShaTargets(idx: number, cand: number[], max: number): Promise
   while (picked.length < max && rest.length) {
     const opts: ChoiceOption[] = rest.map((i) => ({ label: `攻击 ${G.players[i].name}`, value: i }));
     opts.push({ label: picked.length ? '结束选择' : '取消', value: -1 });
-    const t = await waitChoice(idx, opts, 'target');
+    const t = await chooseAmong(idx, opts, 'target');
     const v = Number(t);
     if (v < 0) break;
     picked.push(v);
@@ -531,7 +568,7 @@ async function pickShaTarget(idx: number): Promise<number> {
 async function pickTwoCards(idx: number): Promise<Card[]> {  const p = G.players[idx];
   const firstOpts = p.hand.map((c) => ({ label: `${c.name} ${c.suit}${c.num}`, value: c.id }));
   firstOpts.push({ label: '取消', value: -1 });
-  const f = await waitChoice(idx, firstOpts, 'list');
+  const f = await chooseAmong(idx, firstOpts, 'list');
   const fid = typeof f === 'number' ? f : Number(f);
   if (fid < 0) return [];
   const fc = p.hand.find((c) => c.id === fid);
@@ -540,7 +577,7 @@ async function pickTwoCards(idx: number): Promise<Card[]> {  const p = G.players
     .filter((c) => c.id !== fid)
     .map((c) => ({ label: `${c.name} ${c.suit}${c.num}`, value: c.id }));
   secondOpts.push({ label: '取消', value: -1 });
-  const s = await waitChoice(idx, secondOpts, 'list');
+  const s = await chooseAmong(idx, secondOpts, 'list');
   const sid = typeof s === 'number' ? s : Number(s);
   if (sid < 0) return [];
   const sc = p.hand.find((c) => c.id === sid);
@@ -562,7 +599,7 @@ async function pickTieSuoTargets(idx: number): Promise<number[]> {
       value: i,
     }));
     opts.push({ label: picked.length ? '确认（完成选择）' : '取消', value: -1 });
-    const t = await waitChoice(idx, opts, 'target');
+    const t = await chooseAmong(idx, opts, 'target');
     const v = Number(t);
     if (v < 0) {
       if (!picked.length) return []; // 首次即取消

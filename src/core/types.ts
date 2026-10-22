@@ -562,6 +562,8 @@ export interface Player {
   subjectMastery: Record<string, number>;
   alive: boolean;
   isAI: boolean;
+  /** 决策提供者：'heuristic' = 原启发式 AI；'llm' = 由大模型接管（仅当 isAI 时生效） */
+  aiMode?: 'heuristic' | 'llm';
   skills: Skill[];
   peerId: string | null;
   flags: PlayerFlags;
@@ -615,6 +617,8 @@ export interface GameState {
   timerSec?: number;
   /** 当前决策的截止时间戳（ms，房主权威）；null / undefined = 无进行中的计时；随 state_sync 下发供客人端显示倒计时 */
   timerEnd?: number | null;
+  /** 正在「思考中」的大模型座位号（仅 aiMode==='llm' 的座位）；随 state_sync 下发，客人端显示思考指示 */
+  thinkingSeat?: number | null;
 }
 
 export interface LogEntry {
