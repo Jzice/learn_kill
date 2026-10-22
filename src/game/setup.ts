@@ -230,17 +230,28 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     } else {
       const ch = aiChars.length ? aiChars[i % aiChars.length] : pool[0];
       const pl = newPlayer(i, 'AI·' + (ch ? ch.name : '同学'), ch, roleAtSeat[i], true, null);
-      // 大模型接管：配置开启且本座位在接管范围内时，标记为由大模型驱动
-      if (llmEnabledForSeat(i)) pl.aiMode = 'llm';
       G.players.push(pl);
     }
   }
   resetBrain(); // 新对局：清空 AI 信念/恩怨
+  applyLlmModes(); // 依据当前大模型配置标记各 AI 座位的决策模式
   G.players.forEach((p) => drawCards(p, 4));
   G.current = G.players.findIndex((p) => p.role === 'lord');
   if (G.current < 0) G.current = 0;
   G.myPlayerIdx = hostSeat;
   G.started = true;
+}
+
+/**
+ * 依据当前大模型配置，实时刷新所有 AI 座位的 aiMode（'llm' / 'heuristic'）。
+ * 供开局设置与「对局进行中」开关大模型接管共用：切换开关/接管范围后立即生效到下一回合。
+ * 仅修改已存在的 AI 座位，不触碰真人座位。
+ */
+export function applyLlmModes(): void {
+  G.players.forEach((p, i) => {
+    if (!p.isAI) return;
+    p.aiMode = llmEnabledForSeat(i) ? 'llm' : 'heuristic';
+  });
 }
 
 import { resetBrain } from './aibrain';

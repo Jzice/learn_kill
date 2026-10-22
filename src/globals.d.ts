@@ -127,6 +127,7 @@ declare global {
     llmSetProvider: (p: 'openai' | 'deepseek' | 'qwen' | 'zhipu' | 'ollama' | 'custom') => void;
     llmSetEnabled: (on: boolean) => void;
     llmSetTakeoverAll: (on: boolean) => void;
+    llmSetDebug: (on: boolean) => void;
     llmToggleSeat: (i: number) => void;
     llmSetField: (field: 'baseURL' | 'apiKey' | 'model' | 'temperature' | 'timeoutMs', value: string) => void;
     llmTestConn: () => Promise<void>;

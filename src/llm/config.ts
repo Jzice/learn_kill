@@ -15,6 +15,7 @@ export function defaultLlmConfig(): LlmConfig {
     timeoutMs: 20000,
     takeoverAll: true,
     takeoverSeats: [],
+    debug: false,
   };
 }
 
@@ -58,6 +59,11 @@ export function llmEnabledForSeat(seatIdx: number): boolean {
   if (!c.enabled) return false;
   if (c.takeoverAll) return true;
   return c.takeoverSeats.includes(seatIdx);
+}
+
+/** 是否打印大模型决策 debug 日志（在对局战报中输出「原始输出 / 最终选择」） */
+export function llmDebug(): boolean {
+  return getLlmConfig().debug;
 }
 
 /** 厂商默认 baseURL / 模型（选择预设时联动填入，仍可被用户覆盖） */

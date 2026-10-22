@@ -7,6 +7,7 @@ import {
   setLlmConfig,
 } from '../llm/config';
 import { testLlmConnection } from '../llm/client';
+import { applyLlmModes } from '../game/setup';
 import { SELECTED_COUNT } from './lobby';
 
 const PROVIDERS: LlmProvider[] = ['openai', 'deepseek', 'qwen', 'zhipu', 'ollama', 'custom'];
@@ -62,6 +63,7 @@ export function renderLlmSettings(): void {
       <label class="llm-switch"><input type="checkbox" ${c.enabled ? 'checked' : ''} onchange="llmSetEnabled(this.checked)"> 用大模型接管 AI（开关）</label>
       <label class="llm-switch"><input type="checkbox" ${c.takeoverAll ? 'checked' : ''} onchange="llmSetTakeoverAll(this.checked)"> 接管全部 AI 座位</label>
       <div class="llm-seats">${seatChecks.join('')}</div>
+      <label class="llm-switch"><input type="checkbox" ${c.debug ? 'checked' : ''} onchange="llmSetDebug(this.checked)"> 🐞 显示大模型决策 Debug 日志（战报内打印选择与原始输出）</label>
       <div class="llm-tip">密钥仅存本机。浏览器直连若遇 CORS，可将 Base URL 指向本地代理端口（如 http://localhost:8787/v1），复用同一套逻辑。</div>
     </div>
   `;
@@ -103,12 +105,21 @@ export function llmSetEnabled(on: boolean): void {
   const c = cfg();
   c.enabled = on;
   setLlmConfig(c);
+  applyLlmModes(); // 对局进行中实时生效：开→指定座位转 llm，关→全部回退启发式
   renderLlmSetupPanel();
 }
 
 export function llmSetTakeoverAll(on: boolean): void {
   const c = cfg();
   c.takeoverAll = on;
+  setLlmConfig(c);
+  applyLlmModes();
+  renderLlmSettings();
+}
+
+export function llmSetDebug(on: boolean): void {
+  const c = cfg();
+  c.debug = on;
   setLlmConfig(c);
   renderLlmSettings();
 }
@@ -119,6 +130,7 @@ export function llmToggleSeat(i: number): void {
   if (has) c.takeoverSeats = c.takeoverSeats.filter((x) => x !== i);
   else c.takeoverSeats.push(i);
   setLlmConfig(c);
+  applyLlmModes();
   renderLlmSettings();
 }
 

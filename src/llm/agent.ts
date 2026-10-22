@@ -11,12 +11,18 @@ import { addLog } from '../game/log';
 import { render } from '../ui/render';
 import { callLlm, parseJsonSafe } from './client';
 import { buildDecisionMessages, buildQuizMessages } from './prompts';
-import { llmReady } from './config';
+import { llmReady, llmDebug } from './config';
 import type { LlmDecisionKind } from './types';
 import { aiQuiz } from '../game/ai';
 import { aiQuizRate, aiShouldCounter, aiShouldSave } from '../game/aibrain';
 
 export { llmReady } from './config';
+
+/** Debug 日志：仅在配置开启 debug 时打印大模型决策过程（输出到对局战报） */
+function dbg(idx: number, tag: string, info: string): void {
+  if (!llmDebug()) return;
+  addLog(`🤖[LLM·座位${idx}] ${tag}: ${info}`, 'sys');
+}
 
 /** 在「思考中」状态下执行模型调用（设置/清除 G.thinkingSeat 触发 UI 指示） */
 async function withThinking<T>(idx: number, fn: () => Promise<T>): Promise<T> {
@@ -43,9 +49,9 @@ async function withThinking<T>(idx: number, fn: () => Promise<T>): Promise<T> {
 function instructionFor(kind: LlmDecisionKind): string {
   switch (kind) {
     case 'play':
-      return '出牌阶段：选择你要执行的动作（或结束出牌）。注意技能通常需要答题才能发动。';
+      return '出牌阶段：选择你要执行的动作（或结束出牌）。只要手中有【杀】且场上有可攻击的敌对目标，应优先出【杀】打击；技能通常需要答题才能发动。';
     case 'target':
-      return '选择一个目标座位（value 为座位号，-1 表示取消/不选择）。';
+      return '选择一个目标座位（value 为座位号，-1 表示取消/不选择）。出【杀】或锦囊时务必选定一名敌对角色，不要选 -1 取消。';
     case 'discard':
       return '选择要弃置的牌。';
     case 'rescue':
@@ -66,24 +72,39 @@ export async function llmChooseAction(
   opts: ChoiceOption[],
   kind: LlmDecisionKind,
 ): Promise<string | number | null> {
-  if (!llmReady()) return null;
+  if (!llmReady()) {
+    dbg(idx, '未就绪', `kind=${kind}，回退 null（配置未开启或缺失 baseURL/model）`);
+    return null;
+  }
   const valid = opts.filter((o) => !o.disabled);
-  if (!valid.length) return null;
+  if (!valid.length) {
+    dbg(idx, '无合法选项', `kind=${kind}`);
+    return null;
+  }
   const messages = buildDecisionMessages(idx, kind, opts, instructionFor(kind));
   try {
     const text = await withThinking(idx, () => callLlm(messages));
     const j = parseJsonSafe<{ choice?: string | number }>(text);
-    if (!j || j.choice === undefined) return null;
+    if (!j || j.choice === undefined) {
+      dbg(idx, '解析失败', `kind=${kind} 原始输出=${JSON.stringify((text || '').slice(0, 200))}`);
+      return null;
+    }
     const v = j.choice;
     const found = valid.find((o) => String(o.value) === String(v) || o.value === v);
-    if (found) return found.value;
+    if (found) {
+      dbg(idx, '已选择', `kind=${kind} → ${JSON.stringify(found.value)}（${found.label}）`);
+      return found.value;
+    }
     // 允许模型用 "skip" / -1 表达「不行动」，映射到取消项
     if (String(v) === 'skip' || v === -1) {
       const cancel = opts.find((o) => o.value === -1 || String(o.value) === 'skip');
+      dbg(idx, '选择取消', `kind=${kind} 模型返回 ${JSON.stringify(v)} → ${cancel ? JSON.stringify(cancel.value) : 'null'}`);
       return cancel ? cancel.value : null;
     }
+    dbg(idx, '非法选择', `kind=${kind} 模型返回 ${JSON.stringify(v)} 不在合法选项中`);
     return null;
-  } catch {
+  } catch (e) {
+    dbg(idx, '调用异常', `kind=${kind} ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`);
     return null;
   }
 }
@@ -120,7 +141,11 @@ export async function llmShouldCounter(
   const harm = primary === pid ? '该锦囊直接指向你（对你有害）' : '该锦囊不直接指向你';
   const instr = `是否打出【无懈可击】抵消【${trickName}】？来源：${src}。${harm}。${countered ? '该锦囊已被他人无懈过一次。' : ''}`;
   const r = await llmDecideBool(pid, instr);
-  if (r === null) return aiShouldCounter(pid, srcIdx, countered, sub, primary, lastCounterer);
+  if (r === null) {
+    dbg(pid, '无懈回退', `【${trickName}】→ 原启发式`);
+    return aiShouldCounter(pid, srcIdx, countered, sub, primary, lastCounterer);
+  }
+  dbg(pid, '无懈决策', `【${trickName}】→ ${r ? '打出' : '不无懈'}`);
   if (r === false) addLog(`${G.players[pid]?.name || 'AI'} 经大模型判断不无懈`, 'sys');
   return r;
 }
@@ -132,7 +157,11 @@ export async function llmShouldSave(hIdx: number, dIdx: number): Promise<boolean
   if (!h || !d) return false;
   const instr = `角色 ${d.name} 正处于濒死（体力 ${d.hp}），你是否使用手牌【桃】救援？考虑你的身份目标与阵营关系。`;
   const r = await llmDecideBool(hIdx, instr);
-  if (r === null) return aiShouldSave(hIdx, dIdx) > 0;
+  if (r === null) {
+    dbg(hIdx, '救援回退', `救 ${d.name} → 原启发式`);
+    return aiShouldSave(hIdx, dIdx) > 0;
+  }
+  dbg(hIdx, '救援决策', `救 ${d.name} → ${r ? '救援' : '不救'}`);
   if (r === false) addLog(`${h.name} 经大模型判断不救援`, 'sys');
   return r;
 }
@@ -141,13 +170,21 @@ export async function llmShouldSave(hIdx: number, dIdx: number): Promise<boolean
 export async function llmQuizDecide(idx: number): Promise<boolean> {
   const p = G.players[idx];
   if (!p) return false;
-  if (!llmReady()) return aiQuiz(aiQuizRate(p));
+  if (!llmReady()) {
+    dbg(idx, '答题回退', '配置未就绪 → 原启发式');
+    return aiQuiz(aiQuizRate(p));
+  }
   try {
     const text = await withThinking(idx, () => callLlm(buildQuizMessages(idx)));
     const j = parseJsonSafe<{ quiz?: boolean }>(text);
-    if (!j || typeof j.quiz !== 'boolean') return aiQuiz(aiQuizRate(p));
+    if (!j || typeof j.quiz !== 'boolean') {
+      dbg(idx, '答题解析失败', `原始输出=${JSON.stringify((text || '').slice(0, 200))} → 原启发式`);
+      return aiQuiz(aiQuizRate(p));
+    }
+    dbg(idx, '答题决策', `→ ${j.quiz ? '参悟' : '不参悟'}`);
     return j.quiz;
-  } catch {
+  } catch (e) {
+    dbg(idx, '答题异常', `${(e instanceof Error ? e.message : String(e)).slice(0, 200)} → 原启发式`);
     return aiQuiz(aiQuizRate(p));
   }
 }

@@ -28,6 +28,8 @@ export interface LlmConfig {
   takeoverAll: boolean;
   /** takeoverAll=false 时，接管的全局座位号（AI 座位） */
   takeoverSeats: number[];
+  /** Debug：在对局战报中打印大模型每次决策的「原始输出 / 最终选择」，便于排查「不出杀」等问题 */
+  debug: boolean;
 }
 
 /** 决策种类：供 prompt 构造与路由区分 */

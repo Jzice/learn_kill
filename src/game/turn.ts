@@ -41,6 +41,7 @@ import {
 } from './skillEngine';
 import { NET, scheduleSync } from '../net/network';
 import { llmChooseAction, llmQuizDecide, llmReady } from '../llm/agent';
+import { llmDebug } from '../llm/config';
 import type { LlmDecisionKind } from '../llm/types';
 
 /** 徐霞客【探险】距离陷阱：与目标距离 > min 的角色不能对其使用【杀】 */
@@ -166,8 +167,13 @@ export async function judgePhase(p: (typeof G.players)[number]): Promise<void> {
 
 export async function playPhase(idx: number): Promise<void> {
   const p = G.players[idx];
-  // 启发式 AI 走原 aiPlayPhase；真人 / 大模型接管 走统一的「选项→决策→执行」循环
-  if (p.isAI && p.aiMode !== 'llm') {
+  // 启发式 AI（或未真正开启大模型的接管座位）走原 aiPlayPhase；
+  // 大模型接管座位且配置可用 才走统一的「选项→决策→执行」循环。
+  // 注意：aiMode==='llm' 但 llmReady() 为假（开关关了 / 没配好）时回退启发式，
+  // 避免该座位直接「结束出牌」躺平（支持对局中实时开关大模型接管）。
+  if (p.isAI && (p.aiMode !== 'llm' || !llmReady())) {
+    if (llmDebug() && p.aiMode === 'llm')
+      addLog(`🤖[LLM·座位${idx}] 出牌回退: 大模型未就绪 → 改用启发式 AI 出牌`, 'sys');
     await aiPlayPhase(idx);
     return;
   }
@@ -510,6 +516,9 @@ async function choosePlay(idx: number, opts: ChoiceOption[]): Promise<string | n
     if (llmReady()) {
       const v = await llmChooseAction(idx, opts, 'play');
       if (v !== null && v !== undefined) return v;
+      if (llmDebug()) addLog(`🤖[LLM·座位${idx}] 出牌回退: 模型无有效选择 → 结束出牌`, 'sys');
+    } else if (llmDebug()) {
+      addLog(`🤖[LLM·座位${idx}] 出牌回退: 大模型未就绪 → 直接结束出牌（不开杀）`, 'sys');
     }
     return 'end';
   }
@@ -527,7 +536,10 @@ async function chooseAmong(idx: number, opts: ChoiceOption[], type: PendingType)
       if (v !== null && v !== undefined) return v;
     }
     const cancel = opts.find((o) => o.value === -1 || String(o.value) === 'skip');
-    return cancel ? cancel.value : opts[0]?.value ?? -1;
+    const fb = cancel ? cancel.value : opts[0]?.value ?? -1;
+    if (llmDebug())
+      addLog(`🤖[LLM·座位${idx}] 决策回退: ${type} → ${JSON.stringify(fb)}（${cancel ? '取消项' : '首个选项'}）`, 'sys');
+    return fb;
   }
   return waitChoice(idx, opts, type);
 }

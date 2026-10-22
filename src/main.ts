@@ -127,6 +127,7 @@ import {
   llmSetField,
   llmSetProvider,
   llmSetTakeoverAll,
+  llmSetDebug,
   llmTestConn,
   llmToggleSeat,
   openLlmSettings,
@@ -248,6 +249,7 @@ window.closeLlmSettings = closeLlmSettings;
 window.llmSetProvider = llmSetProvider;
 window.llmSetEnabled = llmSetEnabled;
 window.llmSetTakeoverAll = llmSetTakeoverAll;
+window.llmSetDebug = llmSetDebug;
 window.llmToggleSeat = llmToggleSeat;
 window.llmSetField = llmSetField;
 window.llmTestConn = llmTestConn;
