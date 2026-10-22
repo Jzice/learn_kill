@@ -1092,8 +1092,15 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .kp-rels{margin-top:4px;font-size:10px}
 .kp-rel{margin-right:6px}
 .kp-ops{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
-.kp-map-wrap{background:rgba(0,0,0,.3);border:1px solid var(--gold-dim);border-radius:8px;padding:4px;overflow:auto}
-.kp-map{display:block}
+.kp-map-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;font-size:10px;color:var(--muted)}
+.kp-map-hint{opacity:.8}
+.kp-map-tools{display:flex;align-items:center;gap:4px}
+.kp-zbtn{background:rgba(0,0,0,.35);color:var(--text);border:1px solid var(--gold-dim);border-radius:6px;width:26px;height:24px;font-size:14px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.kp-zbtn:hover{border-color:var(--gold);color:var(--gold)}
+.kp-zpct{min-width:40px;text-align:center;font-size:10px;font-variant-numeric:tabular-nums}
+.kp-map-wrap{background:rgba(0,0,0,.3);border:1px solid var(--gold-dim);border-radius:8px;padding:0;overflow:hidden;height:460px;position:relative}
+.kp-map{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+.kp-map:active{cursor:grabbing}
 .kpnode{cursor:pointer}
 .kpnode rect{fill:#161616;stroke:var(--gold-dim);stroke-width:1.6}
 .kpnode text{fill:var(--text);font-size:12px;pointer-events:none}

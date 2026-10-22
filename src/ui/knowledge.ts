@@ -376,14 +376,197 @@ export async function renderKpMap(grade: string, subject: string): Promise<strin
     .join('');
 
   const auto = !subject ? `<div class="kp-tip">脑图按单学科展示，已自动选择「${escapeHtml(sub)}」</div>` : '';
+  const toolbar = `<div class="kp-map-toolbar">
+      <span class="kp-map-hint">拖动平移 · 滚轮/双指缩放</span>
+      <span class="kp-map-tools">
+        <button class="kp-zbtn" id="kpMapZoomOut" title="缩小" aria-label="缩小">－</button>
+        <span class="kp-zpct" id="kpMapZoomPct">100%</span>
+        <button class="kp-zbtn" id="kpMapZoomIn" title="放大" aria-label="放大">＋</button>
+        <button class="kp-zbtn" id="kpMapFit" title="适应屏幕" aria-label="适应屏幕">⤢</button>
+        <button class="kp-zbtn" id="kpMapReset" title="重置" aria-label="重置">⟳</button>
+      </span>
+    </div>`;
+  const mapHtml = `<div class="kp-map-wrap" id="kpMapWrap" data-cw="${W}" data-ch="${H}">
+      <svg id="kpMapSvg" class="kp-map" preserveAspectRatio="none">
+        <defs>${markersHtml()}</defs>
+        <g id="kpMapViewport" transform="translate(0 0) scale(1)">${edges}${nodeEls}</g>
+      </svg>
+    </div>`;
+  setTimeout(bindKpMap, 0);
   return (
     auto +
-    `<div class="kp-map-wrap"><svg class="kp-map" viewBox="0 0 ${W} ${H}" width="100%" height="${Math.min(460, H)}" preserveAspectRatio="xMidYMin meet">
-      <defs>${markersHtml()}</defs>${edges}${nodeEls}
-    </svg></div>
-    <div class="kp-legend">${legend}</div>
+    toolbar +
+    mapHtml +
+    `<div class="kp-legend">${legend}</div>
     <div class="kp-detail" id="kpMapDetail">点击任意节点查看讲解、关系与相关题目</div>`
   );
+}
+
+/* ==================== 脑图交互：平移 / 缩放 ==================== */
+
+const MIN_SCALE = 0.2;
+const MAX_SCALE = 4;
+/** 当前脑图绑定的 resize 监听，便于重新渲染时移除旧的，避免累积 */
+let resizeHandler: (() => void) | null = null;
+
+/**
+ * 为「知识脑图」绑定平移 / 缩放交互。每次重新渲染脑图后由 renderKpMap 通过
+ * setTimeout(0) 触发（此时 innerHTML 已写入 DOM）。内容坐标由 viewport <g>
+ * 的 transform="translate(tx ty) scale(k)" 控制，1 用户单位 = 1 CSS 像素。
+ */
+function bindKpMap(): void {
+  const wrap = document.getElementById('kpMapWrap');
+  const svg = document.getElementById('kpMapSvg') as SVGSVGElement | null;
+  const vp = document.getElementById('kpMapViewport') as SVGGElement | null;
+  if (!wrap || !svg || !vp) return;
+
+  const cw = parseFloat(wrap.dataset.cw || '720');
+  const ch = parseFloat(wrap.dataset.ch || '460');
+  const pct = document.getElementById('kpMapZoomPct');
+  let scale = 1;
+  let tx = 0;
+  let ty = 0;
+
+  const clamp = (s: number): number => Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
+  const apply = (): void => {
+    vp!.setAttribute('transform', `translate(${tx.toFixed(1)} ${ty.toFixed(1)}) scale(${scale.toFixed(4)})`);
+    if (pct) pct.textContent = `${Math.round(scale * 100)}%`;
+  };
+  const center = (s: number): void => {
+    tx = (wrap!.clientWidth - cw * s) / 2;
+    ty = (wrap!.clientHeight - ch * s) / 2;
+  };
+  const fit = (): void => {
+    const w = wrap!.clientWidth;
+    const h = wrap!.clientHeight;
+    if (!w || !h) return;
+    scale = clamp(Math.min(w / (cw + 24), h / (ch + 24), 1.4));
+    center(scale);
+    apply();
+  };
+  const reset = (): void => {
+    scale = 1;
+    center(1);
+    apply();
+  };
+  /** 以 (cx,cy) 屏幕坐标（相对视口）为中心缩放 factor 倍 */
+  const zoomAt = (factor: number, cx: number, cy: number): void => {
+    const ns = clamp(scale * factor);
+    tx = cx - (cx - tx) * (ns / scale);
+    ty = cy - (cy - ty) * (ns / scale);
+    scale = ns;
+    apply();
+  };
+  const zoomBy = (factor: number, clientX?: number, clientY?: number): void => {
+    const r = wrap!.getBoundingClientRect();
+    const cx = (clientX ?? r.left + r.width / 2) - r.left;
+    const cy = (clientY ?? r.top + r.height / 2) - r.top;
+    zoomAt(factor, cx, cy);
+  };
+
+  document.getElementById('kpMapZoomIn')?.addEventListener('click', () => zoomBy(1.2));
+  document.getElementById('kpMapZoomOut')?.addEventListener('click', () => zoomBy(0.8));
+  document.getElementById('kpMapFit')?.addEventListener('click', fit);
+  document.getElementById('kpMapReset')?.addEventListener('click', reset);
+
+  svg.addEventListener(
+    'wheel',
+    (e: WheelEvent) => {
+      e.preventDefault();
+      zoomBy(e.deltaY < 0 ? 1.12 : 0.89, e.clientX, e.clientY);
+    },
+    { passive: false },
+  );
+
+  // 平移 + 双指捏合缩放（Pointer Events 同时覆盖鼠标与触摸）
+  const pointers = new Map<number, { x: number; y: number }>();
+  let suppressClick = false;
+  let lastX = 0;
+  let lastY = 0;
+  let lastDist = 0;
+  let lastMidX = 0;
+  let lastMidY = 0;
+
+  const midOf = (): { x: number; y: number; dist: number } => {
+    const p = [...pointers.values()];
+    const x = (p[0].x + p[1].x) / 2;
+    const y = (p[0].y + p[1].y) / 2;
+    const dist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+    return { x, y, dist };
+  };
+
+  svg.addEventListener('pointerdown', (e: PointerEvent) => {
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    svg.setPointerCapture(e.pointerId);
+    if (pointers.size === 1) {
+      lastX = e.clientX;
+      lastY = e.clientY;
+      suppressClick = false;
+    } else if (pointers.size === 2) {
+      const m = midOf();
+      lastDist = m.dist;
+      lastMidX = m.x;
+      lastMidY = m.y;
+    }
+  });
+
+  svg.addEventListener('pointermove', (e: PointerEvent) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) {
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      if (Math.abs(dx) + Math.abs(dy) > 2) suppressClick = true;
+      tx += dx;
+      ty += dy;
+      apply();
+      lastX = e.clientX;
+      lastY = e.clientY;
+    } else if (pointers.size === 2) {
+      const m = midOf();
+      if (lastDist > 0) zoomAt(m.dist / lastDist, m.x - wrap!.getBoundingClientRect().left, m.y - wrap!.getBoundingClientRect().top);
+      tx += m.x - lastMidX;
+      ty += m.y - lastMidY;
+      apply();
+      lastDist = m.dist;
+      lastMidX = m.x;
+      lastMidY = m.y;
+    }
+  });
+
+  const endPointer = (e: PointerEvent): void => {
+    pointers.delete(e.pointerId);
+    if (svg.hasPointerCapture(e.pointerId)) svg.releasePointerCapture(e.pointerId);
+    if (pointers.size < 2) {
+      lastDist = 0;
+      if (pointers.size === 1) {
+        const p = [...pointers.values()][0];
+        lastX = p.x;
+        lastY = p.y;
+      }
+    }
+  };
+  svg.addEventListener('pointerup', endPointer);
+  svg.addEventListener('pointercancel', endPointer);
+
+  // 拖动后抑制误触发的节点点击
+  svg.addEventListener(
+    'click',
+    (e: MouseEvent) => {
+      if (suppressClick) {
+        e.stopPropagation();
+        e.preventDefault();
+        suppressClick = false;
+      }
+    },
+    true,
+  );
+
+  if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+  resizeHandler = (): void => fit();
+  window.addEventListener('resize', resizeHandler);
+
+  requestAnimationFrame(fit);
 }
 
 /** 点击脑图节点：高亮该节点并在下方展示讲解详情 */
