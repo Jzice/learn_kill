@@ -1,5 +1,5 @@
 /* ==================== 出牌 ==================== */
-import type { Card, DamageType, Player } from '../core/types';
+import type { Card, ChoiceOption, DamageType, Player } from '../core/types';
 import { G } from './state';
 import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
 import { Sound } from '../core/sound';
@@ -27,7 +27,8 @@ import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { aiQuiz, aiSpeak } from './ai';
 import { aiQuizRate, aiShouldCounter } from './aibrain';
-import { llmShouldCounter } from '../llm/agent';
+import { llmChooseAction, llmShouldCounter } from '../llm/agent';
+import { llmReady } from '../llm/config';
 import { dealDamage, onLoseArmor } from './damage';
 import { triggerDamageMod } from './skillfx';
 import { runSkillEffects } from './skillfx';
@@ -791,7 +792,24 @@ async function requestOneShan(
   const t = G.players[targetIdx];
   const onDodged = async (): Promise<boolean> => true;
   const outside = G.current !== targetIdx;
-  if (t.isAI) {
+  const shans = t.hand.filter((c) => c.sub === 'shan' || canConvertAs(t, c, 'shan', outside));
+  const noShan = shans.length === 0;
+
+  // 八卦阵：手中无闪时判定，红色视为打出闪（AI 与真人同一套处理）
+  if (noShan && !o.ignoreArmor && t.equip.armor?.skill === 'bagua') {
+    const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+    addLog(`【八卦阵】判定：${jc.suit}${jc.num}`, 'hl');
+    G.discard.push(jc);
+    if (jc.suit === '♥' || jc.suit === '♦') {
+      addLog('【八卦阵】判定为红色，视为闪', 'hl');
+      await FX.shield(targetIdx);
+      return onDodged();
+    }
+    addLog('【八卦阵】判定失败');
+  }
+
+  // 启发式 AI（或未真正开启大模型的接管座位）：确定性优先级，有闪必出
+  if (t.isAI && !(t.aiMode === 'llm' && llmReady())) {
     // 转化技：老舍【骆驼祥子】装备当闪 / 孙子【虚实】杀当闪
     const shan =
       t.hand.find((c) => c.sub === 'shan') || t.hand.find((c) => canConvertAs(t, c, 'shan', outside));
@@ -802,18 +820,6 @@ async function requestOneShan(
       await FX.shield(targetIdx);
       await fire('onUseShan', { idx: targetIdx, srcIdx, card: shan });
       return onDodged();
-    }
-    // 八卦阵：手中无闪时判定，红色视为打出闪（AI 此前完全不判，装备形同虚设）
-    if (!o.ignoreArmor && t.equip.armor?.skill === 'bagua') {
-      const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
-      addLog(`【八卦阵】判定：${jc.suit}${jc.num}`, 'hl');
-      G.discard.push(jc);
-      if (jc.suit === '♥' || jc.suit === '♦') {
-        addLog('【八卦阵】判定为红色，视为闪', 'hl');
-        await FX.shield(targetIdx);
-        return onDodged();
-      }
-      addLog('【八卦阵】判定失败');
     }
     if (t.knowledge >= 1 && aiQuiz(aiQuizRate(t))) {
       t.knowledge--;
@@ -830,8 +836,8 @@ async function requestOneShan(
     }
     return false;
   }
-  const opts: { label: string; value: string }[] = [];
-  const shans = t.hand.filter((c) => c.sub === 'shan' || canConvertAs(t, c, 'shan', outside));
+  // 真人 或 大模型接管座位：构造选项 → 决策 → 统一结算
+  const opts: ChoiceOption[] = [];
   shans.forEach((c) =>
     opts.push({
       label: c.sub === 'shan' ? `【闪】${c.suit}${c.num}` : `【${c.name}】${c.suit}${c.num} 当【闪】`,
@@ -839,23 +845,18 @@ async function requestOneShan(
     }),
   );
   // 答题免伤/学识当闪 仅在手中无【闪】时可选：有闪必须出闪，保证闪牌价值（提高可玩性）
-  const noShan = shans.length === 0;
-  if (noShan && !o.ignoreArmor && t.equip.armor?.skill === 'bagua') {
-    const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
-    addLog(`【八卦阵】判定：${jc.suit}${jc.num}`, 'hl');
-    G.discard.push(jc);
-    if (jc.suit === '♥' || jc.suit === '♦') {
-      addLog('【八卦阵】判定为红色，视为闪', 'hl');
-      await FX.shield(targetIdx);
-      return onDodged();
-    }
-    addLog('【八卦阵】判定失败');
-  }
   if (noShan && t.knowledge >= 1) opts.push({ label: '1学识当闪', value: 'know' });
   if ((t.shield || 0) >= 1) opts.push({ label: '1护盾当闪', value: 'shield' });
   if (noShan) opts.push({ label: '答题免伤', value: 'quiz' });
   opts.push({ label: '承受伤害', value: 'none' });
-  const ch = await waitChoice(targetIdx, opts, 'shan');
+  let ch: string | number;
+  if (t.isAI) {
+    // 大模型接管座位：失败回退「承受伤害」，绝不等待输入（AI 座位会永久卡死）
+    const v = await llmChooseAction(targetIdx, opts, 'shan');
+    ch = v === null || v === undefined ? 'none' : v;
+  } else {
+    ch = await waitChoice(targetIdx, opts, 'shan');
+  }
   if (ch === 'none') return false;
   if (ch === 'know') {
     t.knowledge--;

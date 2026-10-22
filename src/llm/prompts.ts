@@ -244,6 +244,29 @@ export function buildDecisionMessages(
   ];
 }
 
+/**
+ * 出牌阶段「回合级规划」提示：一次请求让模型给出多步动作序列。
+ * 把原本每步一次请求的开销压到每回合 1~2 次（引擎仍逐步校验，失效步骤自动跳过）。
+ */
+export function buildPlanMessages(idx: number, opts: ChoiceOption[], maxSteps: number): LlmMessage[] {
+  const p = G.players[idx];
+  const roleHint = `你的身份目标：${ROLE_OBJ[p.role] ?? '隐藏'}。优先保护自己阵营、打击敌对阵营。`;
+  const enumOpts = opts
+    .map((o, i) => `${i + 1}. [value=${JSON.stringify(o.value)}] ${o.label}${o.disabled ? '（当前不可用）' : ''}`)
+    .join('\n');
+  const user =
+    `${situationView(idx)}\n\n` +
+    `【决策】出牌阶段：请一次性规划本回合你打算依次执行的动作序列（最多 ${maxSteps} 步）。\n` +
+    `注意：执行过程中手牌与局面会变化，若某步届时已不可用会被自动跳过。\n` +
+    `可选动作（value 为内部标识）：\n${enumOpts}\n\n` +
+    `请只输出 JSON：{"actions": [<value1>, <value2>, ...]}（最多 ${maxSteps} 项）；` +
+    `若打算直接结束出牌，输出 {"actions":["end"]}。不要解释。`;
+  return [
+    { role: 'system', content: SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + roleHint },
+    { role: 'user', content: user },
+  ];
+}
+
 /** 答题决策提示（是否参与参悟答题） */
 export function buildQuizMessages(idx: number): LlmMessage[] {
   const p = G.players[idx];

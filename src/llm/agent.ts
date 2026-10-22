@@ -10,7 +10,7 @@ import { G } from '../game/state';
 import { addLog } from '../game/log';
 import { render } from '../ui/render';
 import { callLlm, parseJsonSafe } from './client';
-import { buildDecisionMessages, buildQuizMessages } from './prompts';
+import { buildDecisionMessages, buildPlanMessages, buildQuizMessages } from './prompts';
 import { llmReady, llmDebug } from './config';
 import type { LlmDecisionKind } from './types';
 import { aiQuiz } from '../game/ai';
@@ -146,6 +146,49 @@ export async function llmChooseAction(
     return null;
   } catch (e) {
     dbg(idx, '调用异常', `kind=${kind} ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`);
+    noteFail(idx);
+    return null;
+  }
+}
+
+/**
+ * 出牌阶段的一次性规划：让模型给出多步动作序列。
+ * 返回值已过滤为「当前合法选项」并保持模型给出的顺序；任何失败返回 null（由调用方回退单步决策）。
+ * 引擎仍逐步校验每个动作，失效步骤会被丢弃后回退单步决策，因此规划失败不会破坏合法性。
+ */
+export async function llmPlanActions(
+  idx: number,
+  opts: ChoiceOption[],
+  maxSteps: number,
+): Promise<(string | number)[] | null> {
+  if (!llmReady()) return null;
+  const valid = opts.filter((o) => !o.disabled);
+  if (!valid.length) return null;
+  try {
+    const text = await withThinking(idx, () => callLlm(buildPlanMessages(idx, opts, maxSteps)));
+    const j = parseJsonSafe<{ actions?: (string | number)[] }>(text);
+    const raw = j?.actions;
+    if (!Array.isArray(raw) || !raw.length) {
+      dbg(idx, '规划解析失败', `原始输出=${JSON.stringify((text || '').slice(0, 200))}`);
+      noteFail(idx);
+      return null;
+    }
+    const out: (string | number)[] = [];
+    for (const v of raw) {
+      const found = valid.find((o) => String(o.value) === String(v) || o.value === v);
+      if (found) out.push(found.value);
+      if (out.length >= maxSteps) break;
+    }
+    if (!out.length) {
+      dbg(idx, '规划无有效动作', `模型返回=${JSON.stringify(raw.slice(0, 6))}`);
+      noteFail(idx);
+      return null;
+    }
+    dbg(idx, '回合规划', out.map((v) => JSON.stringify(v)).join(' → '));
+    noteOk(idx);
+    return out;
+  } catch (e) {
+    dbg(idx, '规划异常', `${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`);
     noteFail(idx);
     return null;
   }

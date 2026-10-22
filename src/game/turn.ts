@@ -14,6 +14,7 @@ import { EQUIP_DESC, showPlayHint } from '../ui/hint';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { aiPlayPhase, aiQuiz, aiSpeak } from './ai';
+import { aiQuizRate } from './aibrain';
 import { dealDamage, onLoseArmor } from './damage';
 import { useActiveSkill } from './skills';
 import { useSha, useTao, useJiu, useTrick } from './actions';
@@ -40,7 +41,7 @@ import {
   tryReplaceJudge,
 } from './skillEngine';
 import { NET, scheduleSync } from '../net/network';
-import { llmChooseAction, llmQuizDecide, llmReady } from '../llm/agent';
+import { llmChooseAction, llmPlanActions, llmQuizDecide, llmReady } from '../llm/agent';
 import { llmDebug } from '../llm/config';
 import type { LlmDecisionKind } from '../llm/types';
 
@@ -95,7 +96,8 @@ export async function runTurn(idx: number): Promise<void> {
   if (!raid) await fire('onDraw', { idx });
   render();
   if (p.isAI) {
-    const quiz = p.aiMode === 'llm' ? await llmQuizDecide(idx) : aiQuiz(0.6);
+    // 与大模型的回退口径统一：血量越低越拼命（1血 0.85 / 2血 0.7 / 否则 0.5）
+    const quiz = p.aiMode === 'llm' ? await llmQuizDecide(idx) : aiQuiz(aiQuizRate(p));
     if (quiz) {
       const ok = await askQuizForPlayer(p, false);
       if (ok) {
@@ -177,7 +179,33 @@ export async function playPhase(idx: number): Promise<void> {
     await aiPlayPhase(idx);
     return;
   }
+  // 出牌阶段规划队列：大模型接管时一次请求规划多步（PLAN_MAX_STEPS 步内），逐步校验执行；
+  // 队列耗尽或某步已失效则回退单步决策。每回合最多规划 PLAN_MAX_REQUESTS 次，防止反复请求。
+  const PLAN_MAX_STEPS = 4;
+  const PLAN_MAX_REQUESTS = 2;
+  const planQueue: (string | number)[] = [];
+  let planRequests = 0;
+  /** 取下一步动作：优先消费规划队列（仍可用才用），否则回退单步决策 */
+  const nextPlay = async (opts: ChoiceOption[]): Promise<string | number> => {
+    while (planQueue.length) {
+      const v = planQueue.shift()!;
+      if (opts.some((o) => !o.disabled && String(o.value) === String(v))) return v;
+    }
+    if (p.isAI && p.aiMode === 'llm' && llmReady() && planRequests < PLAN_MAX_REQUESTS) {
+      planRequests++;
+      const seq = await llmPlanActions(idx, opts, PLAN_MAX_STEPS);
+      if (seq && seq.length) {
+        const first = seq.shift()!;
+        planQueue.push(...seq);
+        return first;
+      }
+    }
+    return choosePlay(idx, opts);
+  };
+  let guard = 0;
   while (p.alive && !G.gameOver) {
+    // 安全阀：模型反复给出「执行后局面不变」的动作时防止死循环
+    if (++guard > 30) break;
     // 本回合是否还能出【杀】：连弩无限；否则受每回合上限约束（咆哮可额外出杀）；noSha 时本回合禁止
     const shaCap = p.equip.weapon?.skill === 'liannu' ? Infinity : shaLimitOf(p);
     const canSha = !p.flags.noSha && (p.flags.shaUsed || 0) < shaCap;
@@ -234,7 +262,7 @@ export async function playPhase(idx: number): Promise<void> {
       opts.push({ label: '【丈八蛇矛】两张手牌当杀', value: 'zhangba' });
     }
     opts.push({ label: '结束出牌', value: 'end' });
-    const ch = await choosePlay(idx, opts);
+    const ch = await nextPlay(opts);
     if (ch === 'end' || !ch) break;
     if (!p.alive || G.gameOver) break;
     if (ch === 'zhangba') {

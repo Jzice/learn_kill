@@ -279,6 +279,15 @@ system 尾部追加动态身份目标：`你的身份目标：反贼（目标：
 
 `AbortController` 控制超时（默认 20s）；`parseJsonSafe()` 会剥掉 ```json 围栏、截取首尾花括号再 `JSON.parse`，双保险。
 
+#### 回合级规划（降低请求次数）
+
+出牌阶段若每步都单独请求，单回合会产生 3~6 次调用。改为让模型在回合开始时一次性给出**最多 4 步**的动作序列（`{"actions":[…]}`），引擎逐步校验执行：
+
+- 队列中的动作若届时仍合法 → 直接执行，**省掉一次请求**；
+- 若已失效（手牌被消耗 / 出杀上限已到等）→ 丢弃该步，回退单步决策；
+- 队列耗尽后最多再规划 1 次（每回合上限 2 次规划请求），之后一律单步决策；
+- 出牌循环新增 30 次迭代安全阀，防止模型反复给出「执行后局面不变」的动作导致死循环。
+
 ### 3.4 决策路由与挂接点
 
 ```mermaid
@@ -306,13 +315,17 @@ sequenceDiagram
 
 | 挂接点 | 位置 | 函数 |
 |---|---|---|
-| 参悟答题 | `turn.ts:98` | `llmQuizDecide` |
-| 出牌阶段主循环 | `turn.ts:517` | `llmChooseAction('play')` |
-| 目标选择 / 选牌 / 弃牌 | `turn.ts:535` | `llmChooseAction('target'/'discard'/…)` |
-| 无懈可击 | `actions.ts:674` | `llmShouldCounter` |
-| 濒死救援 | `damage.ts:16` | `llmShouldSave` |
+| 参悟答题 | `turn.ts` | `llmQuizDecide` |
+| 出牌阶段（回合级规划） | `turn.ts` `playPhase` | `llmPlanActions` → 规划队列 |
+| 出牌阶段（单步回退） | `turn.ts` `choosePlay` | `llmChooseAction('play')` |
+| 目标选择 / 选牌 / 弃牌 | `turn.ts` `chooseAmong` | `llmChooseAction('target'/'discard'/…)` |
+| 无懈可击 | `actions.ts` | `llmShouldCounter` |
+| 出闪 | `actions.ts` `requestOneShan` | `llmChooseAction('shan')` |
+| 濒死自救 | `damage.ts` `dyingPhase` | `llmChooseAction('rescue')` |
+| 濒死救援他人 | `damage.ts` `saveWillingness` | `llmShouldSave` |
 
-> ⚠️ **已知缺口**：AI 的**出闪**（`actions.ts` `if (t.isAI)` 有闪必出）与**濒死自救**（`damage.ts` 自动吃桃）是硬编码分支，**不经过 LLM 路由**，因此 `agent.ts` 中 `'shan'` / `'rescue'` 两个引导语分支目前是死代码。
+> 出闪与濒死自救原先是硬编码分支（AI 有闪必出 / 有桃必吃），现已改为与真人共用同一套「选项 → 决策 → 结算」流程；
+> 启发式 AI 完全保留原确定性优先级，只有 `aiMode === 'llm'` 的座位才走模型。
 
 ### 3.5 容错与防死锁（四层兜底）
 
@@ -390,12 +403,18 @@ LLM 只在**房主端**运行（房主权威）。调用期间设置 `G.thinking
 
 ## 5. 待办与改进方向
 
-| 优先级 | 状态 | 问题 | 改进方向 |
+| 优先级 | 状态 | 问题 | 处理 |
 |---|---|---|---|
 | P1 | ✅ 已解决 | 上下文缺**攻击范围/距离** | 注入 `distBetween` / `inRange` |
 | P2 | ✅ 已解决 | **信念系统未注入 LLM** | 注入 `beliefProbs` 归一化摘要 |
 | P3 | ✅ 已解决 | **无历史记忆** | 注入近期战报 + 恩怨计数 |
-| P7 | ✅ 已解决 | 无 few-shot；连续失败不降级 | system 加示例；连续 3 次失败本局降级 |
-| P4 | ⏳ 待办 | 每决策点一次全量请求，单回合 3~6 次 | 回合级规划（复用已预留的 `LlmPlayAction`） |
-| P5 | ⏳ 待办 | 出闪 / 濒死绕过 LLM（硬编码） | 接入统一 `chooseAmong` 路由 |
-| P6 | ⏳ 待办 | 启发式答题用固定 `0.6`，LLM 回退用动态 `aiQuizRate` | 统一为 `aiQuizRate` |
+| P4 | ✅ 已解决 | 每决策点一次全量请求，单回合 3~6 次 | 回合级规划：一次请求最多 4 步 + 逐步校验回退 |
+| P5 | ✅ 已解决 | 出闪 / 濒死绕过 LLM（硬编码） | 与真人共用「选项 → 决策 → 结算」流程 |
+| P6 | ✅ 已解决 | 启发式答题用固定 `0.6`，LLM 回退用动态 `aiQuizRate` | 统一为 `aiQuizRate` |
+| P7 | ✅ 已解决 | 无 few-shot；连续失败不降级 | system 加格式示例；连续 3 次失败本局降级 |
+
+### 后续可选优化
+
+- **请求缓存**：相同局面 + 相同选项的请求做短时缓存（key = 局面哈希 + 选项列表）。
+- **失败重试**：超时 / 5xx 时重试一次，重试时把 `temperature` 降为 0。
+- **可观测性**：设置面板展示「本局调用次数 / 平均耗时 / 失败次数 / Token 估算」。

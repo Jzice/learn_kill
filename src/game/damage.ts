@@ -1,5 +1,5 @@
 /* ==================== 伤害 & 濒死 ==================== */
-import type { Card, DamageType, Player } from '../core/types';
+import type { Card, ChoiceOption, DamageType, Player } from '../core/types';
 import { G } from './state';
 import { FX, floatTextFx, resultBanner } from '../core/fx';
 import { Sound } from '../core/sound';
@@ -8,7 +8,8 @@ import { ROLES } from '../data/characters';
 import { addLog, addPlayLog } from './log';
 import { discardCard } from './rules';
 import { aiShouldSave, noteAttack, noteSave } from './aibrain';
-import { llmShouldSave } from '../llm/agent';
+import { llmChooseAction, llmShouldSave } from '../llm/agent';
+import { llmReady } from '../llm/config';
 
 /** 某 AI 是否愿意救援 idx：大模型接管座位走 llmShouldSave，否则用原启发式（意愿>0 视为救） */
 async function saveWillingness(i: number, idx: number): Promise<boolean> {
@@ -152,9 +153,29 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
     // 濒死自救：转化技（屠呦呦·青蒿素 / 李时珍·本草纲目）可把手牌当【桃】
     const outside = G.current !== idx;
     if (p.isAI) {
-      const tao =
-        p.hand.find((c) => c.sub === 'tao') ||
-        p.hand.find((c) => canConvertAs(p, c, 'tao', outside));
+      // 大模型接管座位：由模型决定「用哪张桃自救」或「放弃自救」；调用失败才回退「有桃必自救」
+      let tao: Card | undefined;
+      let decided = false;
+      if (p.aiMode === 'llm' && llmReady()) {
+        const heals = p.hand.filter((c) => c.sub === 'tao' || canConvertAs(p, c, 'tao', outside));
+        const opts: ChoiceOption[] = heals.map((c) => ({
+          label: `使用【${c.name}】自救`,
+          value: 'card_' + c.id,
+        }));
+        opts.push({ label: '放弃自救（保留手牌）', value: 'skip' });
+        const v = await llmChooseAction(idx, opts, 'rescue');
+        if (v !== null && v !== undefined) {
+          decided = true;
+          if (String(v).startsWith('card_')) {
+            const cid = Number(String(v).slice(5));
+            tao = p.hand.find((c) => c.id === cid);
+          }
+        }
+      }
+      if (!decided)
+        tao =
+          p.hand.find((c) => c.sub === 'tao') ||
+          p.hand.find((c) => canConvertAs(p, c, 'tao', outside));
       if (tao) {
         if (tao.sub !== 'tao') markConvertUse(p, tao, 'tao', outside);
         discardCard(p, tao);
