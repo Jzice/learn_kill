@@ -910,7 +910,8 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
         const ti = ctx.targetIdx;
         if (ti == null || ti < 0) break;
         const t = G.players[ti];
-        const same = t.hand.filter((c) => c.suit === ctx.refSuit);
+        const suit = e.suit || ctx.refSuit;
+        const same = suit ? t.hand.filter((c) => c.suit === suit) : [];
         if (same.length && !t.isAI) {
           const ch = await waitChoice(
             ti,

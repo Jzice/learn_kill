@@ -282,7 +282,7 @@ export type SkillEffect =
   /** 把拼点 / 反间展示的那张牌交给对方 */
   | { kind: 'giveDuelCard' }
   /** 弃置 n 张与上下文参照牌花色相同的手牌 */
-  | { kind: 'discardSuitMatch'; n: number }
+  | { kind: 'discardSuitMatch'; n: number; suit?: string }
   /** 使用锦囊后摸牌：minSeq / blackOnly 限定触发范围，redExtra / richestExtra 为额外摸牌 */
   | {
       kind: 'trickDraw';

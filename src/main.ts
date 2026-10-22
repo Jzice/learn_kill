@@ -13,6 +13,15 @@ import { setSim, sleep, togglePanel } from './core/dom';
 import { CHARACTERS } from './data/characters';
 import { FACTIONS } from './data/factions';
 import { defOf, SKILL_DEFS } from './data/skilldefs';
+import {
+  canBeTarget,
+  cardImmuneTo,
+  distTrapOf,
+  enemyEquipVoidOf,
+  horseDistOf,
+  shaRedirectOf,
+  trickRedirectOf,
+} from './game/skillEngine';
 import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
 
 import { exitGame, hostStartGame, startSingle } from './game/setup';
@@ -71,6 +80,7 @@ import {
   updateBankInfo,
   updateLobbyMode,
   viewMemberProfile,
+  setGrade,
 } from './ui/lobby';
 import { bankSearchKp, bindBankBrowser, closeBankBrowser, openBankBrowser } from './ui/bank';
 import { answerDrill, closeDrill, startDrill } from './ui/drill';
@@ -307,6 +317,8 @@ window.xtsSkillAudit = () => {
  */
 window.xtsAutoRun = async (n: number, seats = 5) => {
   setSim(true);
+  // 选最高年级，确保角色池覆盖全部 46 名（AI 座位从 mergedCharPool 取角色）
+  setGrade('高三下');
   const charIds = CHARACTERS.map((c) => c.id);
   const byChar: Record<string, { games: number; wins: number; alive: number }> = {};
   const byCharRole: Record<string, Record<string, { games: number; wins: number; alive: number }>> = {};
@@ -358,6 +370,33 @@ window.xtsAutoRun = async (n: number, seats = 5) => {
     }
   }
   return { games: n, stalls, byChar, byRole, byCharRole };
+};
+
+/**
+ * v2.1 新机制调试查询面（scripts/smoke-v21.mjs 用）。
+ * 这些函数就是 actions.ts / rules.ts / turn.ts 实际消费的引擎查询层，
+ * 对它们断言即等价于验证「免疫 / 转移 / 距离陷阱 / 装备失效 / 马政」的接线是否正确。
+ */
+window.xtsV21 = {
+  /** 指定座位是否免疫某张牌名 */
+  cardImmune: (idx: number, name: string) => cardImmuneTo(G.players[idx], name),
+  /** 目标合法性（可带牌名 / 花色） */
+  canBeTarget: (idx: number, scope: 'trick' | 'sha' | 'juedou' | 'equip', cardName?: string, cardSuit?: string) =>
+    canBeTarget(idx, scope, cardName, cardSuit),
+  /** 其他角色装备区指定槽位对目标是否失效 */
+  equipVoid: (idx: number, slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus') =>
+    enemyEquipVoidOf(G.players[idx], slot),
+  /** 距离陷阱阈值 */
+  distTrap: (idx: number) => distTrapOf(G.players[idx]),
+  /** 马政距离减免 */
+  horseDist: (idx: number) => horseDistOf(G.players[idx]),
+  /** 可否转移锦囊 / 杀 */
+  trickRedirect: (idx: number) => trickRedirectOf(G.players[idx]),
+  shaRedirect: (idx: number) => shaRedirectOf(G.players[idx]),
+  /** 座位号 → 角色 id */
+  charOf: (idx: number) => G.players[idx]?.charId || '',
+  /** 当前对局玩家数组（供测试构造装备 / 标记等场景） */
+  players: () => G.players,
 };
 
 /** 通过 ?room=XXXXXX 分享链接进入时，自动进入加入模式并预填房间号、发起加入 */

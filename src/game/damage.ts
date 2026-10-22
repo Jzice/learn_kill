@@ -92,9 +92,14 @@ async function applyDamage(
     tgt.hp -= dmg;
     addPlayLog('', 'damage', dmg, tgt.name, 'dmg');
     render();
-    // 声明式触发技：受伤后（横眉 / 适者生存 / 显性性状 / 术势 / 莫须有 / 哈姆雷特 …）
+    // 声明式触发技：受伤后（横眉 / 适者生存 / 显性性状 / 术势 / 莫须有 / 哈姆雷特 / 避雷针 …）
     if (tgt.alive) {
-      await fire('onDamaged', { idx: tgtIdx, srcIdx, targetIdx: srcIdx >= 0 ? srcIdx : undefined });
+      await fire('onDamaged', {
+        idx: tgtIdx,
+        srcIdx,
+        targetIdx: srcIdx >= 0 ? srcIdx : undefined,
+        damageType: type,
+      });
     }
     if (tgt.hp <= 0) await dyingPhase(tgtIdx, srcIdx);
   }

@@ -135,6 +135,17 @@ declare global {
       players: { name: string; char: string; role: string; alive: boolean; hp: number }[];
     };
     xtsSkillAudit: () => { total: number; chars: number; missing: string[]; duplicates: string[]; zhuge: string[]; multi: string[] };
+    xtsV21: {
+      cardImmune: (idx: number, name: string) => boolean;
+      canBeTarget: (idx: number, scope: 'trick' | 'sha' | 'juedou' | 'equip', cardName?: string, cardSuit?: string) => boolean;
+      equipVoid: (idx: number, slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus') => boolean;
+      distTrap: (idx: number) => number;
+      horseDist: (idx: number) => number;
+      trickRedirect: (idx: number) => boolean;
+      shaRedirect: (idx: number) => boolean;
+      charOf: (idx: number) => string;
+      players: () => Player[];
+    };
     xtsAutoRun: (
       n: number,
       seats?: number,

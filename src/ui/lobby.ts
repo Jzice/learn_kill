@@ -7,7 +7,7 @@ import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../
 import { PACKETS, charPoolForPacket, packetName, stageOf, withPacketSkills } from '../data/packets';
 import type { PacketId } from '../data/packets';
 import { EXPANSION_CHARS } from '../data/expansion';
-import { gradeSortKey } from '../data/grades';
+import { gradeSortKey, GRADE_ORDER } from '../data/grades';
 import { isCharUnlocked, credits } from '../profile/credits';
 import { claimableCount } from '../profile/missions';
 import { openShop, renderLoadoutBar } from './shop';
@@ -1047,6 +1047,14 @@ export function setPlayerCount(n: number): void {
   }
   saveSetupPrefs();
   Sound.play('click');
+}
+
+/** 设置当前年级（无头模拟 / 批量对战用：确保角色池覆盖全 46 名） */
+export function setGrade(g: string): void {
+  if (GRADE_ORDER.includes(g)) {
+    SELECTED_GRADE = g;
+    (window as unknown as { SELECTED_GRADE?: string }).SELECTED_GRADE = g;
+  }
 }
 
 /** 同步人数滑块下限：建房后随加入人数变化（有人加入则下限提高，有人退出则回落） */

@@ -261,13 +261,13 @@ const GAOSI_SHULUN: SkillDef = {
   ],
 };
 
-/** 笛卡尔·坐标系：双判定同色奖励 */
+/** 笛卡尔·坐标系：双判定同色奖励（v2.1：以知识考核替代弃牌） */
 const DIKAER_ZUOBIAO: SkillDef = {
   id: 'dikaer_zuobiao',
   name: '坐标系',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，令一名角色判定，然后可令另一名角色判定；若两次判定颜色相同，你摸两张牌。',
+  desc: '出牌阶段，你可答一道数学题，答对则令一名角色判定，然后可令另一名角色判定；若两次判定颜色相同，你摸两张牌。',
   effects: [{ kind: 'doubleJudge', sameColor: [{ kind: 'selfDraw', n: 2 }] }],
 };
 
@@ -281,14 +281,14 @@ const DIKAER_WOSI: SkillDef = {
   effects: [{ kind: 'replaceJudge' }],
 };
 
-/** 柯西·极限：弃牌点数 ≥8（46.2%）则伤害 +1 */
+/** 柯西·极限：判定阈值（v2.1：以判定替代弃牌，阈值 46.2%，未命中摸 2 张保底） */
 const KEXI_JIXIAN: SkillDef = {
   id: 'kexi_jixian',
   name: '极限',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌对一名角色造成 1 点伤害；若弃置的牌点数 ≥8，改为造成 2 点伤害。',
-  effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1, bonusTest: { op: 'ge', n: 8 }, bonus: 1 }],
+  desc: '出牌阶段，你可令一名角色判定：若点数 ≥8，其受到 2 点伤害；否则你摸两张牌。',
+  effects: [{ kind: 'judgeIf', test: 'ge', n: 8, hit: [{ kind: 'targetDamage', n: 2 }], miss: [{ kind: 'selfDraw', n: 2 }] }],
 };
 
 /** 柯西·序列：弃置两张点数之差 ≤2 则摸 1 */
@@ -421,15 +421,14 @@ const DIGENGSI_WDGE: SkillDef = {
   ],
 };
 
-/** 雪莱·西风颂：传播 */
+/** 雪莱·西风颂：传播（v2.1：以知识考核替代弃牌） */
 const XUELAI_XFS: SkillDef = {
   id: 'xuelai_xfs',
   name: '西风颂',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，令至多两名其他角色各摸一张牌，然后你回复 1 点体力。',
+  desc: '出牌阶段，你可答一道英语题，答对则令至多两名其他角色各摸一张牌，然后你回复 1 点体力。',
   effects: [
-    { kind: 'costCard', n: 1 },
     { kind: 'multiDraw', max: 2, n: 1 },
     { kind: 'selfHeal', n: 1 },
   ],
@@ -497,17 +496,16 @@ const AINSTEIN_ZNFC: SkillDef = {
   effects: [{ kind: 'convert', from: { color: 'red' }, to: 'sha', damageType: 'fire' }],
 };
 
-/** 法拉第·电磁感应：雷属性 + 连环联动 */
+/** 法拉第·避雷针：免疫【闪电】+ 受雷伤摸牌（v2.1：法拉第笼，替代原弃牌雷伤技） */
 const FALADI_DCYG: SkillDef = {
   id: 'faladi_dcyg',
-  name: '电磁感应',
-  kind: 'active',
-  timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌对一名角色造成 1 点雷属性伤害；若其处于连环状态，你摸一张牌。',
+  name: '避雷针',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '锁定技：你不能成为【闪电】的目标；当你受到雷属性伤害时，你摸一张牌。',
   effects: [
-    { kind: 'costCard', n: 1 },
-    { kind: 'targetDamage', n: 1, damageType: 'thunder' },
-    { kind: 'selfDraw', n: 1, cond: { k: 'targetChained' } },
+    { kind: 'cardImmune', names: ['闪电'] },
+    { kind: 'selfDraw', n: 1, at: 'onDamaged', cond: { k: 'lastDamageThunder' } },
   ],
 };
 
@@ -547,15 +545,14 @@ const JIALILUE_WYJ: SkillDef = {
   ],
 };
 
-/** 普朗克·量子：洛神式连续判定 */
+/** 普朗克·量子：洛神式连续判定（v2.1：以知识考核替代弃牌） */
 const PULANGKE_LIANGZI: SkillDef = {
   id: 'pulangke_liangzi',
   name: '量子',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，然后连续判定直到出现偶数点数的牌，你获得全部判定牌；若你因此获得至少三张牌，对一名角色造成 1 点伤害。',
+  desc: '出牌阶段，你可答一道物理题，答对则连续判定直到出现偶数点数的牌，你获得全部判定牌；若你因此获得至少三张牌，对一名角色造成 1 点伤害。',
   effects: [
-    { kind: 'costCard', n: 1 },
     {
       kind: 'chainJudge',
       stopWhen: 'even',
@@ -606,14 +603,14 @@ const MJLF_YUANSU: SkillDef = {
   ],
 };
 
-/** 拉瓦锡·质量守恒：等量转化 */
+/** 拉瓦锡·质量守恒：等量转化（v2.1：以知识考核替代弃牌） */
 const LWY_ZLSH: SkillDef = {
   id: 'lwx_zlsh',
   name: '质量守恒',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置至多两张手牌，令一名角色回复等量的体力；若其体力已满，改为你回复等量体力。',
-  effects: [{ kind: 'discardToHeal', max: 2 }],
+  desc: '出牌阶段，你可答一道化学题，答对则令一名角色回复 1 点体力，然后你摸一张牌（物质不灭，相互转化）。',
+  effects: [{ kind: 'targetHeal', n: 1 }, { kind: 'selfDraw', n: 1 }],
 };
 
 /** 拉瓦锡·燃烧学说 */
@@ -629,17 +626,14 @@ const LWY_RSHXS: SkillDef = {
   ],
 };
 
-/** 居里夫人·放射性：标记持续伤害 */
+/** 居里夫人·放射性：标记持续伤害（v2.1：以知识考核替代弃牌） */
 const JULI_FSX: SkillDef = {
   id: 'juli_fsx',
   name: '放射性',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，令一名角色获得 2 枚「辐射」标记；其回合开始时移除 1 枚并受到 1 点伤害。',
-  effects: [
-    { kind: 'costCard', n: 1 },
-    { kind: 'addMark', mark: 'radiation', n: 2 },
-  ],
+  desc: '出牌阶段，你可答一道化学题，答对则令一名角色获得 2 枚「辐射」标记；其回合开始时移除 1 枚并受到 1 点伤害。',
+  effects: [{ kind: 'addMark', mark: 'radiation', n: 2 }],
 };
 
 /** 居里夫人·镭元素：全表唯一学识经济技 */
@@ -655,15 +649,14 @@ const JULI_LYS: SkillDef = {
   ],
 };
 
-/** 凯库勒·苯环：循环交换 */
+/** 凯库勒·苯环：循环交换（v2.1：以知识考核替代弃牌） */
 const KKL_BH: SkillDef = {
   id: 'kkl_bh',
   name: '苯环',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌令一名角色摸两张牌，然后其选择：交给你两张手牌 / 受到你造成的 1 点伤害。',
+  desc: '出牌阶段，你可答一道化学题，答对则令一名角色摸两张牌，然后其选择：交给你两张手牌 / 受到你造成的 1 点伤害。',
   effects: [
-    { kind: 'costCard', n: 1 },
     { kind: 'targetDraw', n: 2 },
     {
       kind: 'targetChoose',
@@ -704,16 +697,17 @@ const LSF_HMX: SkillDef = {
   ],
 };
 
-/** 卢瑟福·散射实验：反伤 */
+/** 卢瑟福·散射实验：α 粒子被原子核散射偏转 → 转移【杀】的目标（每回合限一次） */
 const LSF_SSSY: SkillDef = {
   id: 'lsf_sssy',
   name: '散射实验',
-  kind: 'passive',
-  timing: 'passive',
-  desc: '你的手牌上限 +1；你被【杀】造成伤害后，可对伤害来源造成 1 点伤害（散射反弹）。',
+  kind: 'trigger',
+  timing: 'onTargetSha',
+  limit: 'perTurn',
+  desc: '当你成为【杀】的目标时，你可将此【杀】转移给另一名角色（每回合限一次）。',
   effects: [
     { kind: 'handLimit', n: 1 },
-    { kind: 'reflect', n: 1, when: 'hurtBySha' },
+    { kind: 'shaRedirect' },
   ],
 };
 
@@ -752,28 +746,27 @@ const DEW_SZSC: SkillDef = {
   ],
 };
 
-/** 巴斯德·巴氏灭菌：花色代价 */
+/** 巴斯德·巴氏灭菌：花色代价（v2.1：以知识考核替代弃牌） */
 const BSD_MJ: SkillDef = {
   id: 'bsd_mj',
   name: '巴氏灭菌',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张黑色手牌，令一名角色弃置一张牌；若其为黑色，你回复 1 点体力。',
-  effects: [
-    { kind: 'costCard', n: 1 },
-    { kind: 'targetDiscard', n: 1 },
-    { kind: 'selfHeal', n: 1, cond: { k: 'lastCardBlack' } },
-  ],
+  desc: '出牌阶段，你可答一道生物题，答对则令一名角色弃置一张牌，然后你摸一张牌（高温灭菌，清除微生物）。',
+  effects: [{ kind: 'targetDiscard', n: 1 }, { kind: 'selfDraw', n: 1 }],
 };
 
-/** 巴斯德·免疫：属性减伤 */
+/** 巴斯德·免疫：属性减伤 + 花色免疫（v2.1：疫苗只对特定「菌株」生效） */
 const BSD_MY: SkillDef = {
   id: 'bsd_my',
   name: '免疫',
   kind: 'passive',
   timing: 'passive',
-  desc: '你受到的火属性与雷属性伤害 −1（最低 1 点）。',
-  effects: [{ kind: 'reduceDamage', types: ['fire', 'thunder'], n: 1 }],
+  desc: '你受到的火属性与雷属性伤害 −1（最低 1 点）；♦方片的牌对你无效。',
+  effects: [
+    { kind: 'reduceDamage', types: ['fire', 'thunder'], n: 1 },
+    { kind: 'suitImmune', suits: ['♦'] },
+  ],
 };
 
 /** 孟德尔·分离定律：点数成对代价 */
@@ -851,20 +844,19 @@ const LSZ_XY: SkillDef = {
 /* 历史 🏛️                                                             */
 /* ------------------------------------------------------------------ */
 
-/** 秦始皇·统一：花色命令（限至多两名） */
+/** 秦始皇·统一：花色命令（限至多两名）（v2.1：以知识考核替代弃牌） */
 const QSH_TY: SkillDef = {
   id: 'qsh_ty',
   name: '统一',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，令至多两名其他角色各选择：弃置一张与你弃牌花色相同的牌 / 失去 1 点体力（车同轨书同文）。',
+  desc: '出牌阶段，你可答一道历史题，答对则令至多两名其他角色各选择：弃置一张♦方片的手牌 / 失去 1 点体力（车同轨，书同文）。',
   effects: [
-    { kind: 'costCard', n: 1 },
     {
       kind: 'targetChoose',
       maxTargets: 2,
       options: [
-        [{ kind: 'discardSuitMatch', n: 1 }],
+        [{ kind: 'discardSuitMatch', n: 1, suit: '♦' }],
         [{ kind: 'targetLoseHp', n: 1 }],
       ],
     },
@@ -920,28 +912,28 @@ const ZH_XXY: SkillDef = {
   ],
 };
 
-/** 郑和·航海图 */
+/** 郑和·航海图：距离 -1 + 顺手牵羊无距离限制 + 马政（v2.1：舟楫之利） */
 const ZH_HHT: SkillDef = {
   id: 'zh_hht',
   name: '航海图',
   kind: 'passive',
   timing: 'passive',
-  desc: '你计算与其他角色的距离 −1；你使用【顺手牵羊】无距离限制。',
+  desc: '你计算与其他角色的距离 −1；你使用【顺手牵羊】无距离限制；装备区每有一张马，你计算距离额外 −1。',
   effects: [
     { kind: 'distMod', delta: -1 },
     { kind: 'shunshouNoDist' },
+    { kind: 'horseDist', n: 1 },
   ],
 };
 
-/** 林则徐·虎门销烟：群体销毁（收益封顶） */
+/** 林则徐·虎门销烟：群体销毁（收益封顶）（v2.1：以知识考核替代弃牌） */
 const LZX_HMXY: SkillDef = {
   id: 'lzx_hmxy',
   name: '虎门销烟',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，令所有其他角色各弃置一张手牌，然后你摸一张牌。',
+  desc: '出牌阶段，你可答一道历史题，答对则令所有其他角色各弃置一张手牌，然后你摸一张牌。',
   effects: [
-    { kind: 'costCard', n: 1 },
     { kind: 'allDiscard', n: 1 },
     { kind: 'selfDraw', n: 1 },
   ],
@@ -1051,16 +1043,17 @@ const XXK_YJ: SkillDef = {
   effects: [{ kind: 'deckBottom', n: 2, then: 'peek' }],
 };
 
-/** 徐霞客·探险 */
+/** 徐霞客·探险：距离 -1 + 无视 +1 马 + 距离陷阱（v2.1：游记所至，远敌难近） */
 const XXK_TX: SkillDef = {
   id: 'xxk_tx',
   name: '探险',
   kind: 'passive',
   timing: 'passive',
-  desc: '你计算与其他角色的距离 −1；你计算距离时无视其他角色的 +1 马。',
+  desc: '锁定技：你计算与其他角色的距离 −1，且计算距离时无视其他角色的 +1 马；与你距离大于 1 的角色不能对你使用【杀】。',
   effects: [
     { kind: 'distMod', delta: -1 },
     { kind: 'ignoreHorsePlus' },
+    { kind: 'distTrap', min: 1 },
   ],
 };
 
@@ -1087,16 +1080,16 @@ const ZH_HTS: SkillDef = {
   ],
 };
 
-/** 郦道元·水经注：花色筛选 */
+/** 郦道元·水经注：花色筛选（v2.1：以知识考核替代弃牌） */
 const LDY_SJZ: SkillDef = {
   id: 'ldy_sjz',
   name: '水经注',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，展示牌堆顶三张牌，获得其中的一张，其余置入弃牌堆；若你获得的牌与你弃置的牌花色相同，你额外摸一张牌。',
+  desc: '出牌阶段，你可答一道地理题，答对则展示牌堆顶三张牌，获得其中的一张，其余置入弃牌堆；若你获得的牌为红色，你额外摸一张牌。',
   effects: [
-    { kind: 'costCard', n: 1 },
-    { kind: 'deckPeek', n: 3, then: 'pickOne', match: 'sameSuit' },
+    { kind: 'deckPeek', n: 3, then: 'pickOne' },
+    { kind: 'selfDraw', n: 1, cond: { k: 'lastCardRed' } },
   ],
 };
 
@@ -1123,17 +1116,18 @@ const LSG_DZKT: SkillDef = {
   effects: [{ kind: 'deckBottom', n: 5, then: 'digEquip' }],
 };
 
-/** 李四光·构造体系：枭姬双向 */
+/** 李四光·构造体系：枭姬双向 + 地质锤（v2.1：装备牌可当【杀】使用） */
 const LSG_GZTX: SkillDef = {
   id: 'lsg_gztx',
   name: '构造体系',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +1；你装备一张装备牌时摸一张牌；你失去装备区的牌时摸一张牌。',
+  desc: '你的手牌上限 +1；你装备一张装备牌时摸一张牌；你失去装备区的牌时摸一张牌；你可将一张装备牌当【杀】使用（每回合限一次）。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'selfDraw', n: 1, at: 'onEquip' },
     { kind: 'selfDraw', n: 1, at: 'onLoseEquip' },
+    { kind: 'convert', from: { type: 'equip' }, to: 'sha', limit: 'perTurn' },
   ],
 };
 
@@ -1233,38 +1227,28 @@ const MZ_WD: SkillDef = {
   ],
 };
 
-/** 墨子·非攻 */
+/** 墨子·非攻：免疫群体 AOE + 敌人装备失效（v2.1：反对不义之战，收缴兵器） */
 const MZ_FG: SkillDef = {
   id: 'mozi_fg',
   name: '非攻',
-  kind: 'active',
-  timing: 'active',
-  desc: '出牌阶段，你可令一名角色选择：交给你一张手牌 / 弃置一张牌；若其选择弃牌，你令其回复 1 点体力。',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '锁定技：你不能成为【万箭齐发】与【南蛮入侵】的目标；其他角色的武器与防具对你无效。',
   effects: [
-    {
-      kind: 'targetChoose',
-      options: [
-        [{ kind: 'gainHand', n: 1 }],
-        [
-          { kind: 'targetDiscard', n: 1 },
-          { kind: 'targetHeal', n: 1 },
-        ],
-      ],
-    },
+    { kind: 'cardImmune', names: ['万箭齐发', '南蛮入侵'] },
+    { kind: 'enemyEquipVoid', slots: ['weapon', 'armor'] },
   ],
 };
 
-/** 墨子·兼爱：防止伤害换收益 */
+/** 墨子·兼爱：成为锦囊目标时可转移给另一名角色（v2.1：替人承受） */
 const MZ_JA: SkillDef = {
   id: 'mozi_ja',
   name: '兼爱',
-  kind: 'passive',
+  kind: 'trigger',
   timing: 'passive',
-  desc: '你的手牌上限 +1；你使用【杀】造成伤害时，若你本回合未使用过锦囊牌，你可防止此伤害并令目标摸一张牌。',
-  effects: [
-    { kind: 'handLimit', n: 1 },
-    { kind: 'preventShaDamage', then: [{ kind: 'targetDraw', n: 1 }], at: 'onShaHit' },
-  ],
+  limit: 'perTurn',
+  desc: '当你成为锦囊牌的目标时，你可将此牌转移给另一名角色（每回合限一次）。',
+  effects: [{ kind: 'trickRedirect' }],
 };
 
 /** 孙子·兵法：突袭 */
