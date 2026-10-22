@@ -10,6 +10,9 @@ import { discardCard, drawCards, genderOf, inRange, sameFaction } from './rules'
 import {
   canBeTarget,
   canConvertAs,
+  cardImmuneTo,
+  consumeRedirect,
+  enemyEquipVoidOf,
   equipImmune,
   fire,
   markConvertUse,
@@ -56,6 +59,65 @@ function dumpHand(p: Player, n: number): void {
   }
 }
 
+/** 转移候选人的 AI 评分：优先非同阵营 + 手牌多（把祸水引向"敌人"） */
+function redirectScore(from: Player, to: Player): number {
+  return (sameFaction(from, to) ? 0 : 2) + Math.min(to.hand.length, 5) * 0.2;
+}
+
+/** 墨子【兼爱】：成为锦囊目标时，可将其转移给另一名角色（每回合限一次） */
+async function tryTrickRedirect(attackerIdx: number, targetIdx: number): Promise<number> {
+  const t = G.players[targetIdx];
+  if (!t || !t.alive) return targetIdx;
+  const cands = G.players.map((_, i) => i).filter(
+    (i) => i !== attackerIdx && i !== targetIdx && G.players[i].alive && canBeTarget(i, 'trick'),
+  );
+  if (!cands.length) return targetIdx;
+  const d = consumeRedirect(t, 'trickRedirect');
+  if (!d) return targetIdx;
+  addLog(`【${d.name}】${t.name} 将此锦囊转移给另一名角色`, 'hl');
+  let to = cands[0];
+  if (t.isAI) {
+    to = cands.reduce((best, i) => (redirectScore(t, G.players[i]) > redirectScore(t, G.players[best]) ? i : best), cands[0]);
+  } else {
+    const ch = await waitChoice(
+      targetIdx,
+      cands.map((i) => ({ label: `转移给 ${G.players[i].name}`, value: i })),
+      'target',
+    );
+    const v = Number(ch);
+    if (Number.isFinite(v) && cands.includes(v)) to = v;
+  }
+  render();
+  return to;
+}
+
+/** 卢瑟福【散射实验】：成为【杀】目标时，可将其转移给另一名角色（每回合限一次） */
+async function tryShaRedirect(attackerIdx: number, targetIdx: number): Promise<number> {
+  const t = G.players[targetIdx];
+  if (!t || !t.alive) return targetIdx;
+  const cands = G.players.map((_, i) => i).filter(
+    (i) => i !== attackerIdx && i !== targetIdx && G.players[i].alive && canBeTarget(i, 'sha'),
+  );
+  if (!cands.length) return targetIdx;
+  const d = consumeRedirect(t, 'shaRedirect');
+  if (!d) return targetIdx;
+  addLog(`【${d.name}】${t.name} 将此【杀】转移给另一名角色`, 'hl');
+  let to = cands[0];
+  if (t.isAI) {
+    to = cands.reduce((best, i) => (redirectScore(t, G.players[i]) > redirectScore(t, G.players[best]) ? i : best), cands[0]);
+  } else {
+    const ch = await waitChoice(
+      targetIdx,
+      cands.map((i) => ({ label: `转移给 ${G.players[i].name}`, value: i })),
+      'target',
+    );
+    const v = Number(ch);
+    if (Number.isFinite(v) && cands.includes(v)) to = v;
+  }
+  render();
+  return to;
+}
+
 export async function useSha(
   attackerIdx: number,
   targetIdx: number,
@@ -76,7 +138,15 @@ export async function useSha(
     addLog(`${t.name} 不可被指定为【杀】的目标`, 'hl');
     return;
   }
-  const hasLiannu = a.equip.weapon?.skill === 'liannu';
+  // 卢瑟福【散射实验】：成为【杀】目标时可转移给另一名角色，再以新目标重新结算
+  const redirectTo = await tryShaRedirect(attackerIdx, targetIdx);
+  if (redirectTo !== targetIdx) {
+    return useSha(attackerIdx, redirectTo, opts);
+  }
+  // 墨子【非攻】：目标的武器 / 防具对其余角色无效（装备失效）
+  const wVoid = enemyEquipVoidOf(t, 'weapon');
+  const aVoid = enemyEquipVoidOf(t, 'armor');
+  const hasLiannu = !wVoid && a.equip.weapon?.skill === 'liannu';
   // 每回合出杀上限：连弩无限；咆哮可额外出杀（伽利略·自由落体）
   const shaCap = hasLiannu ? Infinity : shaLimitOf(a);
   if (
@@ -99,9 +169,9 @@ export async function useSha(
   Sound.play('sha');
   showPlayCard({ name: cname, suit, num: '?', type: 'basic' }, a.name, FACTIONS[a.faction].color);
   await FX.flyCard(attackerIdx, targetIdx, cname, 'basic');
-  // 青釭剑：无视目标防具（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）
-  const ignoreArmor = a.equip.weapon?.skill === 'qinggang';
-  const armor = ignoreArmor ? undefined : t.equip.armor?.skill;
+  // 青釭剑：无视目标防具（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）；墨子【非攻】令防具失效
+  const ignoreArmor = a.equip.weapon?.skill === 'qinggang' && !wVoid;
+  const armor = ignoreArmor || aVoid ? undefined : t.equip.armor?.skill;
   const black = suit === '♠' || suit === '♣';
   if (armor === 'renwang' && black) {
     addLog(`${t.name} 的【仁王盾】挡下了黑色【杀】`, 'hl');
@@ -115,7 +185,7 @@ export async function useSha(
     return;
   }
   // 雌雄双股剑：对异性角色使用杀，对方选择「令你摸一张」或「自弃一张」
-  if (a.equip.weapon?.skill === 'cixiong' && genderOf(a) !== genderOf(t)) {
+  if (a.equip.weapon?.skill === 'cixiong' && !wVoid && genderOf(a) !== genderOf(t)) {
     addLog(`【雌雄双股剑】：${t.name} 需抉择`, 'hl');
     let ch: string | number = 'draw';
     if (t.hand.length > 0) {
@@ -155,7 +225,7 @@ export async function useSha(
   const dodged = await requestShan(targetIdx, attackerIdx, { ignoreArmor, need: needShan });
   if (dodged) {
     // 贯石斧：弃两张牌，令此杀强制命中
-    if (a.equip.weapon?.skill === 'guanshi' && a.hand.length >= 2) {
+    if (a.equip.weapon?.skill === 'guanshi' && !wVoid && a.hand.length >= 2) {
       const force = a.isAI
         ? true
         : (await waitChoice(attackerIdx, [
@@ -172,7 +242,7 @@ export async function useSha(
     }
     // 青龙偃月刀：杀被闪后可对同目标再出一张杀
     // 规则：需消耗一张手牌中的【杀】；该杀不计入出杀次数上限；若被再次闪避可继续发动（链式）
-    if (a.equip.weapon?.skill === 'qinglong' && t.alive) {
+    if (a.equip.weapon?.skill === 'qinglong' && !wVoid && t.alive) {
       const shaInHand = inRange(attackerIdx, targetIdx)
         ? a.hand.find((c) => SHA_SUBS.includes(c.sub))
         : undefined;
@@ -250,10 +320,11 @@ export async function useJiu(idx: number): Promise<void> {
 export async function useTrick(
   attackerIdx: number,
   card: Card,
-  targetIdx: number | null,
+  targetIdxIn: number | null,
   secondTarget: number | null = null,
 ): Promise<void> {
   const a = G.players[attackerIdx];
+  let targetIdx = targetIdxIn;
   const tn = targetIdx != null ? G.players[targetIdx].name : '';
   addPlayLog(a.name, 'use', card.name, tn);
   addLog(`📘 玩法·【${card.name}】：${TRICK_DESC[card.sub] || '（暂无说明）'}`, 'explain');
@@ -308,6 +379,12 @@ export async function useTrick(
     }
   }
 
+  // 墨子【兼爱】：单体锦囊结算前，目标可将其转移给另一名角色
+  const SINGLE_TARGET_TRICKS = ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo'];
+  if (targetIdx != null && SINGLE_TARGET_TRICKS.includes(card.sub)) {
+    targetIdx = await tryTrickRedirect(attackerIdx, targetIdx);
+  }
+
   switch (card.sub) {
     case 'wuzhong': {
       drawCards(a, 2);
@@ -316,15 +393,19 @@ export async function useTrick(
       break;
     }
     case 'guohe': {
-      if (targetIdx != null) await discardTargetCard(targetIdx, attackerIdx, '弃置');
+      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '过河拆桥', card.suit)) {
+        await discardTargetCard(targetIdx, attackerIdx, '弃置');
+      }
       break;
     }
     case 'shunshou': {
-      if (targetIdx != null) await discardTargetCard(targetIdx, attackerIdx, '获得');
+      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '顺手牵羊', card.suit)) {
+        await discardTargetCard(targetIdx, attackerIdx, '获得');
+      }
       break;
     }
     case 'juedou': {
-      if (targetIdx == null) break;
+      if (targetIdx == null || !canBeTarget(targetIdx, 'juedou', '决斗', card.suit)) break;
       let def: Player = G.players[targetIdx],
         ai = attackerIdx,
         di = targetIdx;
@@ -348,7 +429,7 @@ export async function useTrick(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (!canBeTarget(i, 'trick')) continue;
+        if (!canBeTarget(i, 'trick', '南蛮入侵', card.suit)) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#e74c3c');
@@ -372,7 +453,7 @@ export async function useTrick(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (!canBeTarget(i, 'trick')) continue;
+        if (!canBeTarget(i, 'trick', '万箭齐发', card.suit)) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#f39c12');
@@ -404,13 +485,18 @@ export async function useTrick(
       break;
     }
     case 'lebu': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick')) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '乐不思蜀', card.suit)) {
         G.players[targetIdx].judge.push({ ...card, judgeType: 'lebu' });
         addLog(`【乐不思蜀】置于 ${G.players[targetIdx].name} 判定区`);
       }
       break;
     }
     case 'shandian': {
+      // 法拉第【避雷针】：不能成为【闪电】的目标
+      if (cardImmuneTo(a, '闪电')) {
+        addLog(`${a.name} 免疫【闪电】，无法置于判定区`, 'hl');
+        break;
+      }
       a.judge.push({ ...card, judgeType: 'shandian' });
       addLog(`【闪电】置于 ${a.name} 判定区`);
       break;

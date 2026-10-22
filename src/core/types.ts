@@ -114,7 +114,10 @@ export type SkillCond =
   | { k: 'lastCardOdd' }
   | { k: 'lastCardPrime' }
   | { k: 'lastCardNumGe'; n: number }
-  | { k: 'lastCardNumLe'; n: number };
+  | { k: 'lastCardNumLe'; n: number }
+  /** 最近一次受到的伤害为雷 / 火属性（法拉第·避雷针） */
+  | { k: 'lastDamageThunder' }
+  | { k: 'lastDamageFire' };
 
 /**
  * 带可选「生效时机」的效果。默认跟随技能自身的 timing；
@@ -313,6 +316,10 @@ export type SkillEffect =
   | { kind: 'trickRedirect' }
   /** 转移杀：你成为【杀】目标时，可将其转移给另一名角色（卢瑟福·散射偏转） */
   | { kind: 'shaRedirect' }
+  /** 装备失效：其他角色装备区中指定槽位的牌对你无效（墨子·非攻：收缴兵器） */
+  | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus')[] }
+  /** 马政：装备区每有一张马，你计算距离额外 −n（郑和·航海图） */
+  | { kind: 'horseDist'; n: number }
   | { kind: 'reduceDamage'; types: DamageType[]; n: number }
   /** 改判：判定牌生效前用一张手牌替换之 */
   | { kind: 'replaceJudge' }

@@ -17,6 +17,7 @@
     "audit:expansion": "node scripts/build-expansion.mjs",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
+    "smoke:skills": "node scripts/smoke-skills.mjs",
     "smoke:net": "node scripts/smoke-net.mjs",
     "smoke:net:settle": "node scripts/smoke-net-settle.mjs",
     "smoke:tiesuo": "node scripts/smoke-tiesuo.mjs",

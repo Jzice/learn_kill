@@ -4,6 +4,28 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-22
+
+### 新增
+
+- **声明式技能引擎重构（核心）**：全部技能从「硬编码 switch」迁移为「数据驱动的登记表 + 统一分派器」
+  - 新增 `src/data/skilldefs.ts`：**46 名角色 / 93 个技能 + 9 个主公技 + 18 个学科主题技**统一登记为 `SkillDef`（时机 + 费用 + 限制 + 条件 + 约 44 种效果原语），诸葛亮为全表唯一三技能角色（观星 / 空城 / 出师表）
+  - 新增 `src/game/skillEngine.ts` 统一分派器：`defOf` / `skillsOf` / `canPay` / `payCost` / `limitLeft` / `fire` / `invokeActive` / `runEffects` / `canConvertAs`
+  - 删除 `skills.ts` 289 行 legacy switch 与 21 处 `hasSkill` 硬编码分支，全部改走 `fire()` / `invokeActive()`；`characters.ts` 只存技能 id
+- **无头模拟模式（sim）**：`setSim/isSim` 关闭 sleep/FX/Sound/render，`waitChoice` 自动结算，支持批量无头对局；配套 `scripts/balance.mjs`（平衡批量仿真）与 `scripts/smoke-skills.mjs`（技能登记表自检 + 无头 AI 对战回归，npm run smoke:skills）
+- **引擎层预置 v2.1 机制原语**（数据侧尚未启用，纯增量）：指定牌名免疫 `cardImmune`（法拉第·避雷针——免疫【闪电】）、效果转移 `shaRedirect` / `trickRedirect`（卢瑟福·散射 / 墨子·兼爱，每回合限一次）、距离陷阱 `distTrap`（徐霞客·探险——距离 >1 的角色不能对其使用【杀】）、装备失效 `enemyEquipVoid`（墨子·非攻——令他人武器 / 防具 / +1 马 / −1 马对你无效）、马政 `horseDist`（郑和·航海图——装备区每有一张马距离额外 −1）；`canBeTarget` 扩展支持牌名 / 花色判定（过河拆桥 / 顺手牵羊 / 决斗 / 南蛮 / 万箭 / 乐不思蜀逐一致查）
+- **类型层扩展**：`SkillTiming`(20) / `SkillEffect`(~44) / `Player.skillUse` / `skillGame` / `marks` / `turnSuits` / `PlayerFlags.pledge` 等，均随 `state_sync` 下发，联机零感知
+
+### 变更
+
+- `package.json` 版本号 2.0.0；npm scripts 新增 `smoke:skills`；Release 流水线新增技能冒烟步骤（非阻断）
+- 文档：新增 `docs/技能创意重设计方案.md`（v2.1 设计稿：去弃牌化 / 免疫 / 转移 / 距离陷阱 / 学科即机制）；`docs/架构设计.md` 补 §3.1/§3.2；`docs/游戏机制.md` 补 §6.0 全角色技能表
+
+### 验证
+
+- typecheck 零错误；双模式构建成功（CDN 444.8 KB / bundled 544.4 KB，gzip 183.67 KB）；`verify:dist` 全部通过；题库审计通过；题库生成物与 TSV 源一致
+- 单机冒烟 66/66；技能冒烟 8/8（46 角色 / 122 个技能定义 / 无头 AI 对战零卡死 / 控制台零错误）
+
 ## [1.9.0] - 2026-10-21
 
 ### 新增

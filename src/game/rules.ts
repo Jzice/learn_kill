@@ -6,7 +6,7 @@ import { CHAR_GENDER } from '../data/characters';
 import { Sound } from '../core/sound';
 import { discardFx, drawFx } from '../core/fx';
 import { triggerDistMod, triggerHandLimit } from './skillfx';
-import { distModOf, distPlusToMeOf, handLimitBonus, ignoreHorsePlus } from './skillEngine';
+import { distModOf, distPlusToMeOf, enemyEquipVoidOf, handLimitBonus, horseDistOf, ignoreHorsePlus } from './skillEngine';
 
 export function hasSkill(p: Player, id: string): boolean {
   return !!p.skills && p.skills.some((s) => s.id === id);
@@ -35,9 +35,12 @@ export function distBetween(fi: number, ti: number): number {
   let d = seatDist(fi, ti);
   const from = G.players[fi],
     to = G.players[ti];
-  // 徐霞客【探险】无视他人 +1 马
-  if (to.equip.horsePlus && !ignoreHorsePlus(from)) d += 1;
-  if (from.equip.horseMinus) d -= 1;
+  // 徐霞客【探险】无视他人 +1 马；墨子【非攻】令他人 +1 马对你无效
+  if (to.equip.horsePlus && !ignoreHorsePlus(from) && !enemyEquipVoidOf(to, 'horsePlus')) d += 1;
+  // 墨子【非攻】令他人 -1 马对你无效
+  if (from.equip.horseMinus && !enemyEquipVoidOf(to, 'horseMinus')) d -= 1;
+  // 郑和【航海图】马政：装备区每有一张马，距离额外 -1
+  d -= horseDistOf(from);
   // 声明式技能：距离修正原语（万有引力 / 探险 / 航海图 / 舆地 / 浮力 / 经纬）
   d += distModOf(from);
   // 牛顿【万有引力】：其他角色计算与你的距离 +1

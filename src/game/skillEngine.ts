@@ -59,6 +59,8 @@ export interface SkillCtx {
   def?: SkillDef;
   /** 是否为翻转抉择：由「目标」替发动者做选择（targetChoose 中 selfDraw 归发动者） */
   chooser?: number;
+  /** 最近一次受到的伤害属性（法拉第·避雷针判据） */
+  damageType?: DamageType;
 }
 
 /* ---------------- 基础工具 ---------------- */
@@ -256,6 +258,8 @@ function condOk(p: Player, c: SkillCond | undefined, ctx: SkillCtx): boolean {
     case 'lastCardPrime': return !!ctx.card && isPrimeNum(ctx.card.num);
     case 'lastCardNumGe': return !!ctx.card && numOf(ctx.card) >= c.n;
     case 'lastCardNumLe': return !!ctx.card && numOf(ctx.card) <= c.n;
+    case 'lastDamageThunder': return ctx.damageType === 'thunder';
+    case 'lastDamageFire': return ctx.damageType === 'fire';
     default: return true;
   }
 }
@@ -1034,6 +1038,8 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
       case 'distTrap':
       case 'trickRedirect':
       case 'shaRedirect':
+      case 'enemyEquipVoid':
+      case 'horseDist':
       case 'reduceDamage':
       case 'replaceJudge':
       case 'shaNeedShan':
@@ -1360,6 +1366,32 @@ export function trickRedirectOf(p: Player): boolean {
 /** 可否转移【杀】的目标（卢瑟福·散射） */
 export function shaRedirectOf(p: Player): boolean {
   return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'shaRedirect'));
+}
+/** 目标是否使其他角色装备区的指定槽位失效（墨子·非攻） */
+export function enemyEquipVoidOf(p: Player, slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus'): boolean {
+  return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'enemyEquipVoid' && e.slots.includes(slot)));
+}
+/** 马政：装备区马匹带来的额外距离减免 */
+export function horseDistOf(p: Player): number {
+  const horses = (p.equip.horsePlus ? 1 : 0) + (p.equip.horseMinus ? 1 : 0);
+  if (!horses) return 0;
+  let n = 0;
+  for (const d of defsOf(p)) for (const e of d.effects) if (e.kind === 'horseDist') n += e.n * horses;
+  return n;
+}
+/**
+ * 转移类技能（墨子·兼爱 / 卢瑟福·散射）发动判定：每回合限一次。
+ * 返回可发动的技能定义并记一次使用；不可发动返回 null。
+ */
+export function consumeRedirect(p: Player, kind: 'shaRedirect' | 'trickRedirect'): SkillDef | null {
+  for (const d of defsOf(p)) {
+    if (!d.effects.some((e) => e.kind === kind)) continue;
+    if ((p.skillUse?.[d.id] || 0) >= 1) continue;
+    p.skillUse = p.skillUse || {};
+    p.skillUse[d.id] = (p.skillUse[d.id] || 0) + 1;
+    return d;
+  }
+  return null;
 }
 /** 无双：抵消一张【杀】所需的【闪】数量 */
 export function shanNeeded(attackerIdx: number): number {

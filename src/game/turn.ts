@@ -23,6 +23,7 @@ import {
   canConvertAs,
   canPay,
   convertDamageType,
+  distTrapOf,
   extraDrawOf,
   fire,
   markConvertUse,
@@ -39,6 +40,12 @@ import {
   tryReplaceJudge,
 } from './skillEngine';
 import { NET, scheduleSync } from '../net/network';
+
+/** 徐霞客【探险】距离陷阱：与目标距离 > min 的角色不能对其使用【杀】 */
+function distTrapBlocks(attackerIdx: number, targetIdx: number): boolean {
+  const min = distTrapOf(G.players[targetIdx]);
+  return min > 0 && distBetween(attackerIdx, targetIdx) > min;
+}
 
 export async function runTurn(idx: number): Promise<void> {
   const p = G.players[idx];
@@ -249,6 +256,7 @@ export async function playPhase(idx: number): Promise<void> {
           for (let i = 0; i < G.players.length; i++) {
             if (i === idx || !G.players[i].alive) continue;
             if (!canBeTarget(i, 'sha')) continue;
+            if (distTrapBlocks(idx, i)) continue;
             if (inRange(idx, i)) cand.push(i);
           }
           if (!cand.length) {
@@ -308,8 +316,9 @@ export async function playPhase(idx: number): Promise<void> {
       const cand: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === idx || !G.players[i].alive) continue;
-        // 空城等免疫：不能成为【杀】的目标
+        // 空城等免疫：不能成为【杀】的目标；徐霞客【探险】距离陷阱
         if (!canBeTarget(i, 'sha')) continue;
+        if (distTrapBlocks(idx, i)) continue;
         if (inRange(idx, i)) cand.push(i);
       }
       if (!cand.length) {
@@ -507,6 +516,7 @@ async function pickShaTarget(idx: number): Promise<number> {
   const cand: number[] = [];
   for (let i = 0; i < G.players.length; i++) {
     if (i === idx || !G.players[i].alive) continue;
+    if (!canBeTarget(i, 'sha') || distTrapBlocks(idx, i)) continue;
     if (inRange(idx, i)) cand.push(i);
   }
   if (!cand.length) {
