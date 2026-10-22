@@ -1,9 +1,9 @@
 {
   "name": "xuetangsha",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.4.0",
   "type": "module",
-  "description": "学堂杀 · 九科争鸣 —— v2.3 大模型接管上下文增强（注入距离/攻击范围、身份信念推断、恩怨账本、近期战报 + few-shot 格式示例 + 连续失败自动降级）；v2.2 接入大模型接管 AI（OpenAI 兼容 + ProviderAdapter 可扩展，出牌/目标/无懈/答题/救援由模型驱动，失败回退启发式），构建产出单 HTML 文件",
+  "description": "学堂杀 · 九科争鸣 —— v2.4 大模型接管深化（出牌回合级规划降低请求数、出闪/濒死接入模型决策、答题概率统一）；v2.3 上下文增强（距离/身份信念/恩怨/战报注入 + few-shot + 连续失败自动降级）；v2.2 接入大模型接管 AI（OpenAI 兼容 + ProviderAdapter 可扩展，失败回退启发式），构建产出单 HTML 文件",
   "scripts": {
     "dev": "node scripts/dev.mjs cdn",
     "dev:bundled": "node scripts/dev.mjs bundled",
