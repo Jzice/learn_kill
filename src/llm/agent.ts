@@ -24,6 +24,39 @@ function dbg(idx: number, tag: string, info: string): void {
   addLog(`🤖[LLM·座位${idx}] ${tag}: ${info}`, 'sys');
 }
 
+/* ---------------- 连续失败自动降级 ----------------
+ * 大模型不可用（超时 / 解析失败 / 非法输出）时每回合都会重试，拖慢整局。
+ * 连续失败达到阈值即把该座位本局降回启发式，避免反复无效等待。
+ */
+/** 连续失败阈值 */
+const FAIL_LIMIT = 3;
+/** 座位 → 连续失败次数（本局有效，新对局由 resetLlmFailStreak 清空） */
+const failStreak = new Map<number, number>();
+
+/** 新对局 / 重新应用大模型配置时清空失败计数 */
+export function resetLlmFailStreak(): void {
+  failStreak.clear();
+}
+
+function noteOk(idx: number): void {
+  failStreak.set(idx, 0);
+}
+
+function noteFail(idx: number): void {
+  const n = (failStreak.get(idx) || 0) + 1;
+  failStreak.set(idx, n);
+  if (n < FAIL_LIMIT) return;
+  const p = G.players[idx];
+  if (!p || p.aiMode !== 'llm') return;
+  p.aiMode = 'heuristic';
+  addLog(`🤖[LLM·座位${idx}] 连续 ${n} 次决策失败 → 本局改用启发式 AI`, 'sys');
+  try {
+    render();
+  } catch {
+    /* 渲染失败不阻塞 */
+  }
+}
+
 /** 在「思考中」状态下执行模型调用（设置/清除 G.thinkingSeat 触发 UI 指示） */
 async function withThinking<T>(idx: number, fn: () => Promise<T>): Promise<T> {
   G.thinkingSeat = idx;
@@ -49,7 +82,7 @@ async function withThinking<T>(idx: number, fn: () => Promise<T>): Promise<T> {
 function instructionFor(kind: LlmDecisionKind): string {
   switch (kind) {
     case 'play':
-      return '出牌阶段：选择你要执行的动作（或结束出牌）。只要手中有【杀】且场上有可攻击的敌对目标，应优先出【杀】打击；技能通常需要答题才能发动。';
+      return '出牌阶段：选择你要执行的动作（或结束出牌）。只要手中有【杀】且存在标注「✅在你攻击范围内」的敌对角色，应优先出【杀】打击；技能通常需要答题才能发动。';
     case 'target':
       return '选择一个目标座位（value 为座位号，-1 表示取消/不选择）。出【杀】或锦囊时务必选定一名敌对角色，不要选 -1 取消。';
     case 'discard':
@@ -87,24 +120,33 @@ export async function llmChooseAction(
     const j = parseJsonSafe<{ choice?: string | number }>(text);
     if (!j || j.choice === undefined) {
       dbg(idx, '解析失败', `kind=${kind} 原始输出=${JSON.stringify((text || '').slice(0, 200))}`);
+      noteFail(idx);
       return null;
     }
     const v = j.choice;
     const found = valid.find((o) => String(o.value) === String(v) || o.value === v);
     if (found) {
       dbg(idx, '已选择', `kind=${kind} → ${JSON.stringify(found.value)}（${found.label}）`);
+      noteOk(idx);
       return found.value;
     }
     // 允许模型用 "skip" / -1 表达「不行动」，映射到取消项
     if (String(v) === 'skip' || v === -1) {
       const cancel = opts.find((o) => o.value === -1 || String(o.value) === 'skip');
       dbg(idx, '选择取消', `kind=${kind} 模型返回 ${JSON.stringify(v)} → ${cancel ? JSON.stringify(cancel.value) : 'null'}`);
-      return cancel ? cancel.value : null;
+      if (!cancel) {
+        noteFail(idx);
+        return null;
+      }
+      noteOk(idx);
+      return cancel.value;
     }
     dbg(idx, '非法选择', `kind=${kind} 模型返回 ${JSON.stringify(v)} 不在合法选项中`);
+    noteFail(idx);
     return null;
   } catch (e) {
     dbg(idx, '调用异常', `kind=${kind} ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`);
+    noteFail(idx);
     return null;
   }
 }
@@ -120,9 +162,14 @@ async function llmDecideBool(idx: number, instruction: string): Promise<boolean 
   try {
     const text = await withThinking(idx, () => callLlm(messages));
     const j = parseJsonSafe<{ choice?: string | number }>(text);
-    if (!j) return null;
+    if (!j) {
+      noteFail(idx);
+      return null;
+    }
+    noteOk(idx);
     return String(j.choice) === 'use';
   } catch {
+    noteFail(idx);
     return null;
   }
 }
@@ -179,12 +226,15 @@ export async function llmQuizDecide(idx: number): Promise<boolean> {
     const j = parseJsonSafe<{ quiz?: boolean }>(text);
     if (!j || typeof j.quiz !== 'boolean') {
       dbg(idx, '答题解析失败', `原始输出=${JSON.stringify((text || '').slice(0, 200))} → 原启发式`);
+      noteFail(idx);
       return aiQuiz(aiQuizRate(p));
     }
     dbg(idx, '答题决策', `→ ${j.quiz ? '参悟' : '不参悟'}`);
+    noteOk(idx);
     return j.quiz;
   } catch (e) {
     dbg(idx, '答题异常', `${(e instanceof Error ? e.message : String(e)).slice(0, 200)} → 原启发式`);
+    noteFail(idx);
     return aiQuiz(aiQuizRate(p));
   }
 }

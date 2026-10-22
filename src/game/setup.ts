@@ -42,6 +42,7 @@ import {
 import { LOADOUT_EQUIP_LIMIT, LOADOUT_ITEM_LIMIT } from '../profile/credits';
 import { Sound } from '../core/sound';
 import { llmEnabledForSeat } from '../llm/config';
+import { resetLlmFailStreak } from '../llm/agent';
 
 /** 应用开局选项：回合限时（开关 + 秒数），联机由房主下发给客人 */
 function applyTimerSetting(): void {
@@ -234,6 +235,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     }
   }
   resetBrain(); // 新对局：清空 AI 信念/恩怨
+  resetLlmFailStreak(); // 新对局：清空大模型连续失败计数（解除上一局可能的自动降级）
   applyLlmModes(); // 依据当前大模型配置标记各 AI 座位的决策模式
   G.players.forEach((p) => drawCards(p, 4));
   G.current = G.players.findIndex((p) => p.role === 'lord');

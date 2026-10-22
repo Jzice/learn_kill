@@ -117,10 +117,10 @@ function addFavor(saved: number, saver: number): void {
   m.set(saver, (m.get(saver) || 0) + 1);
 }
 
-function grudgeOf(o: number, t: number): number {
+export function grudgeOf(o: number, t: number): number {
   return grudges.get(o)?.get(t) || 0;
 }
-function favorOf(o: number, t: number): number {
+export function favorOf(o: number, t: number): number {
   return favors.get(o)?.get(t) || 0;
 }
 
