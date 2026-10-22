@@ -6,8 +6,9 @@ import { Sound } from '../core/sound';
 import { localPlayerWin } from '../profile/profile';
 import { ROLES } from '../data/characters';
 import { addLog, addPlayLog } from './log';
-import { hasSkill, discardCard, drawCards } from './rules';
+import { discardCard } from './rules';
 import { aiShouldSave, noteAttack, noteSave } from './aibrain';
+import { canConvertAs, fire, markConvertUse, reduceDamageOf, tryRevive } from './skillEngine';
 import { render } from '../ui/render';
 import { waitChoice } from './choice';
 import { maybeSettle } from '../profile/profile';
@@ -46,6 +47,14 @@ async function applyDamage(
   let dmg = amount;
   // 防具修正：白银狮子（每次受到的伤害最多 1 点）/ 藤甲（火焰伤害 +1）
   // 青釭剑（ignoreArmor）无视目标防具，上述修正整体失效
+  // 巴斯德【免疫】：火 / 雷属性伤害 −1（最低 1 点）
+  if (type !== 'normal' && dmg > 1) {
+    const cut = reduceDamageOf(tgt, type);
+    if (cut > 0) {
+      dmg = Math.max(1, dmg - cut);
+      addLog(`【免疫】${tgt.name} 受到的${type === 'fire' ? '火' : '雷'}属性伤害 -${cut}`, 'heal');
+    }
+  }
   const armor = tgt.equip.armor?.skill;
   if (!ignoreArmor) {
     if (armor === 'baiyin' && dmg > 1) {
@@ -83,19 +92,9 @@ async function applyDamage(
     tgt.hp -= dmg;
     addPlayLog('', 'damage', dmg, tgt.name, 'dmg');
     render();
+    // 声明式触发技：受伤后（横眉 / 适者生存 / 显性性状 / 术势 / 莫须有 / 哈姆雷特 …）
     if (tgt.alive) {
-      if (hasSkill(tgt, 'hengmei') || hasSkill(tgt, 'moxuyou') || hasSkill(tgt, 'shizhe')) {
-        drawCards(tgt, 1);
-        addLog(`${tgt.name} 受伤摸一张牌`, 'hl');
-      }
-      if (hasSkill(tgt, 'hamuleite') && srcIdx >= 0) {
-        const src = G.players[srcIdx];
-        if (src.hand.length > 0) {
-          const c = src.hand[Math.floor(Math.random() * src.hand.length)];
-          discardCard(src, c);
-          addLog(`【哈姆雷特】${src.name} 弃一张牌`, 'dmg');
-        }
-      }
+      await fire('onDamaged', { idx: tgtIdx, srcIdx, targetIdx: srcIdx >= 0 ? srcIdx : undefined });
     }
     if (tgt.hp <= 0) await dyingPhase(tgtIdx, srcIdx);
   }
@@ -135,12 +134,19 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
   const p = G.players[idx];
   if (!p.alive) return;
   while (p.hp <= 0) {
+    // 限定技自救（李时珍·行医）
+    if (await tryRevive(idx)) continue;
+    // 濒死自救：转化技（屠呦呦·青蒿素 / 李时珍·本草纲目）可把手牌当【桃】
+    const outside = G.current !== idx;
     if (p.isAI) {
-      const tao = p.hand.find((c) => c.sub === 'tao');
+      const tao =
+        p.hand.find((c) => c.sub === 'tao') ||
+        p.hand.find((c) => canConvertAs(p, c, 'tao', outside));
       if (tao) {
+        if (tao.sub !== 'tao') markConvertUse(p, tao, 'tao', outside);
         discardCard(p, tao);
         p.hp++;
-        addLog(`${p.name} 使用【桃】自救`, 'heal');
+        addLog(`${p.name} 使用【${tao.name}】自救`, 'heal');
         FX.healGlow(idx);
         continue;
       }
@@ -175,8 +181,13 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
     } else {
       const opts: { label: string; value: string }[] = [];
       p.hand
-        .filter((c) => c.sub === 'tao' || c.sub === 'jiu')
-        .forEach((c) => opts.push({ label: `【${c.name}】`, value: 'card_' + c.id }));
+        .filter((c) => c.sub === 'tao' || c.sub === 'jiu' || canConvertAs(p, c, 'tao', outside))
+        .forEach((c) =>
+          opts.push({
+            label: c.sub === 'tao' || c.sub === 'jiu' ? `【${c.name}】` : `【${c.name}】当【桃】`,
+            value: 'card_' + c.id,
+          }),
+        );
       if (p.knowledge >= 1) opts.push({ label: '消耗1学识自救', value: 'know' });
       if ((p.shield || 0) >= 1) opts.push({ label: '消耗1护盾自救', value: 'shield' });
       opts.push({ label: '放弃', value: 'giveup' });
@@ -209,6 +220,7 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         const id = Number(String(ch).slice(5));
         const c = p.hand.find((x) => x.id === id);
         if (c) {
+          if (c.sub !== 'tao' && c.sub !== 'jiu') markConvertUse(p, c, 'tao', outside);
           discardCard(p, c);
           p.hp++;
           addLog(`${p.name} 使用【${c.name}】自救`, 'heal');

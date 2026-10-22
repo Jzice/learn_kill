@@ -6,7 +6,19 @@ import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
 import { addLog, addPlayLog } from './log';
-import { hasSkill, discardCard, drawCards, genderOf, inRange, sameFaction } from './rules';
+import { discardCard, drawCards, genderOf, inRange, sameFaction } from './rules';
+import {
+  canBeTarget,
+  canConvertAs,
+  equipImmune,
+  fire,
+  markConvertUse,
+  shaLimitOf,
+  shanNeeded,
+  tryNumGuard,
+  tryPreventShaDamage,
+  tryReflect,
+} from './skillEngine';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
@@ -23,7 +35,6 @@ import { NET, scheduleSync, syncStateToClients } from '../net/network';
 /** 结算一次【杀】的伤害值（精忠 / 古锭刀 / 酒·额外伤害），并消耗额外伤害 */
 function shaDamage(a: Player, t: Player): number {
   let dmg = 1;
-  if (hasSkill(a, 'jingzhong')) dmg += 1;
   // 古锭刀：目标没有手牌时伤害 +1
   if (a.equip.weapon?.skill === 'guding' && t.hand.length === 0) dmg += 1;
   // 扩展包触发技：出杀/伤害加成原语（物理「力大无穷」damageMod: +1 等）
@@ -53,18 +64,27 @@ export async function useSha(
     fromFangtian?: boolean;
     fromJiedao?: boolean;
     suit?: string;
+    /** 【杀】的点数（林则徐·海防 点数对抗判据） */
+    num?: string | number;
     damageType?: DamageType;
   } = {},
 ): Promise<void> {
   const a = G.players[attackerIdx],
     t = G.players[targetIdx];
+  // 空城等免疫：不能成为【杀】的目标
+  if (!canBeTarget(targetIdx, 'sha')) {
+    addLog(`${t.name} 不可被指定为【杀】的目标`, 'hl');
+    return;
+  }
   const hasLiannu = a.equip.weapon?.skill === 'liannu';
+  // 每回合出杀上限：连弩无限；咆哮可额外出杀（伽利略·自由落体）
+  const shaCap = hasLiannu ? Infinity : shaLimitOf(a);
   if (
     !hasLiannu &&
     !opts.fromQinglong &&
     !opts.fromFangtian &&
     !opts.fromJiedao &&
-    (a.flags.shaUsed || 0) >= 1
+    (a.flags.shaUsed || 0) >= shaCap
   ) {
     addLog('本回合已使用过【杀】');
     return;
@@ -118,10 +138,21 @@ export async function useSha(
     }
     render();
   }
-  // 相对论（爱因斯坦）：使用【杀】时，若目标手牌数与你不同，此杀不可闪避
-  const noDodge = hasSkill(a, 'xiangduilun') && a.hand.length !== t.hand.length;
-  if (noDodge) addLog(`【相对论】${t.name} 手牌数不同，此杀不可闪避`, 'hl');
-  const dodged = noDodge ? false : await requestShan(targetIdx, attackerIdx, { ignoreArmor });
+  /** 命中结算：兼爱可防止伤害，散射实验可反伤 */
+  const resolveHit = async (): Promise<void> => {
+    if (await tryPreventShaDamage(attackerIdx, targetIdx)) return;
+    await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType, ignoreArmor);
+    await tryReflect(attackerIdx, targetIdx);
+  };
+  // 林则徐【海防】：展示一张手牌，点数 ≥ 此【杀】点数则此杀无效
+  if (await tryNumGuard(targetIdx, Number(opts.num ?? 0))) {
+    render();
+    return;
+  }
+  // 岳飞【精忠】（无双）：每回合第一张【杀】需连续使用两张【闪】才能抵消
+  const needShan = shanNeeded(attackerIdx);
+  if (needShan > 1) addLog(`【精忠】${t.name} 需连续使用 ${needShan} 张【闪】才能抵消`, 'hl');
+  const dodged = await requestShan(targetIdx, attackerIdx, { ignoreArmor, need: needShan });
   if (dodged) {
     // 贯石斧：弃两张牌，令此杀强制命中
     if (a.equip.weapon?.skill === 'guanshi' && a.hand.length >= 2) {
@@ -135,7 +166,7 @@ export async function useSha(
         dumpHand(a, 2);
         addLog(`${a.name} 贯石斧：弃两张牌，此杀不可闪避`, 'hl');
         render();
-        await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType, ignoreArmor);
+        await resolveHit();
         return;
       }
     }
@@ -183,7 +214,7 @@ export async function useSha(
       return;
     }
   }
-  await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType, ignoreArmor);
+  await resolveHit();
 }
 
 export async function useTao(idx: number): Promise<void> {
@@ -228,9 +259,6 @@ export async function useTrick(
   addLog(`📘 玩法·【${card.name}】：${TRICK_DESC[card.sub] || '（暂无说明）'}`, 'explain');
   showPlayHint('锦囊', card.name, TRICK_DESC[card.sub] || '');
   showPlayCard(card, a.name, FACTIONS[a.faction].color);
-  if (hasSkill(a, 'shicheng') || hasSkill(a, 'jiaohua') || hasSkill(a, 'quwei')) {
-    drawCards(a, 1); // 「区位」地理·高中：使用锦囊牌时摸一张
-  }
   render();
   // 锦囊释放特效与音效：按子类区分
   Sound.play(
@@ -265,9 +293,16 @@ export async function useTrick(
     'jiedao', 'wugu', 'tiesuo', 'huogong',
   ];
   if (COUNTERABLE.includes(card.sub)) {
-    const countered = await counterChain(attackerIdx, card.sub, targetIdx);
-    if (countered) {
+    const res = await counterChain(attackerIdx, card.sub, targetIdx);
+    if (res.countered) {
       addLog(`【无懈可击】生效，${card.name} 被抵消`, 'hl');
+      // 茅盾【批判】：锦囊被无懈后可弃一张牌令其弃一张牌
+      await fire('onTrickCountered', {
+        idx: attackerIdx,
+        srcIdx: res.by,
+        card,
+        targetIdx: targetIdx ?? undefined,
+      });
       render();
       return;
     }
@@ -313,7 +348,7 @@ export async function useTrick(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (hasSkill(G.players[i], 'fenshu')) continue;
+        if (!canBeTarget(i, 'trick')) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#e74c3c');
@@ -337,7 +372,7 @@ export async function useTrick(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (hasSkill(G.players[i], 'fenshu')) continue;
+        if (!canBeTarget(i, 'trick')) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#f39c12');
@@ -369,7 +404,7 @@ export async function useTrick(
       break;
     }
     case 'lebu': {
-      if (targetIdx != null && !hasSkill(G.players[targetIdx], 'fenshu')) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'trick')) {
         G.players[targetIdx].judge.push({ ...card, judgeType: 'lebu' });
         addLog(`【乐不思蜀】置于 ${G.players[targetIdx].name} 判定区`);
       }
@@ -430,7 +465,7 @@ export async function useTrick(
       for (const i of order) {
         if (!shown.length) break;
         const pl = G.players[i];
-        if (hasSkill(pl, 'fenshu')) continue;
+        if (!canBeTarget(i, 'trick')) continue;
         let pickId = shown[0].id;
         if (!pl.isAI) {
           const ch = await waitChoice(
@@ -519,11 +554,24 @@ export async function useTrick(
       break;
     }
   }
+  // 使用锦囊后：诗成（顺序连锁）/ 随笔 / 讽刺小说 / 诗辩 / 区位 …
+  if (a.alive) {
+    await fire('onUseTrick', {
+      idx: attackerIdx,
+      card,
+      targetIdx: targetIdx ?? undefined,
+      trickSeq: a.flags.trickCount || 1,
+    });
+  }
   render();
 }
 
 /** 无懈可击响应链：返回该锦囊是否最终被抵消（支持无懈可叠，每人每条链一次） */
-async function counterChain(srcIdx: number, sub: string, primary: number | null): Promise<boolean> {
+async function counterChain(
+  srcIdx: number,
+  sub: string,
+  primary: number | null,
+): Promise<{ countered: boolean; by: number }> {
   let countered = false;
   let lastCounterer = -1;
   const responders = G.players.map((_, i) => i).filter((i) => i !== srcIdx && G.players[i].alive);
@@ -558,7 +606,7 @@ async function counterChain(srcIdx: number, sub: string, primary: number | null)
       for (const r of responders) if (!responded.has(r)) queue.push(r);
     }
   }
-  return countered;
+  return { countered, by: lastCounterer };
 }
 
 function trickLabel(sub: string): string {
@@ -572,13 +620,17 @@ function trickLabel(sub: string): string {
 
 export async function discardTargetCard(targetIdx: number, srcIdx: number, mode: string): Promise<void> {
   const t = G.players[targetIdx];
-  if (hasSkill(t, 'fenshu')) return;
+  // 焚书（锦囊免疫）：不能被【过河拆桥】/【顺手牵羊】指定
+  if (!canBeTarget(targetIdx, 'trick')) return;
   const opts: { label: string; value: string }[] = [];
   if (t.hand.length > 0) opts.push({ label: `手牌（${t.hand.length}张）`, value: 'hand' });
-  if (t.equip.weapon) opts.push({ label: `武器：${t.equip.weapon.name}`, value: 'weapon' });
-  if (t.equip.armor) opts.push({ label: `防具：${t.equip.armor.name}`, value: 'armor' });
-  if (t.equip.horsePlus) opts.push({ label: '+1马', value: 'horsePlus' });
-  if (t.equip.horseMinus) opts.push({ label: '-1马', value: 'horseMinus' });
+  // 凯库勒【结构式】：装备不能被过河拆桥 / 顺手牵羊指定
+  if (!equipImmune(t)) {
+    if (t.equip.weapon) opts.push({ label: `武器：${t.equip.weapon.name}`, value: 'weapon' });
+    if (t.equip.armor) opts.push({ label: `防具：${t.equip.armor.name}`, value: 'armor' });
+    if (t.equip.horsePlus) opts.push({ label: '+1马', value: 'horsePlus' });
+    if (t.equip.horseMinus) opts.push({ label: '-1马', value: 'horseMinus' });
+  }
   if (!opts.length) return;
   const src = G.players[srcIdx];
   let ch: string | number;
@@ -589,6 +641,8 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
     discardCard(t, c, mode !== '获得');
     addLog(`${src.name} ${mode}了 ${t.name} 一张手牌`);
     if (mode === '获得') src.hand.push(c);
+    // 狄更斯【雾都孤儿】：回合外失去最后一张手牌时摸一张
+    if (t.hand.length === 0 && G.current !== targetIdx) await fire('onLoseHand', { idx: targetIdx });
   } else {
     const c = t.equip[ch as keyof typeof t.equip];
     if (c) {
@@ -597,6 +651,7 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
       if (mode === '获得') src.hand.push(c);
       else G.discard.push(c);
       addLog(`${src.name} ${mode}了 ${t.name} 的【${c.name}】`);
+      await fire('onLoseEquip', { idx: targetIdx, card: c });
     }
   }
   render();
@@ -623,26 +678,42 @@ export async function useItem(idx: number, itemId: string): Promise<void> {
 }
 
 /* ==================== 出闪 ==================== */
+/**
+ * 请求出【闪】：need > 1 时（无双）需连续出多张，任意一张出不起即命中。
+ * 未成功闪避（need 未凑齐）返回 false。
+ */
 export async function requestShan(
   targetIdx: number,
   srcIdx: number,
-  o: { ignoreArmor?: boolean } = {},
+  o: { ignoreArmor?: boolean; need?: number } = {},
+): Promise<boolean> {
+  const need = o.need || 1;
+  for (let k = 0; k < need; k++) {
+    const ok = await requestOneShan(targetIdx, srcIdx, o, need);
+    if (!ok) return false;
+  }
+  return true;
+}
+
+async function requestOneShan(
+  targetIdx: number,
+  srcIdx: number,
+  o: { ignoreArmor?: boolean; need?: number },
+  need: number,
 ): Promise<boolean> {
   const t = G.players[targetIdx];
-  // 三大定律（牛顿/法拉第/普朗克）：成功闪避后摸一张牌
-  const onDodged = async (): Promise<boolean> => {
-    if (hasSkill(t, 'sandadinglv')) {
-      drawCards(t, 1);
-      addLog(`【三大定律】${t.name} 闪避成功，摸一张牌`, 'hl');
-    }
-    return true;
-  };
+  const onDodged = async (): Promise<boolean> => true;
+  const outside = G.current !== targetIdx;
   if (t.isAI) {
-    const shan = t.hand.find((c) => c.sub === 'shan');
+    // 转化技：老舍【骆驼祥子】装备当闪 / 孙子【虚实】杀当闪
+    const shan =
+      t.hand.find((c) => c.sub === 'shan') || t.hand.find((c) => canConvertAs(t, c, 'shan', outside));
     if (shan) {
+      if (shan.sub !== 'shan') markConvertUse(t, shan, 'shan', outside);
       discardCard(t, shan);
-      addLog(`${t.name} 打出【闪】`);
+      addLog(`${t.name} 打出【${shan.name}】`);
       await FX.shield(targetIdx);
+      await fire('onUseShan', { idx: targetIdx, srcIdx, card: shan });
       return onDodged();
     }
     // 八卦阵：手中无闪时判定，红色视为打出闪（AI 此前完全不判，装备形同虚设）
@@ -673,8 +744,13 @@ export async function requestShan(
     return false;
   }
   const opts: { label: string; value: string }[] = [];
-  const shans = t.hand.filter((c) => c.sub === 'shan');
-  shans.forEach((c) => opts.push({ label: `【闪】${c.suit}${c.num}`, value: 'card_' + c.id }));
+  const shans = t.hand.filter((c) => c.sub === 'shan' || canConvertAs(t, c, 'shan', outside));
+  shans.forEach((c) =>
+    opts.push({
+      label: c.sub === 'shan' ? `【闪】${c.suit}${c.num}` : `【${c.name}】${c.suit}${c.num} 当【闪】`,
+      value: 'card_' + c.id,
+    }),
+  );
   // 答题免伤/学识当闪 仅在手中无【闪】时可选：有闪必须出闪，保证闪牌价值（提高可玩性）
   const noShan = shans.length === 0;
   if (noShan && !o.ignoreArmor && t.equip.armor?.skill === 'bagua') {
@@ -720,9 +796,11 @@ export async function requestShan(
     const id = Number(String(ch).slice(5));
     const c = t.hand.find((x) => x.id === id);
     if (c) {
+      if (c.sub !== 'shan') markConvertUse(t, c, 'shan', outside);
       discardCard(t, c);
-      addLog(`${t.name} 打出【闪】`);
+      addLog(`${t.name} 打出【${c.name}】`);
       await FX.shield(targetIdx);
+      await fire('onUseShan', { idx: targetIdx, srcIdx, card: c });
       return onDodged();
     }
   }

@@ -1,5 +1,8 @@
-/* ==================== 九科阵营 ==================== */
+/* ==================== 九科阵营 ====================
+ * 主公技定义集中在 src/data/skilldefs.ts（沿用旧 id，保证联机兼容）。
+ */
 import type { Faction, FactionId } from '../core/types';
+import { skillOf } from './skilldefs';
 
 export const FACTIONS: Record<FactionId, Faction> = {
   chinese: {
@@ -8,7 +11,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '📖',
     subject: '语文',
     desc: '文学素养',
-    lordSkill: { id: 'shishu', name: '诗书', type: 'active', desc: '主公技：摸一张牌' },
+    lordSkill: skillOf('shishu'),
   },
   math: {
     name: '数学',
@@ -16,12 +19,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '🔢',
     subject: '数学',
     desc: '数理推演',
-    lordSkill: {
-      id: 'tuiyan',
-      name: '推演',
-      type: 'active',
-      desc: '主公技：令一名角色判定，黑色受1伤，红色摸1牌',
-    },
+    lordSkill: skillOf('tuiyan'),
   },
   english: {
     name: '英语',
@@ -29,7 +27,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '🔤',
     subject: '英语',
     desc: '语言交流',
-    lordSkill: { id: 'yishu', name: '译述', type: 'active', desc: '主公技：获得一名角色一张手牌' },
+    lordSkill: skillOf('yishu'),
   },
   physics: {
     name: '物理',
@@ -37,7 +35,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '⚛️',
     subject: '物理',
     desc: '力学探索',
-    lordSkill: { id: 'yinli', name: '引力', type: 'active', desc: '主公技：对一名角色造成1点伤害' },
+    lordSkill: skillOf('yinli'),
   },
   chemistry: {
     name: '化学',
@@ -45,7 +43,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '⚗️',
     subject: '化学',
     desc: '元素反应',
-    lordSkill: { id: 'cuihua', name: '催化', type: 'active', desc: '主公技：令一名角色回复1点体力（已满则改为摸一张牌）' },
+    lordSkill: skillOf('cuihua'),
   },
   biology: {
     name: '生物',
@@ -53,7 +51,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '🧬',
     subject: '生物',
     desc: '生命奥秘',
-    lordSkill: { id: 'jinhualun', name: '进化', type: 'active', desc: '主公技：摸两张牌然后弃一张牌' },
+    lordSkill: skillOf('jinhualun'),
   },
   history: {
     name: '历史',
@@ -61,7 +59,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '🏛️',
     subject: '历史',
     desc: '古今明鉴',
-    lordSkill: { id: 'mingjian', name: '明鉴', type: 'active', desc: '主公技：令一名角色弃一张牌' },
+    lordSkill: skillOf('mingjian'),
   },
   geography: {
     name: '地理',
@@ -69,7 +67,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '🌍',
     subject: '地理',
     desc: '山河万象',
-    lordSkill: { id: 'tansuo', name: '探索', type: 'active', desc: '主公技：所有角色各摸一张牌' },
+    lordSkill: skillOf('tansuo'),
   },
   politics: {
     name: '政治',
@@ -77,12 +75,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
     icon: '⚖️',
     subject: '政治',
     desc: '道德法治',
-    lordSkill: {
-      id: 'xunjie',
-      name: '训诫',
-      type: 'active',
-      desc: '主公技：令一名角色选择弃一张牌或交给你一张牌',
-    },
+    lordSkill: skillOf('xunjie'),
   },
 };
 

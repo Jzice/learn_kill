@@ -5,6 +5,7 @@
 import type { Character, Skill } from '../core/types';
 import { charPoolForGrade } from './characters';
 import { GRADE_ORDER } from './grades';
+import { skillOf } from './skilldefs';
 
 export type PacketId = 'all' | 'junior' | 'senior';
 /** 学段：初中（初一上~初三下）/ 高中（高一上~高三下） */
@@ -31,44 +32,21 @@ export function stageOf(grade: string): Stage {
   return grade.startsWith('初') ? 'junior' : 'senior';
 }
 
-/** 学科 → 学段 → 主题技能（按学科定制） */
+/**
+ * 学科 → 学段 → 主题技能（按学科定制）。
+ * 定义集中在 src/data/skilldefs.ts（沿用旧 id，保证技能分支与联机兼容），
+ * 由统一引擎分派，不再走 skills.ts 的 switch。
+ */
 const SUBJECT_SKILLS: Record<string, Record<Stage, Skill>> = {
-  语文: {
-    junior: { id: 'beisong', name: '背诵', type: 'active', desc: '弃一张手牌，摸两张牌（背诵默写，积累素材）' },
-    senior: { id: 'wenyan', name: '文言', type: 'active', desc: '弃两张手牌，摸三张牌（文言积累，厚积薄发）' },
-  },
-  数学: {
-    junior: { id: 'youshu', name: '有理数', type: 'active', desc: '弃一张手牌，令一名角色判定：红色其摸一张，黑色其弃一张' },
-    senior: { id: 'daoshu', name: '导数', type: 'active', desc: '弃一张手牌，令一名角色弃两张手牌（求导取极值）' },
-  },
-  英语: {
-    junior: { id: 'tingxie', name: '听写', type: 'active', desc: '弃一张手牌，获得一名角色的一张手牌（听写抽查）' },
-    senior: { id: 'yufa', name: '语法', type: 'active', desc: '展示牌堆顶三张，获得其中一张，其余置入弃牌堆（语法填空）' },
-  },
-  物理: {
-    junior: { id: 'fuli', name: '浮力', type: 'trigger', desc: '计算距离-1（浮力托举）' },
-    senior: { id: 'dianci', name: '电磁', type: 'active', desc: '弃一张手牌，对一名角色造成1点伤害（电磁感应）' },
-  },
-  化学: {
-    junior: { id: 'fangchengshi', name: '方程式', type: 'trigger', desc: '手牌上限+1（配平储备）' },
-    senior: { id: 'youjihuaxue', name: '有机', type: 'active', desc: '弃两张手牌，回复1点体力并摸一张牌（有机合成）' },
-  },
-  生物: {
-    junior: { id: 'guanghe', name: '光合', type: 'trigger', desc: '摸牌阶段额外摸一张牌（光合作用产能）' },
-    senior: { id: 'yichuan', name: '遗传', type: 'trigger', desc: '手牌上限+2（遗传信息承载）' },
-  },
-  历史: {
-    junior: { id: 'chaodai', name: '朝代', type: 'active', desc: '弃一张手牌，令所有其他角色各弃一张手牌（改朝换代）' },
-    senior: { id: 'shiliao', name: '史料', type: 'active', desc: '弃一张手牌，所有存活角色各摸一张牌（史料共享）' },
-  },
-  地理: {
-    junior: { id: 'jingwei', name: '经纬', type: 'trigger', desc: '计算距离-1（经纬定位）' },
-    senior: { id: 'quwei', name: '区位', type: 'trigger', desc: '使用锦囊牌时摸一张牌（区位分析）' },
-  },
-  政治: {
-    junior: { id: 'fazhi', name: '法治', type: 'active', desc: '弃一张手牌，令一名角色回复1点体力（法治保障）' },
-    senior: { id: 'zhexue', name: '哲学', type: 'active', desc: '弃一张手牌，令一名角色交给你一张手牌（思辨论证）' },
-  },
+  语文: { junior: skillOf('beisong'), senior: skillOf('wenyan') },
+  数学: { junior: skillOf('youshu'), senior: skillOf('daoshu') },
+  英语: { junior: skillOf('tingxie'), senior: skillOf('yufa') },
+  物理: { junior: skillOf('fuli'), senior: skillOf('dianci') },
+  化学: { junior: skillOf('fangchengshi'), senior: skillOf('youjihuaxue') },
+  生物: { junior: skillOf('guanghe'), senior: skillOf('yichuan') },
+  历史: { junior: skillOf('chaodai'), senior: skillOf('shiliao') },
+  地理: { junior: skillOf('jingwei'), senior: skillOf('quwei') },
+  政治: { junior: skillOf('fazhi'), senior: skillOf('zhexue') },
 };
 
 /** 按扩展包为角色追加该学段、该学科的主题技能（返回副本，不修改原角色数据） */

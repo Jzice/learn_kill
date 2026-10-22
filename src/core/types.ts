@@ -40,6 +40,101 @@ export interface PlayerIdentity {
   moodIcon: string;
 }
 
+/* ---------------- 声明式技能（SkillDef） ----------------
+ * 46 名基础角色共 93 个技能全部由「时机 + 费用 + 限制 + 效果原语」声明，
+ * 由 src/game/skillEngine.ts 统一分派，避免 skills.ts 出现上百个 switch 分支。
+ * 新增字段全部可选：108 个扩展包角色（纯 SkillEffect 原语制）零改动继续工作。
+ */
+
+/** 技能时机：决定引擎在哪个规则钩子上派发该技能 */
+export type SkillTiming =
+  | 'active' // 出牌阶段主动发动（需答题）
+  | 'passive' // 常驻状态技：距离 / 手牌上限 / 免疫 / 转化 / 无双 / 咆哮
+  | 'onTurnStart' // 准备阶段（判定前）：观星、觉醒判定
+  | 'onDraw' // 摸牌阶段：额外摸牌、突袭替代摸牌
+  | 'onTurnEnd' // 回合结束：据守翻面、军令状结算、顺序奖励
+  | 'beforeJudge' // 判定牌生效前：改判
+  | 'beforeDamage' // 伤害结算前：减伤 / 免伤
+  | 'onDamaged' // 受到伤害后
+  | 'onTargetSha' // 成为【杀】的目标时：点数对抗免伤
+  | 'onUseShan' // 使用或打出【闪】后
+  | 'onShaHit' // 使用【杀】造成伤害后
+  | 'onUseTrick' // 使用锦囊牌后
+  | 'onTrickCountered' // 自己的锦囊被【无懈可击】抵消后
+  | 'onLoseHand' // 失去最后一张手牌时
+  | 'onEquip' // 装备一张装备牌后
+  | 'onLoseEquip' // 失去装备区的牌后
+  | 'onDiscard' // 弃牌阶段结束后
+  | 'onDying' // 进入濒死状态时（限定技自救）
+  | 'onDeath' // 阵亡时
+  | 'awaken'; // 觉醒技（在 onTurnStart 判定）
+
+/** 发动费用 */
+export interface SkillCost {
+  hand?: number;
+  hp?: number;
+  equip?: number;
+  knowledge?: number;
+}
+
+/** 使用限制：perTurn 每回合限一次 / perGame 整局限一次（限定技、觉醒技） */
+export type SkillLimit = 'perTurn' | 'perGame' | 'none';
+
+/** 展示类型标签，UI 与规则书据此分组渲染 */
+export type SkillKind = 'active' | 'trigger' | 'passive' | 'limit' | 'awaken' | 'lord' | 'convert';
+
+/** 触发条件：钩子内据此判定是否执行（纯数据，便于联机同步与规则书展示） */
+export type SkillCond =
+  | { k: 'hpAtMost'; n: number }
+  | { k: 'hpLowest' }
+  | { k: 'isHurt' }
+  | { k: 'dmgTakenAtLeast'; n: number }
+  | { k: 'srcIsLord' }
+  | { k: 'srcHandMoreThanMe' }
+  | { k: 'srcHandGeMe' }
+  | { k: 'srcSameSubject' }
+  | { k: 'srcDiffSubject' }
+  | { k: 'playedThisTurnAtLeast'; n: number }
+  | { k: 'playedNothingThisTurn' }
+  | { k: 'noShaThisTurn' }
+  | { k: 'noDamageDealtThisTurn' }
+  | { k: 'noTrickThisTurn' }
+  | { k: 'lastCardIsTrick' }
+  | { k: 'hasNumPair' }
+  | { k: 'handAtMost'; n: number }
+  | { k: 'outsideTurn' }
+  | { k: 'roleIn'; roles: Role[] }
+  | { k: 'targetHasNoEquip' }
+  | { k: 'targetChained' }
+  | { k: 'targetIsLord' }
+  /** 上下文最近一张牌（刚弃置 / 使用 / 判定）的花色与点数判定 */
+  | { k: 'lastCardBlack' }
+  | { k: 'lastCardRed' }
+  | { k: 'lastCardEven' }
+  | { k: 'lastCardOdd' }
+  | { k: 'lastCardPrime' }
+  | { k: 'lastCardNumGe'; n: number }
+  | { k: 'lastCardNumLe'; n: number };
+
+/**
+ * 带可选「生效时机」的效果。默认跟随技能自身的 timing；
+ * 指定 at 后可让同一技能在不同时机各挂一条效果（如觉醒后的【诗史】：
+ * 常驻手牌上限 + 受伤后摸牌）。
+ */
+export type SkillE = SkillEffect & { at?: SkillTiming };
+
+export interface SkillDef {
+  id: string;
+  name: string;
+  kind: SkillKind;
+  timing: SkillTiming;
+  desc: string;
+  cost?: SkillCost;
+  limit?: SkillLimit;
+  cond?: SkillCond;
+  effects: SkillE[];
+}
+
 export interface Skill {
   id: string;
   name: string;
@@ -47,29 +142,206 @@ export interface Skill {
   desc: string;
   /** 扩展包技能的原语组合（仅扩展包技能有；基础技能走 skills.ts 的 switch 分发） */
   effects?: SkillEffect[];
+  /** 声明式扩展（基础角色技能）：与 SkillDef 同构，由 skillEngine 分派 */
+  kind?: SkillKind;
+  timing?: SkillTiming;
+  cost?: SkillCost;
+  limit?: SkillLimit;
+  cond?: SkillCond;
 }
 
 /**
- * 技能效果原语：108 个扩展包技能均由有限原语组合声明，避免 108 个独立分支。
- * 由 src/game/skillfx.ts 统一分派执行（主动技在 useActiveSkill 拦截，触发技在规则钩子聚合）。
+ * 技能效果原语：技能均由有限原语组合声明，避免上百个独立分支。
+ * 由 src/game/skillEngine.ts 统一分派执行；
+ * 扩展包角色沿用旧的 14 个原语，由 src/game/skillfx.ts 分派，两者加法式共存。
  */
 export type SkillEffect =
-  | { kind: 'selfDraw'; n: number }
+  /* ---- 既有 14 个原语（扩展包依赖；新增字段全部可选，不影响扩展包） ---- */
+  /** 自己摸牌。cond 为可选触发条件；damageType 仅 targetDamage 有意义 */
+  | { kind: 'selfDraw'; n: number; cond?: SkillCond }
   | { kind: 'targetDiscard'; n: number }
   | { kind: 'targetLoseHp'; n: number }
-  | { kind: 'targetDamage'; n: number }
+  | { kind: 'targetDamage'; n: number; damageType?: DamageType }
   | { kind: 'targetHeal'; n: number }
   | { kind: 'targetDraw'; n: number }
   | { kind: 'gainHand'; n: number }
   | { kind: 'allDiscard'; n: number }
   | { kind: 'allDraw'; n: number }
-  | { kind: 'extraDraw'; n: number }
-  | { kind: 'handLimit'; n: number }
+  | { kind: 'extraDraw'; n: number; cond?: SkillCond }
+  | { kind: 'handLimit'; n: number; cond?: SkillCond }
   | { kind: 'distMod'; delta: number }
   | { kind: 'damageMod'; delta: number }
   | { kind: 'shield'; n: number }
-  /** 主动技消耗手牌数（在结算其他原语前先弃置） */
-  | { kind: 'costCard'; n: number };
+  /**
+   * 弃置自己 n 张手牌。require='sameNum'/'sameSuit' 时须弃置点数 / 花色相同的牌
+   *（孟德尔·分离定律、莎士比亚·十四行诗），否则技能不可发动。
+   */
+  | { kind: 'costCard'; n: number; require?: 'sameNum' | 'sameSuit' }
+  /* ---- 牌堆操控 ---- */
+  /** 观星：观看牌堆顶 n 张（'alive' = 存活人数，至多 5），任意分配置顶 / 置底 */
+  | { kind: 'star'; n: number | 'alive' }
+  /** 排序式观星（门捷列夫·周期律）：按点数排序后放回牌堆顶 */
+  | { kind: 'starSort'; n: number; dir: 'asc' | 'desc' }
+  /** 观看牌堆顶 n 张：pickOne 取 1 / pickTwo 取 2 / toBottomOne 把 1 张置底；match 优先取同花色 */
+  | { kind: 'deckPeek'; n: number; then: 'pickOne' | 'pickTwo' | 'toBottomOne'; match?: 'sameSuit' }
+  /** 牌堆底：peek 取 1 张并把另 1 张置顶；digEquip 展示并获取全部装备牌 */
+  | { kind: 'deckBottom'; n: number; then: 'peek' | 'digEquip' }
+  /** 将一张牌置于牌堆顶（hand 自己手牌 / targetHand 目标手牌） */
+  | { kind: 'toDeckTop'; from: 'hand' | 'targetHand' }
+  /** 弃牌阶段把符合 pick 的牌置于牌堆顶而非弃牌堆 */
+  | { kind: 'discardToTop'; pick: 'min' | 'prime' }
+  /** 常驻预知：牌堆顶 n 张对你可见（伽利略·望远镜，仅 UI） */
+  | { kind: 'peekTopDeck'; n: number }
+  /* ---- 转化技 ---- */
+  /** 满足条件的手牌可当目标牌使用；outsideTurn=true 表示仅回合外可用（李时珍·急救） */
+  | {
+      kind: 'convert';
+      from: { suit?: string; color?: 'red' | 'black'; sub?: string; type?: string; maxNum?: number; minNum?: number };
+      to: 'sha' | 'shan' | 'tao' | 'jiu' | 'guohe';
+      damageType?: DamageType;
+      limit?: 'perTurn';
+      outsideTurn?: boolean;
+    }
+  /* ---- 杀 / 闪交互 ---- */
+  /** 无双：每回合第一张【杀】需 n 张【闪】才能抵消 */
+  | { kind: 'shaNeedShan'; n: number; perTurnFirst: boolean }
+  /** 咆哮：使用【杀】无次数限制，每回合最多额外 maxExtra 张，每张额外杀弃 extraCostHand 张 */
+  | { kind: 'shaUnlimited'; maxExtra: number; extraCostHand: number }
+  /** 点数对抗：展示手牌点数 ≥ 该【杀】点数则该杀无效 */
+  | { kind: 'numGuard'; op: 'ge'; against: 'shaNum'; limit?: 'perTurn' }
+  /** 反伤：被【杀】造成伤害后对来源造成 n 点伤害 */
+  | { kind: 'reflect'; n: number; when: 'hurtBySha' }
+  /** 无视防具造成伤害；目标无防具时改为执行 noArmor */
+  | { kind: 'armorPierceDamage'; n: number; noArmor?: SkillEffect[] }
+  /** 用【杀】造成伤害时可防止此伤害，改为执行 then */
+  | { kind: 'preventShaDamage'; then: SkillEffect[] }
+  /* ---- 点数与花色 ---- */
+  | { kind: 'pointDuel'; win: SkillEffect[]; lose: SkillEffect[] }
+  /** 判定并按点数 / 颜色条件分支（hit = 条件成立） */
+  | {
+      kind: 'judgeIf';
+      test: 'prime' | 'odd' | 'even' | 'ge' | 'le' | 'sameNum' | 'black' | 'red';
+      n?: number;
+      hit: SkillEffect[];
+      miss: SkillEffect[];
+    }
+  /** 连续判定直到出现偶数点数，获得全部判定牌；达 bonusAt 张追加 bonus */
+  | { kind: 'chainJudge'; stopWhen: 'even'; takeAll: boolean; bonusAt?: number; bonus?: SkillEffect[] }
+  /** 花色收集连锁：本回合使用过 n 种不同花色则触发 */
+  | { kind: 'suitCollect'; n: number; reward: SkillEffect[] }
+  /** 反间：令其猜花色，猜中 / 猜错 */
+  | { kind: 'guessSuit'; hit: SkillEffect[]; miss: SkillEffect[] }
+  /** 弃 c 张牌造成 d 点伤害；弃置牌点数满足 bonusTest 时伤害 +bonus（柯西·极限） */
+  | { kind: 'costThenDamage'; cost: number; dmg: number; bonusTest?: { op: 'ge' | 'le'; n: number }; bonus?: number }
+  /** 连续两次判定，颜色相同时执行 sameColor（笛卡尔·坐标系） */
+  | { kind: 'doubleJudge'; sameColor: SkillEffect[] }
+  /** 摸 draw 张后弃置点数最小的 discard 张；其和 ≤ sumAtMost 时追加 bonus（达尔文·进化论） */
+  | {
+      kind: 'drawDiscardMin';
+      draw: number;
+      discard: number;
+      bonusTest?: { sumAtMost: number };
+      bonus?: SkillEffect[];
+    }
+  /** 摸牌阶段额外摸 n 张后弃 1 张；弃置牌为奇数则改为不弃（华罗庚·优选法） */
+  | { kind: 'extraDrawDiscardOdd'; n: number }
+  /* ---- 交互与博弈 ---- */
+  /** 观看一名角色手牌后：交换一张 / 夺取一张 / 将其一张置于牌堆顶 */
+  | { kind: 'peekHand'; then: 'exchange' | 'steal' | 'toDeckTop' }
+  /** 突袭：摸牌阶段改为执行 effects（替代常规摸牌） */
+  | { kind: 'replaceDraw'; effects: SkillEffect[] }
+  /** 令一至 maxTargets 名角色各从 options 中选择一项 */
+  | { kind: 'targetChoose'; maxTargets?: number; options: SkillEffect[][] }
+  /** 答题对决：双方各答一题 */
+  | { kind: 'quizDuel'; win: SkillEffect[]; lose: SkillEffect[] }
+  /** 交换体力值（爱因斯坦·相对论） */
+  | { kind: 'swapHp' }
+  /** 据守：翻面并摸 n 张牌 */
+  | { kind: 'turnFace'; draw: number }
+  /** 将 n 张手牌交给一名角色；交给 ≥healIfSpread 名不同角色时自己回复 1 点体力 */
+  | { kind: 'giveHand'; n: number; healIfSpread?: number }
+  /** 交给一名角色 1 张手牌，若为【闪】则自己摸 selfDraw 张（朱自清·背影） */
+  | { kind: 'giveHandIfShan'; selfDraw: number }
+  /** 与一名角色各交换一张手牌 */
+  | { kind: 'exchangeHand'; n: number }
+  /** 令至多 max 名其他角色各摸 n 张牌 */
+  | { kind: 'multiDraw'; max: number; n: number }
+  /** 从至多 max 名其他角色处各夺取一张手牌（孙子·兵法 突袭） */
+  | { kind: 'stealFrom'; max: number }
+  /** 令所有其他角色各展示一张手牌，你获得其中一张（老舍·茶馆） */
+  | { kind: 'revealAllPickOne' }
+  /** 展示自己的一张手牌，按花色分支 */
+  | { kind: 'showHand'; black?: SkillEffect[]; red?: SkillEffect[] }
+  /** 弃至多 max 张手牌，令一名角色回复等量体力（拉瓦锡·质量守恒） */
+  | { kind: 'discardToHeal'; max: number }
+  /** 获得拼点 / 反间展示的那张牌 */
+  | { kind: 'takeDuelCard' }
+  /** 把拼点 / 反间展示的那张牌交给对方 */
+  | { kind: 'giveDuelCard' }
+  /** 弃置 n 张与上下文参照牌花色相同的手牌 */
+  | { kind: 'discardSuitMatch'; n: number }
+  /** 使用锦囊后摸牌：minSeq / blackOnly 限定触发范围，redExtra / richestExtra 为额外摸牌 */
+  | {
+      kind: 'trickDraw';
+      n: number;
+      /** 本回合第 minSeq 张及之后的锦囊牌才触发 */
+      minSeq?: number;
+      /** 锦囊为红色时额外摸 redExtra 张 */
+      redExtra?: number;
+      /** 仅黑色锦囊触发 */
+      blackOnly?: boolean;
+      /** 目标中含手牌最多的角色时额外摸 richestExtra 张 */
+      richestExtra?: number;
+    }
+  /* ---- 状态与标记 ---- */
+  | { kind: 'addMark'; mark: string; n: number }
+  /** 回合开始结算标记：移除 1 枚并造成 damage 点伤害 */
+  | { kind: 'tickMark'; mark: string; damage: number }
+  /** 军令状：目标本回合结束时若未使用过【杀】则执行 onTurnEnd */
+  | { kind: 'pledge'; onTurnEnd: SkillEffect[] }
+  /** 免疫：不能成为某类牌的目标 */
+  | { kind: 'immune'; scope: 'trick' | 'shaAndJuedou' | 'equip' }
+  /** 空城：没有手牌时不能成为【杀】或【决斗】的目标 */
+  | { kind: 'noHandImmune' }
+  /** 指定牌名免疫：不能成为这些牌的目标（诸葛亮·东风 免疫万箭齐发；法拉第 免疫闪电；墨子·非攻 免疫万箭/南蛮） */
+  | { kind: 'cardImmune'; names: string[] }
+  /** 指定花色的牌对你无效（黑牌/红牌免疫） */
+  | { kind: 'suitImmune'; suits: ('♠' | '♥' | '♣' | '♦')[] }
+  /** 距离陷阱：计算距离大于 min 的角色不能对你使用【杀】 */
+  | { kind: 'distTrap'; min: number }
+  /** 转移锦囊：你成为锦囊牌目标时，可将其转移给另一名角色（墨子·兼爱） */
+  | { kind: 'trickRedirect' }
+  /** 转移杀：你成为【杀】目标时，可将其转移给另一名角色（卢瑟福·散射偏转） */
+  | { kind: 'shaRedirect' }
+  | { kind: 'reduceDamage'; types: DamageType[]; n: number }
+  /** 改判：判定牌生效前用一张手牌替换之 */
+  | { kind: 'replaceJudge' }
+  /** 觉醒：减 minusMaxHp 点体力上限并把本技能替换为 replaceWith */
+  | { kind: 'awaken'; replaceWith: string; minusMaxHp: number }
+  /** 限定技复活：将体力回复至 hp 并摸 1 张牌 */
+  | { kind: 'revive'; hp: number }
+  /** 自损：失去 n 点体力 */
+  | { kind: 'selfLoseHp'; n: number }
+  /** 自愈：回复 n 点体力 */
+  | { kind: 'selfHeal'; n: number; cond?: SkillCond }
+  /** 群体回复：所有已受伤角色各回复 n 点体力 */
+  | { kind: 'allHeal'; n: number }
+  /** 本回合下一张【杀】伤害 +n */
+  | { kind: 'nextShaBonus'; n: number }
+  /** 本回合下一张【杀】不可被闪避 */
+  | { kind: 'nextShaUnblockable' }
+  /** 攻击范围 +n */
+  | { kind: 'rangePlus'; n: number }
+  /** 其他角色计算与你的距离 +n */
+  | { kind: 'distPlusToMe'; n: number }
+  /** 计算距离时无视其他角色的 +1 马 */
+  | { kind: 'ignoreHorsePlus' }
+  /** 使用【顺手牵羊】无距离限制 */
+  | { kind: 'shunshouNoDist' }
+  /** 学识经济：每当获得学识时额外 +n（居里夫人·镭元素） */
+  | { kind: 'knowledgeGain'; n: number }
+  | { kind: 'gainKnowledge'; n: number }
+  | { kind: 'spendKnowledge'; n: number };
 
 /** 消耗类道具定义（局末清空，不进牌堆，不可被顺手牵羊等卡牌影响） */
 export interface ItemDef {
@@ -243,6 +515,18 @@ export interface PlayerFlags {
   dmgReduce?: number;
   /** 局前武器加成：出杀/伤害 +n（整局） */
   bonusDmg?: number;
+  /** 【出师表】军令状：回合结束时若本回合未使用过【杀】则失去 1 点体力 */
+  pledge?: boolean;
+  /** 本回合使用牌数（顺序连锁 / 军令状判据），回合初清零 */
+  playedCount?: number;
+  /** 本回合是否造成过伤害（孟子·王道「据守」判据），回合初清零 */
+  dealtDamage?: boolean;
+  /** 本回合是否使用过锦囊（墨子·兼爱判据），回合初清零 */
+  usedTrick?: boolean;
+  /** 本回合已使用的锦囊张数（李白·诗成「第二张及之后」判据），回合初清零 */
+  trickCount?: number;
+  /** 本回合使用的最后一张牌类型（朱自清·荷塘月色判据） */
+  lastCardType?: CardType | null;
 }
 
 export interface Player {
@@ -280,6 +564,14 @@ export interface Player {
   turned?: boolean;
   /** 局内携带的消耗类道具：道具 id → 数量（局末清空，不进牌堆） */
   items?: Record<string, number>;
+  /** 技能每回合使用计数（技能 id → 本回合已用次数），回合初清空 */
+  skillUse?: Record<string, number>;
+  /** 限定技 / 觉醒技整局使用记录（技能 id → 1），随 state_sync 下发 */
+  skillGame?: Record<string, number>;
+  /** 自定义标记（居里夫人「辐射」等），回合开始结算 */
+  marks?: Record<string, number>;
+  /** 本回合已使用过的牌花色集合（门捷列夫·元素「三花色收集」判据），回合初清空 */
+  turnSuits?: string[];
 }
 
 export interface ChoiceOption {
@@ -287,6 +579,8 @@ export interface ChoiceOption {
   value: string | number;
   skill?: boolean;
   lord?: boolean;
+  /** 置灰且不可点击（技能次数已用尽 / 手牌费用不足） */
+  disabled?: boolean;
 }
 
 export interface GameState {

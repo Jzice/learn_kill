@@ -9,12 +9,16 @@ import { dealDamage, checkWin } from './game/damage';
 import { useTrick } from './game/actions';
 
 import type { FactionId } from './core/types';
-import { togglePanel } from './core/dom';
+import { setSim, sleep, togglePanel } from './core/dom';
+import { CHARACTERS } from './data/characters';
+import { FACTIONS } from './data/factions';
+import { defOf, SKILL_DEFS } from './data/skilldefs';
 import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
 
 import { exitGame, hostStartGame, startSingle } from './game/setup';
 import { clickHandCard, clickTargetSeat } from './ui/hand';
-import { handleLocalChoice } from './game/choice';
+import { handleLocalChoice, resolveChoice } from './game/choice';
+import { defaultChoiceFor } from './game/timer';
 import { closeMarkMenu, openMarkMenu, setMark } from './game/marks';
 import { closeProfileModal, refreshProfileUI, showAchievements } from './profile/profile';
 import { sendChat } from './game/chat';
@@ -258,6 +262,103 @@ function syncTopBarHeight(): void {
 
 window.copyInviteLink = copyInviteLink;
 window.nativeShare = nativeShare;
+
+/* ---- 无头模拟 / 技能自检（scripts/balance.mjs、scripts/smoke-skills.mjs 用） ---- */
+window.xtsSim = (on: boolean) => setSim(!!on);
+window.xtsMakeAllAI = () => {
+  G.players.forEach((p) => {
+    p.isAI = true;
+  });
+  // 若真人座位正处于等待选择中，按默认规则放行，避免模拟卡死
+  if (G.pendingResolve && G.pendingOptions?.length) {
+    resolveChoice(defaultChoiceFor(G.pendingType || 'list', G.pendingOptions));
+  }
+};
+window.xtsSnapshot = () => ({
+  started: G.started,
+  gameOver: G.gameOver,
+  winner: G.winnerText || '',
+  players: G.players.map((p) => ({
+    name: p.name,
+    char: p.charId || '',
+    role: p.role,
+    alive: p.alive,
+    hp: p.hp,
+  })),
+});
+window.xtsSkillAudit = () => {
+  const missing: string[] = [];
+  for (const c of CHARACTERS) for (const s of c.skills) if (!defOf(s.id)) missing.push(`${c.id}:${s.id}`);
+  for (const f of Object.values(FACTIONS)) {
+    const ls = f.lordSkill;
+    if (ls && !defOf(ls.id)) missing.push(`lord:${ls.id}`);
+  }
+  const ids = Object.keys(SKILL_DEFS);
+  const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
+  const zhuge = CHARACTERS.find((c) => c.id === 'zhugeliang')?.skills.map((s) => s.id) || [];
+  const multi = CHARACTERS.filter((c) => c.skills.length >= 3).map((c) => c.id);
+  return { total: ids.length, chars: CHARACTERS.length, missing, duplicates: dup, zhuge, multi };
+};
+
+/**
+ * 无头批量 AI 对战（scripts/balance.mjs 用）。
+ * 每局随机角色开局并把所有座位交 AI 托管，跑到 gameOver 后统计胜率 / 存活率。
+ * 返回各角色与各身份的累计战绩，供平衡微调。
+ */
+window.xtsAutoRun = async (n: number, seats = 5) => {
+  setSim(true);
+  const charIds = CHARACTERS.map((c) => c.id);
+  const byChar: Record<string, { games: number; wins: number; alive: number }> = {};
+  const byCharRole: Record<string, Record<string, { games: number; wins: number; alive: number }>> = {};
+  const byRole: Record<string, { games: number; wins: number }> = {
+    lord: { games: 0, wins: 0 },
+    loyal: { games: 0, wins: 0 },
+    rebel: { games: 0, wins: 0 },
+    spy: { games: 0, wins: 0 },
+  };
+  let stalls = 0;
+  for (let i = 0; i < n; i++) {
+    setPlayerCount(seats);
+    selectChar(charIds[Math.floor(Math.random() * charIds.length)]);
+    await startSingle(); // 建局并启动 gameLoop（fire-and-forget）
+    window.xtsMakeAllAI();
+    let guard = 0;
+    while (!G.gameOver && guard < 500000) {
+      await sleep(0);
+      guard++;
+    }
+    if (!G.gameOver) {
+      stalls++;
+      G.gameOver = true; // 防止死循环：强制结束本局
+    }
+    const winner = G.winnerText;
+    const winRoles: string[] =
+      winner === '内奸获胜'
+        ? ['spy']
+        : winner === '反贼获胜'
+          ? ['rebel']
+          : winner === '主公与忠臣获胜'
+            ? ['lord', 'loyal']
+            : [];
+    for (const p of G.players) {
+      const cid = p.charId || '';
+      if (!byChar[cid]) byChar[cid] = { games: 0, wins: 0, alive: 0 };
+      byChar[cid].games++;
+      if (winRoles.includes(p.role)) byChar[cid].wins++;
+      if (p.alive) byChar[cid].alive++;
+      const cr = (byCharRole[cid] ||= {});
+      const rr = (cr[p.role] ||= { games: 0, wins: 0, alive: 0 });
+      rr.games++;
+      if (winRoles.includes(p.role)) rr.wins++;
+      if (p.alive) rr.alive++;
+      if (byRole[p.role]) {
+        byRole[p.role].games++;
+        if (winRoles.includes(p.role)) byRole[p.role].wins++;
+      }
+    }
+  }
+  return { games: n, stalls, byChar, byRole, byCharRole };
+};
 
 /** 通过 ?room=XXXXXX 分享链接进入时，自动进入加入模式并预填房间号、发起加入 */
 function handleSharedRoom(): void {

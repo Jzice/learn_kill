@@ -12,7 +12,19 @@ export function escapeHtml(s: unknown): string {
   return String(s).replace(/[&<>"']/g, (c) => ESCAPE_MAP[c] ?? c);
 }
 
+/* ---------------- 无头模拟模式 ----------------
+ * 开启后所有动画等待立即返回（scripts/balance.mjs 批量跑局用）。
+ * 仅影响节奏，不改变任何结算逻辑。
+ */
+let SIM = false;
+export function setSim(on: boolean): void {
+  SIM = !!on;
+}
+export function isSim(): boolean {
+  return SIM;
+}
 export function sleep(ms: number): Promise<void> {
+  if (SIM) return Promise.resolve();
   return new Promise((r) => setTimeout(r, ms));
 }
 

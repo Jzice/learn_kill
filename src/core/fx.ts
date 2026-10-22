@@ -1,6 +1,6 @@
 /* ==================== 特效（DOM 动画层） ==================== */
 import type { Card } from './types';
-import { escapeHtml, sleep } from './dom';
+import { escapeHtml, isSim, sleep } from './dom';
 
 export const FX = {
   anchor(idx: number): { x: number; y: number } {
@@ -135,6 +135,14 @@ export const FX = {
     f.remove();
   },
 };
+
+/** 无头模拟模式：关闭全部 DOM 动画（anchor 保留，供坐标计算） */
+for (const k of Object.keys(FX) as (keyof typeof FX)[]) {
+  if (k === 'anchor') continue;
+  const orig = (FX as unknown as Record<string, unknown>)[k];
+  (FX as unknown as Record<string, unknown>)[k] = (...args: unknown[]) =>
+    isSim() ? Promise.resolve() : (orig as (...a: unknown[]) => unknown).apply(FX, args);
+}
 
 export function floatTextFx(idx: number, text: string, color: string): void {
   const a = FX.anchor(idx);

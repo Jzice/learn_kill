@@ -5,7 +5,7 @@ import { FX } from '../core/fx';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
 import { addLog, addPlayLog } from './log';
-import { hasSkill, drawCards, discardCard, distBetween, inRange, handLimit } from './rules';
+import { drawCards, discardCard, distBetween, inRange, handLimit } from './rules';
 import { Sound } from '../core/sound';
 import { equipFx } from '../core/fx';
 import { render } from '../ui/render';
@@ -16,8 +16,28 @@ import { askQuizForPlayer } from './quiz';
 import { aiPlayPhase, aiQuiz, aiSpeak } from './ai';
 import { dealDamage, onLoseArmor } from './damage';
 import { useActiveSkill } from './skills';
-import { triggerExtraDraw } from './skillfx';
 import { useSha, useTao, useJiu, useTrick } from './actions';
+import { defOf } from '../data/skilldefs';
+import {
+  canBeTarget,
+  canConvertAs,
+  canPay,
+  convertDamageType,
+  extraDrawOf,
+  fire,
+  markConvertUse,
+  limitLeft,
+  noteCardPlayed,
+  redirectToDeckTop,
+  resolveMarks,
+  resolvePledge,
+  resetTurnState,
+  shaExtraCost,
+  shaLimitOf,
+  shunshouNoDist,
+  tryReplaceDraw,
+  tryReplaceJudge,
+} from './skillEngine';
 import { NET, scheduleSync } from '../net/network';
 
 export async function runTurn(idx: number): Promise<void> {
@@ -42,22 +62,27 @@ export async function runTurn(idx: number): Promise<void> {
   p.flags.skipPlay = false;
   p.flags.extraDamage = 0;
   p.flags.jiuUsed = false;
+  // 声明式技能：清空每回合使用计数 / 花色收集 / 出牌统计
+  resetTurnState(p);
   G.current = idx;
   addLog(`—— ${p.name}（${FACTIONS[p.faction].name}）的回合 ——`, 'hl');
   Sound.play('turn');
   if (p.isAI) aiSpeak(p, 'idle');
   render();
+  // 觉醒判定（杜甫·沉郁 / 司马迁·忍辱负重）
+  await fire('awaken', { idx });
+  // 辐射标记结算（居里夫人·放射性）
+  await resolveMarks(idx);
+  // 准备阶段（判定前）：观星 / 周期律
+  await fire('onTurnStart', { idx });
   await judgePhase(p);
-  let drawN = 2;
-  // 「光合」生物·初中：摸牌阶段额外摸一张（「优选法」youxuan 原有逻辑不变：摸后需弃一张）
-  if (hasSkill(p, 'youxuan') || hasSkill(p, 'guanghe')) drawN += 1;
-  // 扩展包触发技：摸牌阶段额外摸牌原语（生物「光合产能」extraDraw: +1 等）
-  drawN += triggerExtraDraw(p);
+  // 摸牌阶段：突袭（孙子·兵法）可替代常规摸牌
+  const bonusDraw = extraDrawOf(p);
+  const raid = await tryReplaceDraw(idx);
+  const drawN = raid ? bonusDraw : 2 + bonusDraw;
   drawCards(p, drawN);
   addLog(`${p.name} 摸 ${drawN} 张牌`);
-  if (hasSkill(p, 'youxuan') && p.hand.length > 0) {
-    discardCard(p, p.hand[0]);
-  }
+  if (!raid) await fire('onDraw', { idx });
   render();
   if (p.isAI) {
     if (aiQuiz(0.6)) {
@@ -87,6 +112,11 @@ export async function runTurn(idx: number): Promise<void> {
   render();
   if (p.alive && !p.flags.skipPlay) await playPhase(idx);
   if (p.alive) await discardPhase(p);
+  if (p.alive) {
+    // 回合结束：据守翻面 / 荷塘月色 / 军令状结算
+    await fire('onTurnEnd', { idx });
+    await resolvePledge(idx);
+  }
   render();
 }
 
@@ -96,7 +126,9 @@ export async function judgePhase(p: (typeof G.players)[number]): Promise<void> {
     const j = p.judge[i];
     if (!j.judgeType) continue;
     p.judge.splice(i, 1);
-    const card = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+    let card = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+    // 改判（张衡·地动仪 / 笛卡尔·我思故我在）：判定牌生效前可用手牌替换
+    card = await tryReplaceJudge(G.players.indexOf(p), card);
     addLog(`${p.name} 判定：${card.suit}${card.num}`, 'hl');
     await FX.judge(G.players.indexOf(p), card);
     if (j.judgeType === 'lebu') {
@@ -129,9 +161,9 @@ export async function playPhase(idx: number): Promise<void> {
     return;
   }
   while (p.alive && !G.gameOver) {
-    // 本回合是否还能出【杀】：连弩无限；否则每回合限一次；noSha 时本回合禁止
-    const canSha =
-      !p.flags.noSha && (p.equip.weapon?.skill === 'liannu' || (p.flags.shaUsed || 0) < 1);
+    // 本回合是否还能出【杀】：连弩无限；否则受每回合上限约束（咆哮可额外出杀）；noSha 时本回合禁止
+    const shaCap = p.equip.weapon?.skill === 'liannu' ? Infinity : shaLimitOf(p);
+    const canSha = !p.flags.noSha && (p.flags.shaUsed || 0) < shaCap;
     const opts: ChoiceOption[] = [];
     for (const c of p.hand) {
       if (SHA_SUBS.includes(c.sub) && canSha) opts.push({ label: `【${c.name}】${c.suit}${c.num}`, value: 'sha_' + c.id });
@@ -140,15 +172,43 @@ export async function playPhase(idx: number): Promise<void> {
       else if (c.type === 'trick' && c.sub !== 'wuxie') opts.push({ label: `【${c.name}】`, value: 'trick_' + c.id });
       else if (c.type === 'equip') opts.push({ label: `【${c.name}】`, value: 'equip_' + c.id });
     }
+    // 转化技（虚拟可用牌）：不复制卡牌对象，仅在使用时按目标牌结算
+    if (canSha)
+      for (const c of p.hand)
+        if (!SHA_SUBS.includes(c.sub) && canConvertAs(p, c, 'sha', false))
+          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【杀】`, value: `conv_${c.id}_sha` });
+    if (!p.flags.jiuUsed)
+      for (const c of p.hand)
+        if (c.sub !== 'jiu' && canConvertAs(p, c, 'jiu', false))
+          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【酒】`, value: `conv_${c.id}_jiu` });
+    if (p.hp < p.maxHp)
+      for (const c of p.hand)
+        if (c.sub !== 'tao' && canConvertAs(p, c, 'tao', false))
+          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【桃】`, value: `conv_${c.id}_tao` });
+    for (const c of p.hand)
+      if (c.type !== 'trick' && canConvertAs(p, c, 'guohe', false))
+        opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【过河拆桥】`, value: `conv_${c.id}_guohe` });
     if (!p.flags.skillUsed) {
       p.skills.forEach((s) => {
+        // 观星 / 周期律 / 行医等「非出牌阶段」技能不出现在出牌按钮里
+        const sd = defOf(s.id);
+        if (sd && sd.timing !== 'active') return;
         if (s.type === 'active') {
           const isLord = Object.values(FACTIONS).some((f) => f.lordSkill.id === s.id);
+          // 类型徽标（★限定 / ☆觉醒 /【锁】）+ 可用性（整局限制 / 手牌费用）
+          const badge = !sd ? '' : sd.kind === 'limit' ? '★' : sd.kind === 'awaken' ? '☆' : '';
+          const usable = sd ? limitLeft(p, sd) && canPay(p, sd) : true;
+          const reason = usable
+            ? '（需答题）'
+            : sd && !limitLeft(p, sd)
+              ? '（本局已用）'
+              : '（牌不足）';
           opts.push({
-            label: `▶${isLord ? '主公技·' : ''}${s.name}（需答题）`,
+            label: `▶${isLord ? '主公技·' : ''}${badge}${s.name}${reason}`,
             value: 'skill_' + s.id,
             skill: true,
             lord: isLord,
+            disabled: !usable,
           });
         }
       });
@@ -178,6 +238,64 @@ export async function playPhase(idx: number): Promise<void> {
       await useActiveSkill(idx, String(ch).slice(6));
       continue;
     }
+    if (String(ch).startsWith('conv_')) {
+      const [, idStr2, to] = String(ch).split('_');
+      const card = p.hand.find((c) => c.id === Number(idStr2));
+      if (card) {
+        markConvertUse(p, card, to, false);
+        await noteCardPlayed(idx, card);
+        if (to === 'sha') {
+          const cand: number[] = [];
+          for (let i = 0; i < G.players.length; i++) {
+            if (i === idx || !G.players[i].alive) continue;
+            if (!canBeTarget(i, 'sha')) continue;
+            if (inRange(idx, i)) cand.push(i);
+          }
+          if (!cand.length) {
+            addLog('攻击范围内无目标');
+          } else {
+            const picked = await pickShaTargets(idx, cand, 1);
+            if (picked.length) {
+              const extra = shaExtraCost(p);
+              if (extra > 0) {
+                for (let k = 0; k < extra && p.hand.length > 1; k++) discardCard(p, p.hand[0]);
+              }
+              discardCard(p, card);
+              await useSha(idx, picked[0], {
+                suit: card.suit,
+                num: card.num,
+                damageType: convertDamageType(p, card, 'sha', false) || 'normal',
+              });
+            }
+          }
+        } else if (to === 'jiu') {
+          discardCard(p, card);
+          await useJiu(idx);
+        } else if (to === 'tao') {
+          discardCard(p, card);
+          await useTao(idx);
+        } else if (to === 'guohe') {
+          const targets: ChoiceOption[] = [];
+          for (let i = 0; i < G.players.length; i++) {
+            if (i === idx || !G.players[i].alive) continue;
+            if (!canBeTarget(i, 'trick')) continue;
+            targets.push({ label: G.players[i].name, value: i });
+          }
+          if (!targets.length) {
+            addLog('无合法目标');
+          } else {
+            targets.push({ label: '取消', value: -1 });
+            const t = await waitChoice(idx, targets, 'target');
+            if (Number(t) >= 0) {
+              discardCard(p, card);
+              const synth = C('过河拆桥', 'trick', 'guohe', card.suit, card.num);
+              await useTrick(idx, synth, t as number);
+            }
+          }
+        }
+      }
+      continue;
+    }
     const [kind, idStr] = String(ch).split('_');
     const id = Number(idStr);
     const card = p.hand.find((c) => c.id === id);
@@ -190,6 +308,8 @@ export async function playPhase(idx: number): Promise<void> {
       const cand: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === idx || !G.players[i].alive) continue;
+        // 空城等免疫：不能成为【杀】的目标
+        if (!canBeTarget(i, 'sha')) continue;
         if (inRange(idx, i)) cand.push(i);
       }
       if (!cand.length) {
@@ -201,13 +321,21 @@ export async function playPhase(idx: number): Promise<void> {
       const picked = await pickShaTargets(idx, cand, maxTargets);
       if (!picked.length) continue;
       const dmgType: DamageType = card.damageType || 'normal';
+      // 咆哮：第二张及之后的【杀】需先弃置手牌
+      const extra = shaExtraCost(p);
+      if (extra > 0) {
+        const rest = p.hand.filter((x) => x.id !== card.id);
+        for (let k = 0; k < extra && k < rest.length; k++) discardCard(p, rest[k]);
+      }
       discardCard(p, card);
+      await noteCardPlayed(idx, card);
       for (let k = 0; k < picked.length; k++) {
         if (!G.players[picked[k]].alive) continue;
-        await useSha(idx, picked[k], { suit: card.suit, damageType: dmgType, fromFangtian: k > 0 });
+        await useSha(idx, picked[k], { suit: card.suit, num: card.num, damageType: dmgType, fromFangtian: k > 0 });
       }
     } else if (kind === 'tao') {
       discardCard(p, card);
+      await noteCardPlayed(idx, card);
       await useTao(idx);
     } else if (kind === 'jiu') {
       if (p.flags.jiuUsed) {
@@ -215,6 +343,7 @@ export async function playPhase(idx: number): Promise<void> {
         continue;
       }
       discardCard(p, card);
+      await noteCardPlayed(idx, card);
       await useJiu(idx);
     } else if (kind === 'trick') {
       let tgt: number | null = null;
@@ -246,8 +375,10 @@ export async function playPhase(idx: number): Promise<void> {
         const targets: ChoiceOption[] = [];
         for (let i = 0; i < G.players.length; i++) {
           if (i === idx || !G.players[i].alive) continue;
-          if (card.sub === 'shunshou' && distBetween(idx, i) > 1) continue;
-          if (hasSkill(G.players[i], 'fenshu')) continue;
+          // 郑和【航海图】：使用【顺手牵羊】无距离限制
+          if (card.sub === 'shunshou' && !shunshouNoDist(p) && distBetween(idx, i) > 1) continue;
+          // 焚书（锦囊免疫）/ 空城（杀与决斗免疫）
+          if (!canBeTarget(i, card.sub === 'juedou' ? 'juedou' : 'trick')) continue;
           targets.push({ label: G.players[i].name, value: i });
         }
         if (!targets.length) {
@@ -264,7 +395,7 @@ export async function playPhase(idx: number): Promise<void> {
         for (let i = 0; i < G.players.length; i++) {
           if (i === idx || !G.players[i].alive) continue;
           const w = G.players[i].equip.weapon;
-          if (!w || hasSkill(G.players[i], 'fenshu')) continue;
+          if (!w || !canBeTarget(i, 'trick')) continue;
           holders.push({ label: `借刀：${G.players[i].name}（${w.name}）`, value: i });
         }
         if (!holders.length) {
@@ -291,32 +422,42 @@ export async function playPhase(idx: number): Promise<void> {
         second = v as number;
       }
       discardCard(p, card);
+      await noteCardPlayed(idx, card);
       await useTrick(idx, card, tgt, second);
     } else if (kind === 'equip') {
       discardCard(p, card, false);
       showPlayCard(card, p.name, FACTIONS[p.faction].color);
       addPlayLog(p.name, 'use', card.name, '');
+      let replaced: Card | null = null;
       if (card.sub === 'weapon') {
+        replaced = p.equip.weapon;
         if (p.equip.weapon) G.discard.push(p.equip.weapon);
         p.equip.weapon = card;
       } else if (card.sub === 'armor') {
+        replaced = p.equip.armor;
         if (p.equip.armor) {
           onLoseArmor(p, p.equip.armor);
           G.discard.push(p.equip.armor);
         }
         p.equip.armor = card;
       } else if (card.sub === 'horse+') {
+        replaced = p.equip.horsePlus;
         if (p.equip.horsePlus) G.discard.push(p.equip.horsePlus);
         p.equip.horsePlus = card;
       } else if (card.sub === 'horse-') {
+        replaced = p.equip.horseMinus;
         if (p.equip.horseMinus) G.discard.push(p.equip.horseMinus);
         p.equip.horseMinus = card;
       }
+      await noteCardPlayed(idx, card);
       addLog(`${p.name} 装备【${card.name}】`);
       showPlayHint('装备', card.name, EQUIP_DESC[card.skill || ''] || '');
       Sound.play('equip');
       void equipFx(idx, card.name);
       render();
+      // 李四光【构造体系】：装备 / 失去装备各摸一张
+      if (replaced) await fire('onLoseEquip', { idx, card: replaced });
+      await fire('onEquip', { idx, card });
       if (NET.isHost) scheduleSync();
     }
     if (!p.alive || G.gameOver) break;
@@ -328,7 +469,8 @@ export async function discardPhase(p: (typeof G.players)[number]): Promise<void>
   while (p.hand.length > limit && p.hand.length > 0) {
     if (p.isAI) {
       const c = p.hand.pop()!;
-      G.discard.push(c);
+      // 缀术 / 低温提取：符合条件的弃牌改为置于牌堆顶
+      if (!redirectToDeckTop(p, c)) G.discard.push(c);
     } else {
       const opts: ChoiceOption[] = p.hand.map((c) => ({ label: c.name, value: c.id }));
       if (!opts.length) break;
@@ -336,7 +478,7 @@ export async function discardPhase(p: (typeof G.players)[number]): Promise<void>
       const cid = typeof ch === 'number' ? ch : Number(ch);
       const c = p.hand.find((x) => x.id === cid);
       if (c) {
-        discardCard(p, c);
+        if (!redirectToDeckTop(p, c)) discardCard(p, c);
         addLog(`${p.name} 弃置【${c.name}】`);
       } else break;
     }

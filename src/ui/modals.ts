@@ -3,6 +3,7 @@ import { FACTIONS } from '../data/factions';
 import { GRADE_ORDER } from '../data/grades';
 import { CHARACTERS } from '../data/characters';
 import { ACHIEVEMENTS, PROFILE } from '../profile/profile';
+import { defOf } from '../data/skilldefs';
 
 /** 五个 tab（顺序即高度测量顺序） */
 const RULE_TABS = ['basic', 'factions', 'cards', 'chars', 'ach'];
@@ -128,7 +129,25 @@ function renderRulesContent(tab: string): void {
         const f = FACTIONS[c.faction];
         html += `<div style="padding:7px;background:rgba(0,0,0,.25);border-radius:6px;border-left:3px solid ${f.color};margin-bottom:6px">
           <div style="display:flex;align-items:center;gap:8px"><span style="font-size:19px">${c.avatar}</span><span style="color:${f.color};font-weight:700;font-size:13px">${c.name}</span><span style="font-size:11px;color:var(--muted)">${c.title} · ${f.name} · 体力${c.hp}</span></div>
-          <div style="font-size:11px;margin-top:3px">${c.skills.map((s) => `<b style="color:#f5e0a0">${s.name}</b>（${s.type === 'active' ? '主动·需答题' : '触发'}）：${s.desc}`).join('<br>')}</div>
+          <div style="font-size:11px;margin-top:3px">${c.skills.map((s) => {
+            const d = defOf(s.id);
+            const tag = d
+              ? d.kind === 'limit'
+                ? '★限定技·需答题'
+                : d.kind === 'awaken'
+                  ? '☆觉醒技'
+                  : d.kind === 'lord'
+                    ? '👑主公技·需答题'
+                    : d.kind === 'passive'
+                      ? '【锁】锁定技'
+                      : d.timing === 'active'
+                        ? '主动·需答题'
+                        : '触发技'
+              : s.type === 'active'
+                ? '主动·需答题'
+                : '触发';
+            return `<b style="color:#f5e0a0">${s.name}</b>（<span style="color:#c8b8f0">${tag}</span>）：${s.desc}`;
+          }).join('<br>')}</div>
         </div>`;
       });
       html += `</div>`;

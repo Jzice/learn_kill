@@ -1,6 +1,7 @@
 /* ==================== 选择等待（Promise 桥接本地/远程玩家） ==================== */
 import type { ChoiceOption, PendingType } from '../core/types';
 import { G } from './state';
+import { isSim } from '../core/dom';
 import { Sound } from '../core/sound';
 import { addLog } from './log';
 import { render } from '../ui/render';
@@ -27,6 +28,16 @@ export function waitChoice(
     const p = G.players[playerIdx];
     if (!p) {
       resolve(options[options.length - 1].value);
+      return;
+    }
+    // 无头模拟模式：所有选择自动按默认规则结算（技能发动按 AI 概率 0.62），避免批量对战卡死
+    if (isSim()) {
+      const yesOpt = options.find((o) => String(o.value) === 'yes');
+      if (yesOpt) {
+        resolve(Math.random() < 0.62 ? 'yes' : 'no');
+      } else {
+        resolve(defaultChoiceFor(type, options));
+      }
       return;
     }
     G.pendingOptions = options;

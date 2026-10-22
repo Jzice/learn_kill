@@ -174,6 +174,11 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       chained: false,
       turned: false,
       items: {},
+      // 声明式技能运行时状态（随 state_sync 下发，供客人端一致结算）
+      skillUse: {},
+      skillGame: {},
+      marks: {},
+      turnSuits: [],
     };
     // 局前配装注入：self 用本地档案；远程玩家在 setupPlayers 中按上报数据应用
     if (self) applyLoadoutTo(p, PROFILE.loadout, PROFILE.unlockedEquips);

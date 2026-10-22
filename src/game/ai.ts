@@ -14,6 +14,16 @@ import { useActiveSkill } from './skills';
 import { useTao, useTrick, useSha, useJiu } from './actions';
 import { onLoseArmor } from './damage';
 import { NET, syncStateToClients } from '../net/network';
+import { defOf } from '../data/skilldefs';
+import {
+  canConvertAs,
+  canPay,
+  convertDamageType,
+  limitLeft,
+  markConvertUse,
+  shaExtraCost,
+  shaLimitOf,
+} from './skillEngine';
 import { noteAiTurn, pickAiTarget } from './aibrain';
 import { SHA_SUBS } from '../data/cards';
 
@@ -21,8 +31,13 @@ export function aiQuiz(rate = 0.6): boolean {
   return Math.random() < rate;
 }
 
-/** AI 主动技可用性：判断该技能的费用（手牌数门槛）当前能否支付 */
+/** AI 主动技可用性：由技能声明（费用 + 每回合 / 整局限制）统一判定 */
 export function aiSkillUsable(p: Player, id: string): boolean {
+  const d = defOf(id);
+  if (d) {
+    if (!limitLeft(p, d)) return false;
+    return canPay(p, d);
+  }
   const sk = p.skills.find((s) => s.id === id);
   // 扩展包技能：按原语 costCard 判定费用门槛
   if (sk?.effects) {
@@ -30,22 +45,49 @@ export function aiSkillUsable(p: Player, id: string): boolean {
     if (cost && cost.kind === 'costCard') return p.hand.length >= cost.n;
     return true;
   }
-  const need2 = id === 'wenyan' || id === 'youjihuaxue';
-  const need1 = ['beisong', 'daoshu', 'tingxie', 'zhexue', 'dianci', 'chaodai', 'shiliao', 'fazhi', 'youshu'].includes(id);
-  if (need2) return p.hand.length >= 2;
-  if (need1) return p.hand.length >= 1;
   return true;
+}
+/** AI 主动技收益粗估：据此在多个可用技能中挑一个（数值越大越优先） */
+export function aiSkillValue(p: Player, id: string): number {
+  const d = defOf(id);
+  if (!d) return 1;
+  let v = 0;
+  for (const e of d.effects) {
+    switch (e.kind) {
+      case 'selfDraw': v += 0.6 * e.n; break;
+      case 'targetDamage': v += 1.5 * e.n; break;
+      case 'targetLoseHp': v += 1.3 * e.n; break;
+      case 'targetHeal': v += (p.hp < p.maxHp ? 1.2 : 0.2) * e.n; break;
+      case 'selfHeal': v += (p.hp < p.maxHp ? 1.2 : 0.1) * e.n; break;
+      case 'targetDiscard': v += 1.0 * e.n; break;
+      case 'allDiscard': v += 0.8 * e.n; break;
+      case 'gainHand': v += 0.9 * e.n; break;
+      case 'judgeIf': v += 1.0; break;
+      case 'pointDuel': v += 1.0; break;
+      case 'quizDuel': v += 0.8; break;
+      case 'swapHp': v += p.hp <= 2 ? 2.0 : 0.3; break;
+      case 'costCard': v -= e.require ? 0.5 * e.n : 0.3 * e.n; break;
+      default: v += 0.2; break;
+    }
+  }
+  return v;
 }
 
 export async function aiPlayPhase(idx: number): Promise<void> {
   const p = G.players[idx];
   if (!p.flags.skillUsed && p.alive) {
-    const acts = p.skills.filter((s) => s.type === 'active');
-    if (acts.length && Math.random() < 0.5) {
-      // 基础技与扩展包主题技一视同仁：优先挑当前可执行的（付得起费用的），否则任选一个
+    // 观星 / 周期律 / 行医等「非出牌阶段」技能不在此发动
+    const acts = p.skills.filter((s) => {
+      const d = defOf(s.id);
+      if (d && d.timing !== 'active') return false;
+      return s.type === 'active';
+    });
+    if (acts.length && Math.random() < 0.62) {
+      // 收益启发式：优先挑付得起费用且估值最高的技能，保留一定随机性
       const usable = acts.filter((s) => aiSkillUsable(p, s.id));
       const pool = usable.length ? usable : acts;
-      const act = pool[Math.floor(Math.random() * pool.length)];
+      const best = pool.reduce((a, b) => (aiSkillValue(p, b.id) > aiSkillValue(p, a.id) ? b : a));
+      const act = Math.random() < 0.7 ? best : pool[Math.floor(Math.random() * pool.length)];
       await useActiveSkill(idx, act.id);
       await sleep(400);
     }
@@ -186,8 +228,12 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       }
     }
   }
-  if (p.alive && !p.flags.noSha && (p.flags.shaUsed || 0) < 1) {
-    const shas = p.hand.filter((c) => SHA_SUBS.includes(c.sub));
+  // 咆哮（伽利略·自由落体）放开每回合出杀上限
+  const shaCap = shaLimitOf(p);
+  if (p.alive && !p.flags.noSha && (p.flags.shaUsed || 0) < shaCap) {
+    // 转化技：手牌中没有【杀】时可用黑色牌（茅盾·子夜）/ 红色牌（爱因斯坦·质能方程）当杀
+    let shas = p.hand.filter((c) => SHA_SUBS.includes(c.sub));
+    if (!shas.length) shas = p.hand.filter((c) => canConvertAs(p, c, 'sha', false));
     // 【酒】：本回合首次出杀前喝一口（每回合限一次，伤害 +1）
     if (shas.length && !p.flags.jiuUsed) {
       const jiu = p.hand.find((c) => c.sub === 'jiu');
@@ -232,10 +278,16 @@ export async function aiPlayPhase(idx: number): Promise<void> {
               targets.push(i);
             }
           }
+          // 转化技记账 + 咆哮额外弃牌代价
+          if (!SHA_SUBS.includes(sha.sub)) markConvertUse(p, sha, 'sha', false);
+          const extraCost = shaExtraCost(p);
+          const rest = p.hand.filter((x) => x.id !== sha.id);
+          for (let k = 0; k < extraCost && k < rest.length; k++) discardCard(p, rest[k]);
           discardCard(p, sha);
+          const dmgType = sha.damageType || convertDamageType(p, sha, 'sha', false) || 'normal';
           for (let k = 0; k < targets.length; k++) {
             if (!G.players[targets[k]].alive) continue;
-            await useSha(idx, targets[k], { suit: sha.suit, damageType: sha.damageType, fromFangtian: k > 0 });
+            await useSha(idx, targets[k], { suit: sha.suit, num: sha.num, damageType: dmgType, fromFangtian: k > 0 });
           }
           await sleep(300);
         }
@@ -246,7 +298,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
   if (
     p.alive &&
     !p.flags.noSha &&
-    (p.flags.shaUsed || 0) < 1 &&
+    (p.flags.shaUsed || 0) < shaCap &&
     p.equip.weapon?.skill === 'zhangba' &&
     p.hand.length >= 2
   ) {

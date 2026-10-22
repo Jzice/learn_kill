@@ -6,6 +6,7 @@ import { CHAR_GENDER } from '../data/characters';
 import { Sound } from '../core/sound';
 import { discardFx, drawFx } from '../core/fx';
 import { triggerDistMod, triggerHandLimit } from './skillfx';
+import { distModOf, distPlusToMeOf, handLimitBonus, ignoreHorsePlus } from './skillEngine';
 
 export function hasSkill(p: Player, id: string): boolean {
   return !!p.skills && p.skills.some((s) => s.id === id);
@@ -34,11 +35,14 @@ export function distBetween(fi: number, ti: number): number {
   let d = seatDist(fi, ti);
   const from = G.players[fi],
     to = G.players[ti];
-  if (to.equip.horsePlus) d += 1;
+  // 徐霞客【探险】无视他人 +1 马
+  if (to.equip.horsePlus && !ignoreHorsePlus(from)) d += 1;
   if (from.equip.horseMinus) d -= 1;
-  // 「浮力」(生物?) 物理·初中 / 「经纬」地理·初中：计算距离-1（扩展包触发技）
-  if (hasSkill(from, 'wanyou') || hasSkill(from, 'tanxian') || hasSkill(from, 'fuli') || hasSkill(from, 'jingwei')) d -= 1;
-  // 扩展包触发技：距离修正原语（地理「经纬」distMod: -1 等）
+  // 声明式技能：距离修正原语（万有引力 / 探险 / 航海图 / 舆地 / 浮力 / 经纬）
+  d += distModOf(from);
+  // 牛顿【万有引力】：其他角色计算与你的距离 +1
+  d += distPlusToMeOf(to);
+  // 扩展包触发技：距离修正原语（保持加法式共存）
   d += triggerDistMod(from);
   return Math.max(1, d);
 }
@@ -84,10 +88,8 @@ export function discardCard(p: Player, card: Card, toDiscard = true): void {
 
 export function handLimit(p: Player): number {
   let l = Math.max(p.hp, 0);
-  if (hasSkill(p, 'zhuishu')) l += 2;
-  if (hasSkill(p, 'yichuan')) l += 2; // 生物·高中「遗传」
-  if (hasSkill(p, 'yuansu')) l += 1;
-  if (hasSkill(p, 'fangchengshi')) l += 1; // 化学·初中「方程式」
+  // 声明式技能：手牌上限原语（缀术 +2 / 数论直觉 +1（有对子再 +1）/ 元素 +1 …）
+  l += handLimitBonus(p);
   // 扩展包触发技：手牌上限原语（数学/化学「厚积薄发」handLimit: +1 等）
   l += triggerHandLimit(p);
   return l;

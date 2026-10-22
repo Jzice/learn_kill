@@ -1,4 +1,5 @@
 /* ==================== 音效（WebAudio 振荡器合成，无音频资源，可开关） ==================== */
+import { isSim } from './dom';
 export const Sound = {
   ctx: null as AudioContext | null,
   enabled: true,
@@ -47,7 +48,7 @@ export const Sound = {
     freqs.forEach((f, i) => this.note(c, f, dur, type, vol, i * step));
   },
   play(t: string): void {
-    if (!this.enabled) return;
+    if (!this.enabled || isSim()) return;
     const c = this.init();
     if (!c) return;
     const N = (f: number, d: number, tp: OscillatorType = 'sine', v = 0.1, delay = 0): void =>

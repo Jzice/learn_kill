@@ -125,6 +125,26 @@ declare global {
     clickHandCard: (cardId: number) => void;
     clickTargetSeat: (idx: number) => void;
     handleLocalChoice: (v: string | number) => void;
+    // 无头模拟 / 技能自检（scripts/balance.mjs、scripts/smoke-skills.mjs）
+    xtsSim: (on: boolean) => void;
+    xtsMakeAllAI: () => void;
+    xtsSnapshot: () => {
+      started: boolean;
+      gameOver: boolean;
+      winner: string;
+      players: { name: string; char: string; role: string; alive: boolean; hp: number }[];
+    };
+    xtsSkillAudit: () => { total: number; chars: number; missing: string[]; duplicates: string[]; zhuge: string[]; multi: string[] };
+    xtsAutoRun: (
+      n: number,
+      seats?: number,
+    ) => Promise<{
+      games: number;
+      stalls: number;
+      byChar: Record<string, { games: number; wins: number; alive: number }>;
+      byRole: Record<string, { games: number; wins: number }>;
+      byCharRole: Record<string, Record<string, { games: number; wins: number; alive: number }>>;
+    }>;
   }
 }
 

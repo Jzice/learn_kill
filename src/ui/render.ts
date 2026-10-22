@@ -4,7 +4,7 @@ import { G } from '../game/state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_ICON, EQUIP_SHORT } from '../data/characters';
 import { genderIcon } from '../profile/profile';
-import { escapeHtml } from '../core/dom';
+import { escapeHtml, isSim } from '../core/dom';
 import { displayOrder, handLimit } from '../game/rules';
 import { isCardClickable, cardClickHint } from './hand';
 import { ROLE_MARKS } from '../game/marks';
@@ -173,6 +173,8 @@ function handSuitVal(suit: string): number {
 }
 
 export function render(): void {
+  // 无头模拟模式：跳过整屏重绘（scripts/balance.mjs 批量跑局用）
+  if (isSim()) return;
   if (!G.started) return;
   const me = G.players[G.myPlayerIdx];
   if (!me) return;
@@ -192,7 +194,9 @@ export function render(): void {
       hintClass = 'hint-play';
       const skillBtns = G.pendingOptions.filter((o) => typeof o.value === 'string' && o.value.startsWith('skill_'));
       skillBtns.forEach((o) => {
-        btnHtml += `<button class="btn btn-sm ${o.lord ? 'btn-lord' : 'btn-skill'}" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`;
+        const cls = `${o.lord ? 'btn-lord' : 'btn-skill'}${o.disabled ? ' btn-off' : ''}`;
+        const onclick = o.disabled ? '' : `onclick="handleLocalChoice('${o.value}')"`;
+        btnHtml += `<button class="btn btn-sm ${cls}" ${onclick} ${o.disabled ? 'disabled' : ''}>${o.label}</button>`;
       });
       if (G.pendingOptions.some((o) => o.value === 'end'))
         btnHtml += `<button class="btn btn-sm" onclick="handleLocalChoice('end')">结束出牌</button>`;

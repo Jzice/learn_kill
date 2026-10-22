@@ -1,9 +1,9 @@
 {
   "name": "xuetangsha",
   "private": true,
-  "version": "1.9.0",
+  "version": "2.0.0",
   "type": "module",
-  "description": "学堂杀 · 九科争鸣 —— TypeScript 工程化重构，构建产出单 HTML 文件",
+  "description": "学堂杀 · 九科争鸣 —— v2.0 声明式技能引擎重构，构建产出单 HTML 文件",
   "scripts": {
     "dev": "node scripts/dev.mjs cdn",
     "dev:bundled": "node scripts/dev.mjs bundled",
