@@ -497,7 +497,6 @@ function bindKpMap(): void {
 
   svg.addEventListener('pointerdown', (e: PointerEvent) => {
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    svg.setPointerCapture(e.pointerId);
     if (pointers.size === 1) {
       lastX = e.clientX;
       lastY = e.clientY;
@@ -512,6 +511,14 @@ function bindKpMap(): void {
 
   svg.addEventListener('pointermove', (e: PointerEvent) => {
     if (!pointers.has(e.pointerId)) return;
+    // 首次移动时才捕获指针，保证平移可移出画布；纯点击不捕获，节点 onclick 才能触发
+    if (!svg.hasPointerCapture(e.pointerId)) {
+      try {
+        svg.setPointerCapture(e.pointerId);
+      } catch {
+        /* 忽略捕获失败 */
+      }
+    }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1) {
       const dx = e.clientX - lastX;
