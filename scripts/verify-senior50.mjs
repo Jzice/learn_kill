@@ -110,6 +110,10 @@ function extractEffectsArray(text) {
 const allSkillIds = parseSkillIds();
 const allChars = parseChars();
 
+/** 从 src/data/grades.ts 取出年级顺序（与运行期 GRADE_ORDER 同源，避免硬编码漂移） */
+const gradesSrc = read('src/data/grades.ts');
+const GRADE_ORDER = [...gradesSrc.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+
 const SENIOR_GRADES = ['高一上', '高一下', '高二上', '高二下', '高三上', '高三下'];
 const NEW_IDS = [
   'qy_ls', 'qy_jg', 'ss_cb', 'ss_kd', 'cxq_st', 'cxq_qf',
@@ -149,6 +153,35 @@ check('71 个新技能全部登记', newRegistered.length === NEW_IDS.length, `$
 const charIds = allChars.map((c) => c.id);
 const idClash = NEW_IDS.filter((id) => charIds.includes(id));
 check('新技能 id 与角色 id 无冲突', idClash.length === 0, idClash.join(','));
+
+/* ---------- 5. 四个扩展包选项的取池口径 ---------- */
+// 规则：按年级 = 累加；全部 / 初中 / 高中 = 字面全量，不累加。
+const JUNIOR_GRADES = ['初一上', '初一下', '初二上', '初二下', '初三上', '初三下'];
+const isJunior = (g) => JUNIOR_GRADES.includes(g);
+const isSenior = (g) => SENIOR_GRADES.includes(g);
+const cnt = (fn) => allChars.filter((c) => fn(c.grade)).length;
+
+const GRADE_PACK = 'grade';
+const total = allChars.length;
+const juniors = cnt(isJunior);
+const seniors = cnt(isSenior);
+
+// 与运行期口径保持一致：grade 包受年级限制，其余为全量
+const poolSize = (packet, grade) => {
+  if (packet === 'all') return total;
+  if (packet === GRADE_PACK) return cnt((g) => GRADE_ORDER.indexOf(g) <= GRADE_ORDER.indexOf(grade));
+  return packet === 'junior' ? juniors : seniors;
+};
+check('全部包 = 81 名（不按年级累加）', poolSize('all', GRADE_ORDER[0]) === total, `${poolSize('all', GRADE_ORDER[0])}`);
+check('初中包 = 31 名（不按年级累加）', juniors === 31, `${juniors}`);
+check('高中包 = 50 名（不按年级累加）', seniors === 50, `${seniors}`);
+check('合计无遗漏（81 = 初中 31 + 高中 50）', juniors + seniors === total, `${juniors}+${seniors}=${total}`);
+check(
+  '按年级包随年级累加（初一上 < 高三下，且高三下 = 81）',
+  poolSize(GRADE_PACK, GRADE_ORDER[0]) < poolSize(GRADE_PACK, GRADE_ORDER[GRADE_ORDER.length - 1]) &&
+    poolSize(GRADE_PACK, GRADE_ORDER[GRADE_ORDER.length - 1]) === total,
+  `初一上=${poolSize(GRADE_PACK, GRADE_ORDER[0])} / 高三下=${poolSize(GRADE_PACK, GRADE_ORDER[GRADE_ORDER.length - 1])}`,
+);
 
 /* ---------- 5/6. 原语与时机白名单 ---------- */
 // 执行期原语：runEffects 有真实分支

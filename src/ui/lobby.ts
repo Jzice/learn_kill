@@ -4,7 +4,7 @@ import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../data/characters';
-import { PACKETS, charPoolForPacket, packetName, stageOf, withPacketSkills } from '../data/packets';
+import { PACKETS, charPoolForPacket, packetCharCount, packetName, stageOf, withPacketSkills } from '../data/packets';
 import type { PacketId } from '../data/packets';
 import { EXPANSION_CHARS } from '../data/expansion';
 import { gradeSortKey, GRADE_ORDER } from '../data/grades';
@@ -51,8 +51,8 @@ export let SELECTED_COUNT = 5;
 export let SELECTED_CHAR: Character | null = null;
 export let SELECTED_FACTION: FactionId = 'chinese';
 export let SELECTED_MODE: 'single' | 'host' | 'join' = 'single';
-/** 扩展包：决定可选角色的学段（初中/高中/全部），并为角色追加对应学科主题技能 */
-export let SELECTED_PACKET: PacketId = 'all';
+/** 扩展包：决定可选角色的学段（按年级 / 初中 / 高中 / 全部），并为角色追加对应学科主题技能 */
+export let SELECTED_PACKET: PacketId = 'grade';
 export let USER_CHOSEN = false;
 /** 随机模式预览角色：未手动选择时随机派发，一次预览后保持稳定（开局所见即所得） */
 let RANDOM_CHAR: Character | null = null;
@@ -121,21 +121,23 @@ export function updateSetupGradeHint(): void {
   if (el) el.textContent = `📚 当前年级 / 学期：${SELECTED_GRADE}（在首页修改，决定题库与可选角色）`;
 }
 
-/** 扩展包选择器（初中 / 高中 / 全部）：与年级独立，年级管题库、扩展包管角色学段与主题技能 */
+/** 扩展包选择器：按年级（累加，默认）/ 初中 / 高中 / 全部；年级只决定题库范围 */
 export function renderPacketPicker(): void {
   const box = document.getElementById('packetPicker');
   if (!box) return;
   box.innerHTML = PACKETS.map((p) => {
     const n = charPoolForPacket(SELECTED_GRADE, p.id).length;
-    return `<button class="opt-btn ${p.id === SELECTED_PACKET ? 'active' : ''}" data-packet="${p.id}" onclick="setPacket('${p.id}')">${p.icon} ${p.name}<small>${p.desc} · ${n}角色</small></button>`;
+    // 四个选项都不按年级累加，n 恒 > 0，此处仅为兜底文案
+    const tail = n ? `${n}角色` : '暂无角色';
+    return `<button class="opt-btn ${p.id === SELECTED_PACKET ? 'active' : ''}" data-packet="${p.id}" onclick="setPacket('${p.id}')">${p.icon} ${p.name}<small>${p.desc} · ${tail}</small></button>`;
   }).join('');
   const hint = document.getElementById('packetHint');
   if (hint) {
     const n = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).length;
-    // 角色池仍按年级累加（扩展包只筛学段），低年级下高中包可能为 0，需明确引导
-    hint.textContent = n
-      ? `当前：${packetName(SELECTED_PACKET)}（${n} 名角色；只影响可选角色与主题技能，题目范围由年级决定）`
-      : `当前：${packetName(SELECTED_PACKET)} —— 本年级（${SELECTED_GRADE}）下暂无该学段角色，请到首页提高年级`;
+    hint.textContent =
+      SELECTED_PACKET === 'grade'
+        ? `当前：按年级（${SELECTED_GRADE}）—— 角色池随年级累加，共 ${n} 名；不追加学科主题技能`
+        : `当前：${packetName(SELECTED_PACKET)} —— 共 ${n} 名（不按年级累加）；题目范围仍由「年级 / 学期」决定`;
   }
 }
 
@@ -358,10 +360,12 @@ export function mergedCharPool(grade: string, packet: PacketId): Character[] {
   const lim = gradeSortKey(grade);
   // 扩展包角色与基础池一致：按扩展包筛选学段，并追加该学段 / 学科的主题技能
   //（此前扩展角色不过滤学段、也不追加主题技，导致高中扩展包里混入初中角色且拿不到学科主题技）
-  const extra = EXPANSION_CHARS.filter(
-    (c) => isCharUnlocked(c.id) && gradeSortKey(c.grade) <= lim && gradeSortKey(c.grade) > 0,
-  )
-    .filter((c) => packet === 'all' || stageOf(c.grade) === packet)
+  const extra = EXPANSION_CHARS.filter((c) => isCharUnlocked(c.id) && gradeSortKey(c.grade) > 0)
+    .filter((c) => {
+      // 全量包（all / grade）都带扩展包角色；分学段包只带该学段
+      if (packet === 'all' || packet === 'grade') return gradeSortKey(c.grade) <= lim || packet === 'all';
+      return stageOf(c.grade) === packet;
+    })
     .map((c) => withPacketSkills(c, packet));
   const ids = new Set(base.map((c) => c.id));
   return [...base, ...extra.filter((c) => !ids.has(c.id))];
