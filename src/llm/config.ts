@@ -12,7 +12,7 @@ export function defaultLlmConfig(): LlmConfig {
     model: 'deepseek-chat',
     temperature: 0.7,
     maxTokens: 800,
-    timeoutMs: 20000,
+    timeoutMs: 12000,
     takeoverAll: true,
     takeoverSeats: [],
     debug: false,

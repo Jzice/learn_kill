@@ -15,6 +15,7 @@ import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { aiPlayPhase, aiQuiz, aiSpeak } from './ai';
 import { aiQuizRate } from './aibrain';
+import { demoteLlmSeat } from '../llm/agent';
 import { AIPOLICY } from './aipolicy';
 import { pickDiscardCard } from './aieval';
 import { dealDamage, onLoseArmor } from './damage';
@@ -187,8 +188,17 @@ export async function playPhase(idx: number): Promise<void> {
   const PLAN_MAX_REQUESTS = 2;
   const planQueue: (string | number)[] = [];
   let planRequests = 0;
+  // 单回合大模型决策时长硬上限：累计超过即强制降级为启发式并结束本回合，
+  // 杜绝「大模型过慢导致 AI 长时间不出牌」卡住整局（默认 30s，足够多步决策且远小于一局时长）。
+  const turnStart = Date.now();
+  const LLM_TURN_BUDGET_MS = 30000;
   /** 取下一步动作：优先消费规划队列（仍可用才用），否则回退单步决策 */
   const nextPlay = async (opts: ChoiceOption[]): Promise<string | number> => {
+    // 单回合超时保护：大模型决策累计过久直接降级并结束本回合（降级后后续回合走启发式）
+    if (Date.now() - turnStart > LLM_TURN_BUDGET_MS) {
+      demoteLlmSeat(idx);
+      return 'end';
+    }
     while (planQueue.length) {
       const v = planQueue.shift()!;
       if (opts.some((o) => !o.disabled && String(o.value) === String(v))) return v;

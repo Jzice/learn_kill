@@ -2,6 +2,7 @@
  * 本模块把大模型作为「决策提供者」插入现有 AI 决策链：
  *  - 仅在座位 aiMode==='llm' 且配置可用时调用模型；
  *  - 任何异常/超时/非法输出都 try/catch 后回退原启发式，保证零死锁；
+ *  - 模型过慢（响应接近超时）同样计入坏决策，累计达阈值即降级，避免「AI 长时间不出牌」。
  *  - 模型结果经二次校验（选项必须存在）后再交引擎执行。
  * 全部为函数体内调用，无顶层副作用，符合 AGENTS.md 模块循环约束。
  */
@@ -11,7 +12,7 @@ import { addLog } from '../game/log';
 import { render } from '../ui/render';
 import { callLlm, parseJsonSafe } from './client';
 import { buildDecisionMessages, buildPlanMessages, buildQuizMessages } from './prompts';
-import { llmReady, llmDebug } from './config';
+import { llmReady, llmDebug, getLlmConfig } from './config';
 import type { LlmDecisionKind } from './types';
 import { aiQuiz } from '../game/ai';
 import { aiQuizRate, aiShouldCounter, aiShouldSave } from '../game/aibrain';
@@ -24,32 +25,54 @@ function dbg(idx: number, tag: string, info: string): void {
   addLog(`🤖[LLM·座位${idx}] ${tag}: ${info}`, 'sys');
 }
 
-/* ---------------- 连续失败自动降级 ----------------
- * 大模型不可用（超时 / 解析失败 / 非法输出）时每回合都会重试，拖慢整局。
- * 连续失败达到阈值即把该座位本局降回启发式，避免反复无效等待。
+/* ---------------- 连续失败 / 过慢 自动降级 ----------------
+ * 大模型不可用（超时 / 解析失败 / 非法输出）或过慢（响应接近超时）都会拖慢整局、造成「AI 长时间不出牌」。
+ * 用「坏决策」累计权重：失败记 1、过慢记 2；累计达阈值即把该座位本局降回启发式，避免反复无效等待。
  */
-/** 连续失败阈值 */
-const FAIL_LIMIT = 3;
-/** 座位 → 连续失败次数（本局有效，新对局由 resetLlmFailStreak 清空） */
-const failStreak = new Map<number, number>();
+/** 坏决策降级阈值（累计权重） */
+const BAD_LIMIT = 3;
+/** 座位 → 坏决策累计权重（本局有效，新对局由 resetLlmFailStreak 清空） */
+const badStreak = new Map<number, number>();
 
-/** 新对局 / 重新应用大模型配置时清空失败计数 */
+/** 新对局 / 重新应用大模型配置时清空计数 */
 export function resetLlmFailStreak(): void {
-  failStreak.clear();
+  badStreak.clear();
+}
+
+/** 该座位单步决策「过慢」阈值：响应时间接近超时即视为过慢（至少 4s，至多不超过超时本身） */
+function slowMs(): number {
+  const c = getLlmConfig();
+  return Math.max(4000, Math.round(c.timeoutMs * 0.6));
 }
 
 function noteOk(idx: number): void {
-  failStreak.set(idx, 0);
+  badStreak.set(idx, 0);
 }
 
+/** 决策失败（异常 / 超时 / 非法输出）：权重 1 */
 function noteFail(idx: number): void {
-  const n = (failStreak.get(idx) || 0) + 1;
-  failStreak.set(idx, n);
-  if (n < FAIL_LIMIT) return;
+  bump(idx, 1);
+}
+
+/** 决策成功但过慢（响应时间 ≥ 阈值）：权重 2，更快触发降级 */
+function noteSlow(idx: number): void {
+  bump(idx, 2);
+}
+
+function bump(idx: number, w: number): void {
+  const n = (badStreak.get(idx) || 0) + w;
+  badStreak.set(idx, n);
+  if (n < BAD_LIMIT) return;
+  demoteLlmSeat(idx);
+}
+
+/** 把某座位本局降回启发式 AI（连续坏决策达到阈值时调用，杜绝反复空等）。导出供出牌循环在单回合超时时强制降级。 */
+export function demoteLlmSeat(idx: number): void {
   const p = G.players[idx];
   if (!p || p.aiMode !== 'llm') return;
   p.aiMode = 'heuristic';
-  addLog(`🤖[LLM·座位${idx}] 连续 ${n} 次决策失败 → 本局改用启发式 AI`, 'sys');
+  badStreak.set(idx, 0);
+  addLog(`🤖[LLM·座位${idx}] 大模型决策过慢/失败过多 → 本局改用启发式 AI`, 'sys');
   try {
     render();
   } catch {
@@ -77,6 +100,13 @@ async function withThinking<T>(idx: number, fn: () => Promise<T>): Promise<T> {
       }
     }
   }
+}
+
+/** 计时调用模型：返回 [文本, 耗时ms]。失败（异常/超时）交由调用方 catch 处理。 */
+async function callTimed(idx: number, messages: Parameters<typeof callLlm>[0]): Promise<[string, number]> {
+  const t0 = Date.now();
+  const text = await withThinking(idx, () => callLlm(messages));
+  return [text, Date.now() - t0];
 }
 
 function instructionFor(kind: LlmDecisionKind): string {
@@ -116,7 +146,7 @@ export async function llmChooseAction(
   }
   const messages = buildDecisionMessages(idx, kind, opts, instructionFor(kind));
   try {
-    const text = await withThinking(idx, () => callLlm(messages));
+    const [text, ms] = await callTimed(idx, messages);
     const j = parseJsonSafe<{ choice?: string | number }>(text);
     if (!j || j.choice === undefined) {
       dbg(idx, '解析失败', `kind=${kind} 原始输出=${JSON.stringify((text || '').slice(0, 200))}`);
@@ -127,7 +157,8 @@ export async function llmChooseAction(
     const found = valid.find((o) => String(o.value) === String(v) || o.value === v);
     if (found) {
       dbg(idx, '已选择', `kind=${kind} → ${JSON.stringify(found.value)}（${found.label}）`);
-      noteOk(idx);
+      if (ms >= slowMs()) noteSlow(idx);
+      else noteOk(idx);
       return found.value;
     }
     // 允许模型用 "skip" / -1 表达「不行动」，映射到取消项
@@ -138,7 +169,8 @@ export async function llmChooseAction(
         noteFail(idx);
         return null;
       }
-      noteOk(idx);
+      if (ms >= slowMs()) noteSlow(idx);
+      else noteOk(idx);
       return cancel.value;
     }
     dbg(idx, '非法选择', `kind=${kind} 模型返回 ${JSON.stringify(v)} 不在合法选项中`);
@@ -165,7 +197,7 @@ export async function llmPlanActions(
   const valid = opts.filter((o) => !o.disabled);
   if (!valid.length) return null;
   try {
-    const text = await withThinking(idx, () => callLlm(buildPlanMessages(idx, opts, maxSteps)));
+    const [text, ms] = await callTimed(idx, buildPlanMessages(idx, opts, maxSteps));
     const j = parseJsonSafe<{ actions?: (string | number)[] }>(text);
     const raw = j?.actions;
     if (!Array.isArray(raw) || !raw.length) {
@@ -185,7 +217,8 @@ export async function llmPlanActions(
       return null;
     }
     dbg(idx, '回合规划', out.map((v) => JSON.stringify(v)).join(' → '));
-    noteOk(idx);
+    if (ms >= slowMs()) noteSlow(idx);
+    else noteOk(idx);
     return out;
   } catch (e) {
     dbg(idx, '规划异常', `${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`);
@@ -203,13 +236,14 @@ async function llmDecideBool(idx: number, instruction: string): Promise<boolean 
   ];
   const messages = buildDecisionMessages(idx, 'list', opts, instruction);
   try {
-    const text = await withThinking(idx, () => callLlm(messages));
+    const [text, ms] = await callTimed(idx, messages);
     const j = parseJsonSafe<{ choice?: string | number }>(text);
     if (!j) {
       noteFail(idx);
       return null;
     }
-    noteOk(idx);
+    if (ms >= slowMs()) noteSlow(idx);
+    else noteOk(idx);
     return String(j.choice) === 'use';
   } catch {
     noteFail(idx);
@@ -265,7 +299,7 @@ export async function llmQuizDecide(idx: number): Promise<boolean> {
     return aiQuiz(aiQuizRate(p));
   }
   try {
-    const text = await withThinking(idx, () => callLlm(buildQuizMessages(idx)));
+    const [text, ms] = await callTimed(idx, buildQuizMessages(idx));
     const j = parseJsonSafe<{ quiz?: boolean }>(text);
     if (!j || typeof j.quiz !== 'boolean') {
       dbg(idx, '答题解析失败', `原始输出=${JSON.stringify((text || '').slice(0, 200))} → 原启发式`);
@@ -273,7 +307,8 @@ export async function llmQuizDecide(idx: number): Promise<boolean> {
       return aiQuiz(aiQuizRate(p));
     }
     dbg(idx, '答题决策', `→ ${j.quiz ? '参悟' : '不参悟'}`);
-    noteOk(idx);
+    if (ms >= slowMs()) noteSlow(idx);
+    else noteOk(idx);
     return j.quiz;
   } catch (e) {
     dbg(idx, '答题异常', `${(e instanceof Error ? e.message : String(e)).slice(0, 200)} → 原启发式`);
