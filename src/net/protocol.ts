@@ -75,6 +75,8 @@ export type NetMessage =
   | { type: 'ask_quiz_request'; question: Question; isSkill: boolean; quizId: number }
   /** 座位表更新（下标即座位号，null 由 AI 补齐） */
   | { type: 'seat_update'; seats: (SeatSlot | null)[]; targetCount: number }
+  /** 房主拒绝加入：对局进行中且无 AI 席位可接管/顶替（真人已满） */
+  | { type: 'join_rejected'; reason: string }
   /** 房主通知全体：回到房间界面直接重开一局 */
   | { type: 'rematch' }
   | { type: 'host_closed' };

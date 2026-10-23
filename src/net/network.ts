@@ -10,7 +10,8 @@ import { clearPlayZone } from '../ui/playzone';
 import { SELECTED_COUNT, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
 import { backToRoomForRematch, hostHandleRematchRequest } from '../ui/settle';
 import { onAskQuizRequest } from '../game/quiz';
-import { maybeSettle, publicProfile } from '../profile/profile';
+import { applyLlmModes } from '../game/setup';
+import { identityFromProfile, localIdentity, maybeSettle, publicProfile } from '../profile/profile';
 import { FX } from '../core/fx';
 import { ROLES } from '../data/characters';
 
@@ -25,6 +26,9 @@ export interface PendingQuiz {
   /** 20 秒超时定时器（解析时需清除） */
   timer: ReturnType<typeof setTimeout> | null;
 }
+
+/** 已通过 leave_room 主动退出的 peer（关闭连接时不再重复播报“断线”） */
+const leftByButton = new Set<string>();
 
 export const NET = {
   peer: null as PeerJS | null,
@@ -158,17 +162,21 @@ export const NET = {
         conn.on('data', (d) => onPeerData(conn, d as NetMessage));
         conn.on('close', () => {
           this.conns = this.conns.filter((c) => c !== conn);
-          delete this.playerConns[conn.peer];
-          const leavingName = NET_PLAYER_NAMES[conn.peer] || '玩家';
-          this.removeRoomMember(conn.peer);
-          delete NET_PLAYER_NAMES[conn.peer];
-          addChat('系统', `📤 ${leavingName} 断开了连接。`, 'sys');
-          this.broadcast({ type: 'chat', name: '系统', text: `📤 ${leavingName} 断开了连接。` });
+          const peerId = conn.peer;
+          delete this.playerConns[peerId];
+          const leavingName = NET_PLAYER_NAMES[peerId] || '玩家';
+          const byButton = leftByButton.has(peerId);
+          leftByButton.delete(peerId);
+          this.removeRoomMember(peerId);
+          delete NET_PLAYER_NAMES[peerId];
+          const leaveMsg = byButton ? `📤 ${leavingName} 离开了房间。` : `📤 ${leavingName} 断开了连接。`;
+          addChat('系统', leaveMsg, 'sys');
+          this.broadcast({ type: 'chat', name: '系统', text: leaveMsg });
           this.broadcastRoomState();
-          const idx = G.players.findIndex((pl) => pl.peerId === conn.peer);
+          const idx = G.players.findIndex((pl) => pl.peerId === peerId);
           const p = idx >= 0 ? G.players[idx] : null;
           if (p && p.alive) {
-            addLog(`${p.name} 断线，转为AI`);
+            addLog(`${p.name} 离开，由 AI 接管`, 'hl');
             p.isAI = true;
             p.peerId = null;
             // 若房主正在等待该玩家的选择，用默认项（通常是放弃/承受/结束）结算，防止游戏挂起
@@ -187,6 +195,12 @@ export const NET = {
               NET.pendingQuiz = null;
               r(false);
             }
+            // 新晋 AI 座位必须标记决策模式：否则 aiMode 为 undefined，
+            // 出牌/通用决策会误走 waitChoice 向 null 的 peerId 发请求而卡死对局
+            applyLlmModes();
+            // 立即向全体同步“转为 AI”的最新状态，避免客人端延迟看到空座位
+            syncStateToClients();
+            NET.broadcastSeats();
             render();
           }
         });
@@ -257,11 +271,113 @@ export const NET = {
   },
 };
 
+/* ==================== 局中接入：接管 / 顶替 AI 席位 ==================== */
+/** 已入座、等待档案到达后执行接管的成员：peerId → AI 席位下标 */
+const pendingTakeovers = new Map<string, number>();
+
+/** 无席位可加入：通知对方并断开（对局进行中且真人已满） */
+function rejectJoin(conn: PeerJS.DataConnection): void {
+  try {
+    conn.send({ type: 'join_rejected', reason: 'room_full' });
+  } catch (e) {
+    /* ignore */
+  }
+  setTimeout(() => {
+    try {
+      conn.close();
+    } catch (e) {
+      /* ignore */
+    }
+  }, 400);
+}
+
+/**
+ * 局中接入：优先随机接管一个存活 AI 席位；仅剩已阵亡 AI 席位时顶替其作为观察者（下一局可直接参战）；
+ * 完全没有 AI 席位（真人已满）则拒绝加入。
+ * 成员先登记入房并直接落到目标席位（绕过大厅阶段的随机入座），
+ * 待 hello_profile 档案到达后执行接管（1s 兜底，防档案丢失）。
+ */
+function beginTakeover(conn: PeerJS.DataConnection, idx: number, name: string): void {
+  const peerId = conn.peer;
+  NET.roomMembers.push({ peerId, name, isHost: false, profile: null });
+  while (NET.seats.length <= idx) NET.seats.push(null);
+  NET.seats[idx] = { peerId, name };
+  pendingTakeovers.set(peerId, idx);
+  const p = G.players[idx];
+  const how = p.alive ? '接管' : '作为观察者顶替';
+  const tip = `📥 ${name} 加入对局，${how} ${p.name} 的席位`;
+  addChat('系统', `${tip}…`, 'sys');
+  NET.broadcast({ type: 'chat', name: '系统', text: `${tip}…` });
+  NET.broadcastRoomState();
+  NET.broadcastSeats();
+  setTimeout(() => {
+    if (pendingTakeovers.has(peerId)) executeTakeover(peerId);
+  }, 1000);
+}
+
+/**
+ * 执行接管：AI 席位 → 该 peerId 对应的真人。
+ * 保留席位全部进度（角色/身份/手牌/装备/血量/知识分），仅替换控制者与个性化身份；
+ * 顶替已阵亡席位时该成员本局为观察者，rematch 重开时按座位表正常参战。
+ */
+function executeTakeover(peerId: string): void {
+  const idx = pendingTakeovers.get(peerId);
+  pendingTakeovers.delete(peerId);
+  if (idx == null) return;
+  if (!NET.playerConns[peerId]) return; // 接管前已断开
+  const p = G.players[idx];
+  if (!p || !p.isAI || G.gameOver) return;
+  const member = NET.roomMembers.find((m) => m.peerId === peerId);
+  const identity =
+    identityFromProfile(member?.profile ?? null) ?? { ...localIdentity(), name: member?.name || '玩家' };
+  const oldName = p.name;
+  const spectate = !p.alive;
+  p.isAI = false;
+  p.peerId = peerId;
+  p.name = identity.name;
+  p.identity = identity;
+  delete p.aiMode;
+  const text = spectate
+    ? `📥 ${identity.name} 作为观察者顶替了 ${oldName} 的席位，下一局可直接参战`
+    : `📥 ${identity.name} 加入战斗，接管了 ${oldName} 的席位！`;
+  addLog(text, 'hl');
+  addChat('系统', text, 'sys');
+  NET.broadcast({ type: 'chat', name: '系统', text });
+  // 下发 start_game 使其直接进入游戏界面（myPlayerIdx = 接管席位），随后全量同步
+  NET.sendToPlayer(peerId, {
+    type: 'start_game',
+    players: G.players,
+    myPlayerIdx: idx,
+    grade: G.grade,
+    playerCount: G.playerCount,
+    timerOn: G.timerOn,
+    timerSec: G.timerSec,
+  });
+  syncStateToClients();
+  render();
+}
+
 export function onPeerConnected(conn: PeerJS.DataConnection): void {
   const rawName = conn.metadata?.name;
   const name = (typeof rawName === 'string' && rawName) || '玩家';
-  NET.addRoomMember(conn.peer, name, false, null);
   NET_PLAYER_NAMES[conn.peer] = name;
+  // 局中接入：有 AI 席位则接管/顶替继续打；真人已满（无 AI 席位）则拒绝
+  if (NET.isHost && G.started && !G.gameOver) {
+    const aliveAi: number[] = [];
+    const deadAi: number[] = [];
+    G.players.forEach((pl, i) => {
+      if (!pl.isAI) return;
+      (pl.alive ? aliveAi : deadAi).push(i);
+    });
+    const cand = aliveAi.length ? aliveAi : deadAi;
+    if (!cand.length) {
+      rejectJoin(conn);
+      return;
+    }
+    beginTakeover(conn, cand[Math.floor(Math.random() * cand.length)], name);
+    return;
+  }
+  NET.addRoomMember(conn.peer, name, false, null);
   addChat('系统', `📥 ${name} 加入了房间。`, 'sys');
   NET.broadcast({ type: 'chat', name: '系统', text: `📥 ${name} 加入了房间。` });
   NET.broadcastRoomState();
@@ -279,6 +395,8 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
       }
     }
     NET.broadcastRoomState();
+    // 局中接管：档案到达后立即执行（先于 1s 兜底定时器）
+    if (pendingTakeovers.has(conn.peer)) executeTakeover(conn.peer);
   } else if (data.type === 'guest_pref') {
     const m = NET.roomMembers.find((x) => x.peerId === conn.peer);
     if (m) {
@@ -315,6 +433,7 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
     NET.broadcast(data);
   } else if (data.type === 'leave_room') {
     const ln = data.name || NET_PLAYER_NAMES[conn.peer] || '玩家';
+    leftByButton.add(conn.peer); // 标记为主动退出，关闭连接时不再重复播报“断线”
     NET.removeRoomMember(conn.peer);
     delete NET_PLAYER_NAMES[conn.peer];
     addChat('系统', `📤 ${ln} 离开了房间。`, 'sys');
@@ -395,6 +514,17 @@ export function onClientData(data: NetMessage): void {
     updateGuestRoomInfo(data);
   } else if (data.type === 'host_closed') {
     alert('⚠️ 房主已关闭房间，游戏结束');
+    try {
+      if (NET.peer) NET.peer.destroy();
+    } catch (e) {
+      /* ignore */
+    }
+    setTimeout(() => {
+      location.reload();
+    }, 400);
+  } else if (data.type === 'join_rejected') {
+    // 房主拒绝加入：对局进行中且真人席位已满，无 AI 席位可接管/顶替
+    alert('⚠️ 对局已开始，且没有可加入的席位（真人已满）');
     try {
       if (NET.peer) NET.peer.destroy();
     } catch (e) {

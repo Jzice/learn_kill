@@ -516,6 +516,11 @@ async function chooseAmong(idx: number, opts: ChoiceOption[], type: PendingType)
 
 LLM 只在**房主端**运行（房主权威）。调用期间设置 `G.thinkingSeat = idx`，随 `state_sync` 下发，客户端渲染呼吸式「思考中」指示。
 
+> **座位动态易主**：联机中座位可在 AI 与真人之间动态切换，但「决策提供者」的职责边界不变：
+> - 真人接管 AI 席位（局中接入）：`isAI→false`，后续决策走 `waitChoice` 真人链路。
+> - 真人离场转 AI（掉线 / 主动退出）：`isAI→true` 后由 `applyLlmModes()` 依全局 LLM 配置重标 `aiMode`（`heuristic` / `llm`），保证出牌 / 通用决策不会误入 `waitChoice` 卡死。
+> 详见 [游戏机制.md §8](./游戏机制.md)。
+
 ### 3.7 调试
 
 开启 `debug` 后，每次决策向战报打印「原始输出 / 最终选择 / 回退原因」：

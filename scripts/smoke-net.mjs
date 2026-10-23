@@ -194,6 +194,52 @@ check('战报广播同步', hostLog === guestLog && hostLog > 0, `房主${hostLo
 await host.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-net-host.png') });
 await guest.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-net-guest.png') });
 
+// —— 局中接入：第三人加入，接管/顶替 AI 席位（无 AI 席位则正确拒绝）——
+// 4 人局：房主 + 客人 = 2 真人，另有 2 个 AI 席位；对局进行中第三人加入应接管/顶替，
+// 不允许出现旧版「卡在大厅等房主开始」的死局；若 AI 全灭（真人满）应被拒（符合预期）。
+const ctxC = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+const joiner = await ctxC.newPage();
+const errsC = [];
+let joinerRejected = false;
+joiner.on('pageerror', (e) => errsC.push(e.message));
+joiner.on('dialog', (d) => {
+  if (/没有可加入的席位/.test(d.message())) joinerRejected = true;
+  d.accept().catch(() => {});
+});
+await joiner.goto(url, { waitUntil: 'networkidle' });
+await joiner.click('#modePicker .mode-card[data-mode="net"]');
+await joiner.click('#netModePicker .opt-btn[data-net="join"]');
+await joiner.waitForSelector('#joinConfig', { state: 'visible', timeout: 3000 });
+await joiner.fill('#joinCode', roomCode);
+await joiner.click('#joinRoomBtn');
+const joinResult = await joiner
+  .waitForFunction(() => document.getElementById('screenGame')?.classList.contains('active'), {
+    timeout: 12000,
+  })
+  .then(() => 'game')
+  .catch(() => (joinerRejected ? 'rejected' : 'stuck'));
+check(
+  '局中第三人加入（接管/顶替或正确拒绝，不卡死）',
+  joinResult !== 'stuck',
+  joinResult === 'game' ? '接管/顶替成功进入对局' : joinerRejected ? '真人已满被拒（符合预期）' : '卡在大厅',
+);
+check('第三人页面无JS错误', errsC.length === 0, errsC.slice(0, 2).join(' ; '));
+await joiner.screenshot({ path: path.resolve(dirname, '..', 'dist', 'smoke-net-joiner.png') });
+
+// 模拟第三人主动退出联机：调用 leaveRoom → 房主收到 leave_room → 该存活真人座位由 AI 接管。
+// （直接 page.close() 硬关闭时房主侧 PeerJS close 事件不可靠，故走显式 leave_room 路径验证接管）
+await joiner.evaluate(() => window.leaveRoom());
+await host.waitForTimeout(2500);
+const logHtml = await host.locator('#playLogList').innerHTML();
+const takenOver = logHtml.includes('由 AI 接管');
+check(
+  '成员退出后由 AI 接管（离场接管路径执行）',
+  takenOver,
+  takenOver ? '战报出现「由 AI 接管」' : `未出现；日志尾部=${(logHtml || '').slice(-240)}`,
+);
+check('房主页面无JS错误（退出后）', errsA.length === 0, errsA.slice(0, 2).join(' ; '));
+await ctxC.close();
+
 check('房主页面无JS错误', errsA.length === 0, errsA.slice(0, 2).join(' ; '));
 check('客人页面无JS错误', errsB.length === 0, errsB.slice(0, 2).join(' ; '));
 
