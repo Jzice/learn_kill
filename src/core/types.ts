@@ -619,6 +619,10 @@ export interface GameState {
   timerEnd?: number | null;
   /** 正在「思考中」的大模型座位号（仅 aiMode==='llm' 的座位）；随 state_sync 下发，客人端显示思考指示 */
   thinkingSeat?: number | null;
+  /** 房主的大模型接管开关状态（联机由房主下发，客人端只读展示，不用于控制） */
+  llmEnabled?: boolean;
+  /** 房主的大模型接管范围：是否接管全部 AI 座位（客人端只读展示） */
+  llmTakeoverAll?: boolean;
 }
 
 export interface LogEntry {

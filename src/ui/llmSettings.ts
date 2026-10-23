@@ -9,6 +9,10 @@ import {
 import { testLlmConnection } from '../llm/client';
 import { applyLlmModes } from '../game/setup';
 import { SELECTED_COUNT } from './lobby';
+import { G } from '../game/state';
+import { NET, syncStateToClients } from '../net/network';
+import { pushNotify } from './notify';
+import { render } from './render';
 
 const PROVIDERS: LlmProvider[] = ['openai', 'deepseek', 'qwen', 'zhipu', 'ollama', 'custom'];
 
@@ -24,6 +28,26 @@ export function openLlmSettings(): void {
 
 export function closeLlmSettings(): void {
   document.getElementById('llmSettingsModal')?.classList.remove('show');
+}
+
+/**
+ * 顶栏一键开关：翻转大模型接管开关并立即生效。
+ * 单机 / 房主可编辑；联机客人点击仅提示「仅房主可设置」，不修改本地配置。
+ * 房主切换后立即 syncStateToClients，把新状态同步给客人端。
+ */
+export function llmQuickToggle(): void {
+  if (NET.mode === 'host' && !NET.isHost) {
+    pushNotify('sys', '仅房主可设置大模型接管');
+    return;
+  }
+  const c = cfg();
+  c.enabled = !c.enabled;
+  setLlmConfig(c);
+  applyLlmModes(); // 对局进行中实时生效：开→接管座位转 llm，关→回退启发式
+  if (NET.isHost) syncStateToClients(); // 立即把开关状态同步给客人端
+  renderLlmSetupPanel();
+  renderLlmSettings(); // 若设置弹窗已打开则同步勾选框
+  render(); // 刷新顶栏一键开关按钮状态
 }
 
 /** 设置弹窗内容渲染 */
@@ -45,6 +69,18 @@ export function renderLlmSettings(): void {
 
   const box = document.getElementById('llmSettingsBody');
   if (!box) return;
+  // 联机客人：只读展示房主设置，禁止修改
+  if (NET.mode === 'host' && !NET.isHost) {
+    const on = !!G.llmEnabled;
+    box.innerHTML = `
+      <div class="llm-sec">
+        <div class="llm-sec-title">大模型接管 AI（只读）</div>
+        <div class="llm-tip">该设置由房主控制，你无需操作；房主开关即时对所有玩家生效。</div>
+        <div class="llm-status ${on ? 'on' : ''}" style="margin:8px 0 12px">🤖 ${on ? `已开启（${G.llmTakeoverAll ? '接管全部 AI' : '指定座位'}）` : '未开启'}</div>
+        <button class="btn btn-sm" onclick="closeLlmSettings()">关闭</button>
+      </div>`;
+    return;
+  }
   box.innerHTML = `
     <div class="llm-sec">
       <div class="llm-sec-title">① 接入配置</div>
@@ -73,6 +109,15 @@ export function renderLlmSettings(): void {
 export function renderLlmSetupPanel(): void {
   const el = document.getElementById('llmSetupPanel');
   if (!el) return;
+  // 联机客人：只读展示「由房主控制」
+  if (NET.mode === 'host' && !NET.isHost) {
+    el.innerHTML = `
+      <h3>◈ 大模型接管 AI ◈</h3>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="llm-status">🤖 由房主控制（只读）</span>
+      </div>`;
+    return;
+  }
   const c = cfg();
   const status = c.enabled ? `已开启（${c.takeoverAll ? '接管全部 AI' : '指定座位'}）` : '未开启';
   el.innerHTML = `
@@ -102,19 +147,25 @@ export function llmSetProvider(p: LlmProvider): void {
 }
 
 export function llmSetEnabled(on: boolean): void {
+  if (NET.mode === 'host' && !NET.isHost) return;
   const c = cfg();
   c.enabled = on;
   setLlmConfig(c);
   applyLlmModes(); // 对局进行中实时生效：开→指定座位转 llm，关→全部回退启发式
+  if (NET.isHost) syncStateToClients(); // 立即同步给客人端
   renderLlmSetupPanel();
+  render(); // 刷新顶栏一键开关按钮状态
 }
 
 export function llmSetTakeoverAll(on: boolean): void {
+  if (NET.mode === 'host' && !NET.isHost) return;
   const c = cfg();
   c.takeoverAll = on;
   setLlmConfig(c);
   applyLlmModes();
+  if (NET.isHost) syncStateToClients();
   renderLlmSettings();
+  render(); // 刷新顶栏一键开关按钮状态
 }
 
 export function llmSetDebug(on: boolean): void {
@@ -125,13 +176,16 @@ export function llmSetDebug(on: boolean): void {
 }
 
 export function llmToggleSeat(i: number): void {
+  if (NET.mode === 'host' && !NET.isHost) return;
   const c = cfg();
   const has = c.takeoverSeats.includes(i);
   if (has) c.takeoverSeats = c.takeoverSeats.filter((x) => x !== i);
   else c.takeoverSeats.push(i);
   setLlmConfig(c);
   applyLlmModes();
+  if (NET.isHost) syncStateToClients();
   renderLlmSettings();
+  render(); // 刷新顶栏一键开关按钮状态
 }
 
 export function llmSetField(field: 'baseURL' | 'apiKey' | 'model' | 'temperature' | 'timeoutMs', value: string): void {

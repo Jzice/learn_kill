@@ -12,6 +12,7 @@ import { updateNetChatVisible } from './netchat';
 import { useItem } from '../game/actions';
 import { expansionItemById } from '../data/expansion';
 import { NET, scheduleSync } from '../net/network';
+import { getLlmConfig } from '../llm/config';
 
 const EQUIP_ICON: Record<string, string> = {
   weapon: '⚔️',
@@ -174,6 +175,23 @@ function handSuitVal(suit: string): number {
   return HAND_SUIT_ORDER[suit] ?? 9;
 }
 
+/** 顶栏大模型接管一键开关：按权限与当前生效状态刷新按钮外观（房主/单机可编辑，联机客人只读） */
+function syncLlmToggleButton(): void {
+  const btn = document.getElementById('llmQuickToggle');
+  if (!btn) return;
+  const editable = NET.mode !== 'host' || NET.isHost; // 单机/房主可编辑；联机客人只读
+  const enabled = NET.isHost ? getLlmConfig().enabled : !!G.llmEnabled;
+  const txt = enabled ? '🤖 开' : '🤖 关';
+  if (btn.textContent !== txt) btn.textContent = txt;
+  btn.classList.toggle('on', enabled);
+  btn.classList.toggle('disabled', !editable);
+  btn.title = editable
+    ? enabled
+      ? '大模型接管：已开启（点击关闭）'
+      : '大模型接管：已关闭（点击开启）'
+    : '大模型接管：由房主控制（只读）';
+}
+
 export function render(): void {
   // 无头模拟模式：跳过整屏重绘（scripts/balance.mjs 批量跑局用）
   if (isSim()) return;
@@ -312,6 +330,8 @@ export function render(): void {
   if (chatPanel) chatPanel.style.display = NET.mode === 'single' ? 'none' : 'flex';
   // 小屏联机聊天面板：仅联机对局 + 窄屏显示（内部自行判定并驱动 --chat-h 让位）
   updateNetChatVisible();
+
+  syncLlmToggleButton();
 
   if (NET.isHost && NET.mode === 'host' && G.started) scheduleSync();
 }

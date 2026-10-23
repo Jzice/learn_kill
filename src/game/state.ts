@@ -25,6 +25,9 @@ export const G: GameState = {
   timerEnd: null,
   // 大模型「思考中」座位（默认无）
   thinkingSeat: null,
+  // 房主大模型接管开关状态（联机由房主下发给客人端只读展示）
+  llmEnabled: false,
+  llmTakeoverAll: false,
 };
 
 /** 答题统计（const 对象，字段 mutate；setup 重置时逐字段清零） */

@@ -11,9 +11,10 @@
  * 信息不对称是硬约束：② 中绝不泄露他人手牌内容与未揭示身份。
  * 上下文为「无状态全量重述」——不保留多轮对话，跨回合记忆由 ③④⑤ 显式注入。
  */
-import type { ChoiceOption, LogEntry, Player } from '../core/types';
+import type { Card, ChoiceOption, LogEntry, Player } from '../core/types';
 import { G } from '../game/state';
 import { ROLES } from '../data/characters';
+import { defOf } from '../data/skilldefs';
 import { FACTIONS } from '../data/factions';
 import { attackRange, distBetween, inRange } from '../game/rules';
 import { beliefProbs, favorOf, grudgeOf } from '../game/aibrain';
@@ -194,6 +195,100 @@ function situationView(idx: number): string {
   return segs.join('\n\n');
 }
 
+/* ------------------------------------------------------------------ */
+/* 提示词增强层（详见 docs/AI机制.md §3.3 补充）：                       */
+/*   RULE_REF        精简规则速查（帮助模型「评估」选项，不取代引擎合法性）*/
+/*   EVAL_PRINCIPLES 稳定的决策评估准则（约束权衡偏好）                  */
+/*   deriveHint      按 value 前缀/查 skilldefs 给枚举选项生成一行语义   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 精简规则速查（注入 system，约 250 token）。
+ * 刻意不注入完整《游戏机制.md》——引擎已保证合法性，这里只为帮助模型理解卡牌/技能意图。
+ */
+const RULE_REF =
+  '【基本牌】杀:对攻击范围内目标造成1点伤害,每回合限1张(连弩除外);' +
+  '闪:抵消一次【杀】(也可用学识/护盾/答题代替);桃:回复1点体力(濒死可自救);' +
+  '酒:本回合下一张【杀】伤害+1(每回合限一次)。\n' +
+  '【锦囊】决斗:与一名角色轮流出【杀】,无杀者受1伤;南蛮/万箭:全场需出杀/闪否则受伤;' +
+  '乐不思蜀:跳过其出牌阶段;闪电:黑桃2-9受3雷伤;火攻:弃同花色手牌造成1火伤;' +
+  '铁索连环:横置,受属性伤害时传导给所有横置者;借刀杀人:令持武者攻击指定角色。\n' +
+  '【装备】武器决定攻击范围与特效;+1马增加别人到你的距离,-1马缩短你到别人的距离;防具可减伤/免疫。\n' +
+  '【答题门槛】标注(需答题)的主动技须先答对一道题才能发动,答错浪费本回合技能次数。';
+
+/** 稳定的决策评估准则（注入 system，约束模型的权衡偏好） */
+const EVAL_PRINCIPLES =
+  '【决策准则】1)优先推进身份目标:打击敌对阵营、保护己方;' +
+  '2)出牌先攻击/控场,后防御/补牌;3)保留防御牌(闪/桃),非必要不弃;' +
+  '4)残血敌方优先击杀;5)误伤友方代价高,出AOE/决斗前先确认目标阵营关系。';
+
+/** 常见锦囊的一行语义（sub → 中文效果） */
+const CARD_HINT: Record<string, string> = {
+  tao: '回复1点体力;濒死时可自救',
+  jiu: '本回合下一张【杀】伤害+1(每回合限一次)',
+  guohe: '弃置一名其他角色的一张牌',
+  shunshou: '获得一名距离1内角色的一张牌',
+  juedou: '与一名角色轮流出【杀】,无杀者受1点伤害',
+  nanman: '全场其他角色需出【杀】,否则受1点伤害',
+  wanjian: '全场其他角色需出【闪】,否则受1点伤害',
+  taoyuan: '所有角色回复1点体力',
+  wuzhong: '摸两张牌',
+  wugu: '所有角色依次从亮出的牌中各取一张',
+  lebu: '判定:非红桃则跳过其出牌阶段',
+  shandian: '判定:黑桃2-9受3雷伤,否则传给下家',
+  tiesuo: '横置/重置一名角色;重铸则弃此牌摸一张',
+  huogong: '弃一张与展示牌同花色的手牌,造成1点火属性伤害',
+  jiedao: '令一名持武器角色攻击你指定角色,否则交出武器',
+};
+
+/** 在全局牌集合中按 id 查找卡牌（用于给枚举选项生成精确语义） */
+function cardById(id: number): Card | undefined {
+  for (const p of G.players) {
+    const inHand = p.hand.find((c) => c.id === id);
+    if (inHand) return inHand;
+    for (const eq of [p.equip.weapon, p.equip.armor, p.equip.horsePlus, p.equip.horseMinus]) {
+      if (eq && eq.id === id) return eq;
+    }
+  }
+  const inPile = [...G.discard, ...G.deck].find((c) => c.id === id);
+  return inPile;
+}
+
+/**
+ * 根据选项的 value 推导一句话语义注解（无需调用点显式填充）。
+ * - 技能:直接复用 skilldefs 的 desc（现成中文描述,含「需答题」等提示）
+ * - 卡牌:按 sub / 属性生成精简效果
+ */
+function deriveHint(value: string | number, _label: string): string {
+  const s = String(value);
+  if (s.startsWith('skill_')) {
+    const id = s.slice('skill_'.length).split('_')[0];
+    const d = defOf(id);
+    return d?.desc ? `技能:${d.desc}` : '发动主动技能(通常需先答题)';
+  }
+  if (s.startsWith('trick_')) {
+    const c = cardById(Number(s.slice('trick_'.length)));
+    const sub = c?.sub || '';
+    return sub && CARD_HINT[sub] ? `锦囊:${CARD_HINT[sub]}` : '使用一张锦囊牌';
+  }
+  if (s.startsWith('sha_')) {
+    const c = cardById(Number(s.slice('sha_'.length)));
+    if (c?.damageType === 'fire') return '火属性【杀】:造成1点火属性伤害(可触发连环传导)';
+    if (c?.damageType === 'thunder') return '雷属性【杀】:造成1点雷属性伤害(可触发连环传导)';
+    return '【杀】:对攻击范围内一名目标造成1点伤害(每回合限1张)';
+  }
+  if (s.startsWith('tao_')) return `【桃】:${CARD_HINT.tao}`;
+  if (s.startsWith('jiu_')) return `【酒】:${CARD_HINT.jiu}`;
+  if (s.startsWith('conv_') || s.startsWith('convert')) return '转化技:把一张手牌当其他牌使用';
+  if (s === 'end') return '结束出牌阶段(停止行动)';
+  if (s === 'skip') return '不采取行动';
+  if (/^\d+$/.test(s)) {
+    const c = cardById(Number(s));
+    if (c) return `手牌:${c.name}`;
+  }
+  return '';
+}
+
 const SYSTEM_BASE =
   '你是桌游《学堂杀》（三国杀-like 学科阵营身份局）中一名由大模型驱动的 AI 玩家。' +
   '请基于当前局面与你的身份目标，做出最合理的决策。' +
@@ -209,7 +304,9 @@ const FORMAT_EXAMPLES =
   '· 要结束出牌（选项 value 为 "end"）→ {"choice":"end"}\n' +
   '· 要选择座位 2 为目标 → {"choice":2}\n' +
   '· 不打算行动（选项 value 为 "skip"）→ {"choice":"skip"}\n' +
-  'value 必须与「可选动作」列表中的某一项完全一致（数字不要加引号，字符串必须加引号）。';
+  'value 必须与「可选动作」列表中的某一项完全一致（数字不要加引号，字符串必须加引号）。\n' +
+  '【情境示例】若你手牌有【杀】,且座位2是敌对反贼并标注「✅在你攻击范围内」,应优先选择对应 sha_* 而非结束出牌;' +
+  '若可选目标只能是友方则勿误伤,改选其他动作或结束出牌。';
 
 /**
  * 构造一次决策的 messages。
@@ -227,19 +324,25 @@ export function buildDecisionMessages(
   const p = G.players[idx];
   const roleHint = `你的身份目标：${ROLE_OBJ[p.role] ?? '隐藏'}。优先保护自己阵营、打击敌对阵营。`;
   const enumOpts = opts
-    .map((o, i) => `${i + 1}. [value=${JSON.stringify(o.value)}] ${o.label}${o.disabled ? '（当前不可用）' : ''}`)
+    .map((o, i) => {
+      const h = deriveHint(o.value, o.label);
+      return `${i + 1}. [value=${JSON.stringify(o.value)}] ${o.label}${h ? ` — ${h}` : ''}${o.disabled ? '（当前不可用）' : ''}`;
+    })
     .join('\n');
   const user =
     `${situationView(idx)}\n\n` +
     `【决策】${instruction}\n` +
-    `可选动作（只能选其一，value 为内部标识）：\n${enumOpts}\n\n` +
+    `可选动作（只能选其一，value 为内部标识，每行「—」后为该动作的效果说明）：\n${enumOpts}\n\n` +
     `请只输出 JSON：{"choice": <某一个 value>}` +
     (kind === 'counter' || kind === 'save'
       ? '（若认为不应行动，选择 value 为 "skip" 或 -1 的项；若无此类项则选表示不行动的选项）'
       : '') +
     '。不要解释。';
   return [
-    { role: 'system', content: SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + roleHint },
+    {
+      role: 'system',
+      content: SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + EVAL_PRINCIPLES + '\n' + roleHint + '\n' + RULE_REF,
+    },
     { role: 'user', content: user },
   ];
 }
@@ -252,7 +355,10 @@ export function buildPlanMessages(idx: number, opts: ChoiceOption[], maxSteps: n
   const p = G.players[idx];
   const roleHint = `你的身份目标：${ROLE_OBJ[p.role] ?? '隐藏'}。优先保护自己阵营、打击敌对阵营。`;
   const enumOpts = opts
-    .map((o, i) => `${i + 1}. [value=${JSON.stringify(o.value)}] ${o.label}${o.disabled ? '（当前不可用）' : ''}`)
+    .map((o, i) => {
+      const h = deriveHint(o.value, o.label);
+      return `${i + 1}. [value=${JSON.stringify(o.value)}] ${o.label}${h ? ` — ${h}` : ''}${o.disabled ? '（当前不可用）' : ''}`;
+    })
     .join('\n');
   const user =
     `${situationView(idx)}\n\n` +
@@ -262,7 +368,10 @@ export function buildPlanMessages(idx: number, opts: ChoiceOption[], maxSteps: n
     `请只输出 JSON：{"actions": [<value1>, <value2>, ...]}（最多 ${maxSteps} 项）；` +
     `若打算直接结束出牌，输出 {"actions":["end"]}。不要解释。`;
   return [
-    { role: 'system', content: SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + roleHint },
+    {
+      role: 'system',
+      content: SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + EVAL_PRINCIPLES + '\n' + roleHint + '\n' + RULE_REF,
+    },
     { role: 'user', content: user },
   ];
 }

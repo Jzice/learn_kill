@@ -14,6 +14,7 @@ import { applyLlmModes } from '../game/setup';
 import { resolveChoice } from '../game/choice';
 import { identityFromProfile, localIdentity, maybeSettle, publicProfile } from '../profile/profile';
 import { FX } from '../core/fx';
+import { getLlmConfig } from '../llm/config';
 import { ROLES } from '../data/characters';
 
 export const NET_PLAYER_NAMES: Record<string, string> = {};
@@ -462,6 +463,9 @@ export function onClientData(data: NetMessage): void {
     G.timerOn = data.timerOn ?? false;
     G.timerSec = data.timerSec ?? 20;
     G.timerEnd = null;
+    G.llmEnabled = false;
+    G.llmTakeoverAll = false;
+    G.thinkingSeat = null;
     G.started = true;
     G.deck = [];
     G.discard = [];
@@ -487,6 +491,9 @@ export function onClientData(data: NetMessage): void {
     G.timerOn = data.timerOn ?? G.timerOn;
     G.timerSec = data.timerSec ?? G.timerSec;
     G.timerEnd = data.timerEnd ?? null;
+    G.llmEnabled = data.llmEnabled ?? G.llmEnabled;
+    G.llmTakeoverAll = data.llmTakeoverAll ?? G.llmTakeoverAll;
+    G.thinkingSeat = data.thinkingSeat ?? null;
     if (data.playLog) {
       setPlayLog(data.playLog);
     }
@@ -560,6 +567,9 @@ export function syncStateToClients(): void {
     timerOn: G.timerOn,
     timerSec: G.timerSec,
     timerEnd: G.timerEnd ?? null,
+    llmEnabled: getLlmConfig().enabled,
+    llmTakeoverAll: getLlmConfig().takeoverAll,
+    thinkingSeat: G.thinkingSeat ?? null,
   });
 }
 

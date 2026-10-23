@@ -65,6 +65,11 @@ export type NetMessage =
       timerOn?: boolean;
       timerSec?: number;
       timerEnd?: number | null;
+      /** 大模型接管：房主开关状态与接管范围（客人端只读展示） */
+      llmEnabled?: boolean;
+      llmTakeoverAll?: boolean;
+      /** 大模型「思考中」座位（客人端据此显示呼吸式思考指示） */
+      thinkingSeat?: number | null;
     }
   | {
       /** 仅同步回合限时字段：房主自己出牌（pendingOptions 属房主，不得下发）时广播倒计时用 */

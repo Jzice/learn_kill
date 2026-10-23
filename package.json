@@ -1,7 +1,7 @@
 {
   "name": "xuetangsha",
   "private": true,
-  "version": "2.6.4",
+  "version": "2.6.5",
   "type": "module",
   "description": "学堂杀 · 九科争鸣 —— v2.5 启发式 AI 博弈论增强层（不完全信息信念·期望效用 EV·机会节点展开·威胁度集火·softmax 混合策略·内奸均衡目标），含可校准权重表与 A/B / CEM 校准脚本（AIPOLICY.useEv 一键开关，默认关闭零回归）；v2.4 大模型接管深化；v2.3 上下文增强；v2.2 接入大模型接管 AI（OpenAI 兼容 + ProviderAdapter 可扩展，失败回退启发式），构建产出单 HTML 文件",
   "scripts": {

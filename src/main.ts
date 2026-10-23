@@ -135,6 +135,7 @@ import {
   llmTestConn,
   llmToggleSeat,
   openLlmSettings,
+  llmQuickToggle,
   renderLlmSetupPanel,
 } from './ui/llmSettings';
 import { revealCancel, revealConfirm, revealReroll } from './ui/reveal';
@@ -249,6 +250,7 @@ window.renderLoadoutBar = renderLoadoutBar;
 window.useItem = useItem;
 // 大模型接管设置
 window.openLlmSettings = openLlmSettings;
+window.llmQuickToggle = llmQuickToggle;
 window.closeLlmSettings = closeLlmSettings;
 window.llmSetProvider = llmSetProvider;
 window.llmSetEnabled = llmSetEnabled;

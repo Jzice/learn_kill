@@ -123,6 +123,7 @@ declare global {
     useItem: (idx: number, itemId: string) => void;
     // 大模型接管 AI 设置
     openLlmSettings: () => void;
+    llmQuickToggle: () => void;
     closeLlmSettings: () => void;
     llmSetProvider: (p: 'openai' | 'deepseek' | 'qwen' | 'zhipu' | 'ollama' | 'custom') => void;
     llmSetEnabled: (on: boolean) => void;

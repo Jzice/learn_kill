@@ -13,7 +13,7 @@ import { render } from '../ui/render';
 import { callLlm, parseJsonSafe } from './client';
 import { buildDecisionMessages, buildPlanMessages, buildQuizMessages } from './prompts';
 import { llmReady, llmDebug, getLlmConfig } from './config';
-import type { LlmDecisionKind } from './types';
+import type { LlmConfig, LlmDecisionKind } from './types';
 import { aiQuiz } from '../game/ai';
 import { aiQuizRate, aiShouldCounter, aiShouldSave } from '../game/aibrain';
 
@@ -103,24 +103,49 @@ async function withThinking<T>(idx: number, fn: () => Promise<T>): Promise<T> {
 }
 
 /** 计时调用模型：返回 [文本, 耗时ms]。失败（异常/超时）交由调用方 catch 处理。 */
-async function callTimed(idx: number, messages: Parameters<typeof callLlm>[0]): Promise<[string, number]> {
+async function callTimed(
+  idx: number,
+  messages: Parameters<typeof callLlm>[0],
+  cfg?: LlmConfig,
+): Promise<[string, number]> {
   const t0 = Date.now();
-  const text = await withThinking(idx, () => callLlm(messages));
+  const text = await withThinking(idx, () => callLlm(messages, cfg));
   return [text, Date.now() - t0];
+}
+
+/** 按决策种类调整采样温度：防御/救援类更确定，攻击/规划类保留探索性 */
+function tempForKind(kind: LlmDecisionKind): number {
+  switch (kind) {
+    case 'discard':
+    case 'shan':
+    case 'rescue':
+    case 'save':
+    case 'counter':
+      return 0.3;
+    case 'play':
+    case 'target':
+      return 0.8;
+    default:
+      return 0.5;
+  }
 }
 
 function instructionFor(kind: LlmDecisionKind): string {
   switch (kind) {
     case 'play':
-      return '出牌阶段：选择你要执行的动作（或结束出牌）。只要手中有【杀】且存在标注「✅在你攻击范围内」的敌对角色，应优先出【杀】打击；技能通常需要答题才能发动。';
+      return '出牌阶段：选择你要执行的动作（或结束出牌）。只要手中有【杀】且存在标注「✅在你攻击范围内」的敌对角色，应优先出【杀】打击；技能通常需要答题才能发动，转化技可把一张牌当其他牌使用。优先顺序建议：发动关键技能 → 装备 → 补牌/控场 → 攻击敌方。';
     case 'target':
-      return '选择一个目标座位（value 为座位号，-1 表示取消/不选择）。出【杀】或锦囊时务必选定一名敌对角色，不要选 -1 取消。';
+      return '选择一个目标座位（value 为座位号，-1 表示取消/不选择）。出【杀】或锦囊时务必选定一名敌对角色，不要选 -1 取消；若只能选到友方(绿方)请改选其他动作或直接结束。';
     case 'discard':
-      return '选择要弃置的牌。';
+      return '弃牌阶段：手牌超出体力上限须弃置。优先弃掉锦囊与装备，保留【闪】【杀】【桃】等防御/进攻牌；若某牌可作转化技素材也优先保留。';
     case 'rescue':
-      return '濒死：选择自救方式（无【桃】则放弃）。';
+      return '濒死：若手中有【桃】应自救回复 1 点体力；若无【桃】则只能放弃（选表示放弃的取消项）。';
     case 'shan':
-      return '需要出【闪】：选择手牌中的【闪】。';
+      return '被【杀】攻击：若你确为攻击目标且非必死，应打出【闪】抵消；若代价过高或会误伤友方，可不闪（选取消项）。';
+    case 'save':
+      return '他人濒死：考虑你的身份目标与阵营关系，若值得救援则使用【桃】救之，否则不救（选 skip）。';
+    case 'counter':
+      return '是否打出【无懈可击】抵消该锦囊：若锦囊对你/盟友有害应打出；若已被无懈过一次且其对我方有利可再无懈恢复。';
     default:
       return '请选择一项。';
   }
@@ -145,8 +170,9 @@ export async function llmChooseAction(
     return null;
   }
   const messages = buildDecisionMessages(idx, kind, opts, instructionFor(kind));
+  const cfg = { ...getLlmConfig(), temperature: tempForKind(kind) };
   try {
-    const [text, ms] = await callTimed(idx, messages);
+    const [text, ms] = await callTimed(idx, messages, cfg);
     const j = parseJsonSafe<{ choice?: string | number }>(text);
     if (!j || j.choice === undefined) {
       dbg(idx, '解析失败', `kind=${kind} 原始输出=${JSON.stringify((text || '').slice(0, 200))}`);
@@ -197,7 +223,8 @@ export async function llmPlanActions(
   const valid = opts.filter((o) => !o.disabled);
   if (!valid.length) return null;
   try {
-    const [text, ms] = await callTimed(idx, buildPlanMessages(idx, opts, maxSteps));
+    const cfg = { ...getLlmConfig(), temperature: 0.7 };
+    const [text, ms] = await callTimed(idx, buildPlanMessages(idx, opts, maxSteps), cfg);
     const j = parseJsonSafe<{ actions?: (string | number)[] }>(text);
     const raw = j?.actions;
     if (!Array.isArray(raw) || !raw.length) {
@@ -235,8 +262,9 @@ async function llmDecideBool(idx: number, instruction: string): Promise<boolean 
     { label: '不行动', value: 'skip' },
   ];
   const messages = buildDecisionMessages(idx, 'list', opts, instruction);
+  const cfg = { ...getLlmConfig(), temperature: 0.4 };
   try {
-    const [text, ms] = await callTimed(idx, messages);
+    const [text, ms] = await callTimed(idx, messages, cfg);
     const j = parseJsonSafe<{ choice?: string | number }>(text);
     if (!j) {
       noteFail(idx);
@@ -299,7 +327,8 @@ export async function llmQuizDecide(idx: number): Promise<boolean> {
     return aiQuiz(aiQuizRate(p));
   }
   try {
-    const [text, ms] = await callTimed(idx, buildQuizMessages(idx));
+    const cfg = { ...getLlmConfig(), temperature: 0.4 };
+    const [text, ms] = await callTimed(idx, buildQuizMessages(idx), cfg);
     const j = parseJsonSafe<{ quiz?: boolean }>(text);
     if (!j || typeof j.quiz !== 'boolean') {
       dbg(idx, '答题解析失败', `原始输出=${JSON.stringify((text || '').slice(0, 200))} → 原启发式`);
