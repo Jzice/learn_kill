@@ -76,10 +76,10 @@ page.on('dialog', (d) => d.accept().catch(() => {}));
 
 await page.goto(url, { waitUntil: 'networkidle' });
 
-// 1. 登记表自检：46 角色、技能 id 唯一、无缺失定义、诸葛亮三技能
+// 1. 登记表自检：81 角色、技能 id 唯一、无缺失定义、诸葛亮三技能
 const audit = await page.evaluate(() => window.xtsSkillAudit());
-check('46 名角色全部加载', audit.chars === 46, `${audit.chars}`);
-check('技能定义数量充足（≥93）', audit.total >= 93, `${audit.total} 个`);
+check('81 名角色全部加载', audit.chars === 81, `${audit.chars}`);
+check('技能定义数量充足（≥191）', audit.total >= 191, `${audit.total} 个`);
 check('所有角色 / 主公技均有定义', audit.missing.length === 0, audit.missing.join(','));
 check('技能 id 唯一', audit.duplicates.length === 0, audit.duplicates.join(','));
 
@@ -88,6 +88,19 @@ check('诸葛亮为三技能角色（观星 / 空城 / 出师表）',
   audit.zhuge.length === 3 && audit.zhuge.includes('zgl_gx') && audit.zhuge.includes('zgl_kc') && audit.zhuge.includes('zgl_csb'),
   audit.zhuge.join(','));
 check('诸葛亮是全表唯一三技能角色', audit.multi.length === 1 && audit.multi[0] === 'zhugeliang', audit.multi.join(','));
+
+// 2.1 高中扩展包 50 将（v2.7.0）
+const pool = await page.evaluate(() => window.xtsSeniorPool());
+check('高中扩展包角色数为 50', pool.count === 50, `${pool.count} 名`);
+const SUBJECTS9 = ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治'];
+check('九科均有 4~6 名高中角色',
+  SUBJECTS9.every((s) => (pool.bySubject[s] || 0) >= 4 && (pool.bySubject[s] || 0) <= 6),
+  SUBJECTS9.map((s) => `${s}${pool.bySubject[s] || 0}`).join(' '));
+check('高中角色均为 2 技能', pool.chars.every((c) => c.skills.length === 2), '');
+const seniorSkills = pool.chars.flatMap((c) => c.skills.map((s) => s.id));
+check('高中技能无重复且全部有定义',
+  new Set(seniorSkills).size === seniorSkills.length && pool.chars.every((c) => c.skills.every((s) => s.kind !== '')),
+  `${seniorSkills.length} 个`);
 
 // 3. 单局无头 AI 对战：从开局跑到 gameOver，无卡死、无 console error
 const one = await page.evaluate((seats) => window.xtsAutoRun(1, seats), 5);

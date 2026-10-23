@@ -13,6 +13,7 @@ import { setSim, sleep, togglePanel } from './core/dom';
 import { CHARACTERS } from './data/characters';
 import { FACTIONS } from './data/factions';
 import { defOf, SKILL_DEFS } from './data/skilldefs';
+import { stageOf } from './data/packets';
 import {
   canBeTarget,
   cardImmuneTo,
@@ -338,6 +339,37 @@ window.xtsSkillAudit = () => {
   const zhuge = CHARACTERS.find((c) => c.id === 'zhugeliang')?.skills.map((s) => s.id) || [];
   const multi = CHARACTERS.filter((c) => c.skills.length >= 3).map((c) => c.id);
   return { total: ids.length, chars: CHARACTERS.length, missing, duplicates: dup, zhuge, multi };
+};
+
+/**
+ * 高中扩展包 50 将专项指针（scripts/verify-senior50.mjs / smoke-skills.mjs 用）。
+ * 返回高中段（高一上~高三下）角色清单，含学科分布与每名角色的技能明细。
+ */
+window.xtsSeniorPool = () => {
+  const senior = CHARACTERS.filter((c) => stageOf(c.grade) === 'senior');
+  const bySubject: Record<string, number> = {};
+  for (const c of senior) bySubject[c.subject] = (bySubject[c.subject] || 0) + 1;
+  return {
+    count: senior.length,
+    bySubject,
+    chars: senior.map((c) => ({
+      id: c.id,
+      name: c.name,
+      subject: c.subject,
+      grade: c.grade,
+      hp: c.hp,
+      skills: c.skills.map((s) => ({
+        id: s.id,
+        name: s.name,
+        kind: defOf(s.id)?.kind || '',
+        timing: defOf(s.id)?.timing || '',
+        effects: (defOf(s.id)?.effects || []).map((e) => ({
+          kind: e.kind,
+          at: (e as { at?: string }).at || null,
+        })),
+      })),
+    })),
+  };
 };
 
 /**

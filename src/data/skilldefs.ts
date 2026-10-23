@@ -1,5 +1,7 @@
 /* ==================== 技能定义表（声明式） ====================
- * 46 名基础角色共 93 个技能全部在此登记：时机 + 费用 + 限制 + 效果原语。
+ * 81 名基础角色共 164 个技能全部在此登记：时机 + 费用 + 限制 + 效果原语。
+ * （46 名基础角色 93 技能 + v2.7.0 高中扩展包 35 名角色 70 技能 + 1 个觉醒后技能
+ *   + 9 主公技 + 18 学科主题技 = 191 条登记项）
  * 由 src/game/skillEngine.ts 统一分派，规则书 / 选人卡 / 亮将卡均读本表。
  *
  * 设计原则（详见 docs/游戏机制.md）：
@@ -1274,6 +1276,961 @@ const SZ_XS: SkillDef = {
   ],
 };
 
+/* ================================================================== */
+/* 高中扩展包 50 将技能（v2.7.0：35 名角色 70 技能 + 1 觉醒后技能）      */
+/* 全部只使用被引擎真实消费的原语；锁定技的触发型效果统一用 at 挂载。    */
+/* ================================================================== */
+
+/* ------------------------------------------------------------------ */
+/* 语文 📖                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 屈原·离骚：红色判定 → 摸 3；黑色 → 其失去 1 体力 */
+const QY_LS: SkillDef = {
+  id: 'qy_ls',
+  name: '离骚',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置一张手牌，令一名角色判定：红色你摸三张牌；黑色其失去 1 点体力。',
+  effects: [
+    { kind: 'costCard', n: 1 },
+    {
+      kind: 'judgeIf',
+      test: 'red',
+      hit: [{ kind: 'selfDraw', n: 3 }],
+      miss: [{ kind: 'targetLoseHp', n: 1 }],
+    },
+  ],
+};
+
+/** 屈原·九歌：上限 +2 + 锦囊连锁 */
+const QY_JG: SkillDef = {
+  id: 'qy_jg',
+  name: '九歌',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；你使用锦囊牌后摸一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'trickDraw', n: 1, at: 'onUseTrick' },
+  ],
+};
+
+/** 苏轼·赤壁赋：拼点，赢则摸 2 并令其弃 1 */
+const SS_CB: SkillDef = {
+  id: 'ss_cb',
+  name: '赤壁赋',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可与一名角色拼点：若你赢，你摸两张牌并令其弃置一张牌；若你输，你弃置一张牌。',
+  effects: [
+    {
+      kind: 'pointDuel',
+      win: [{ kind: 'selfDraw', n: 2 }, { kind: 'targetDiscard', n: 1 }],
+      lose: [{ kind: 'costCard', n: 1 }],
+    },
+  ],
+};
+
+/** 苏轼·旷达：受伤后摸 1，体力最低时再回 1（与达尔文·适者生存以「体力最低」条件区分） */
+const SS_KD: SkillDef = {
+  id: 'ss_kd',
+  name: '旷达',
+  kind: 'trigger',
+  timing: 'onDamaged',
+  desc: '受到伤害后，你摸一张牌；若你的体力为全场最低，你回复 1 点体力。',
+  effects: [
+    { kind: 'selfDraw', n: 1 },
+    { kind: 'selfHeal', n: 1, cond: { k: 'hpLowest' } },
+  ],
+};
+
+/** 曹雪芹·石头记：窥牌 + 夺取 + 摸牌 */
+const CXQ_ST: SkillDef = {
+  id: 'cxq_st',
+  name: '石头记',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可观看一名角色的手牌，获得其中的一张，然后你摸两张牌。',
+  effects: [{ kind: 'peekHand', then: 'steal' }, { kind: 'selfDraw', n: 2 }],
+};
+
+/** 曹雪芹·群芳谱：回合内出牌数量连锁 */
+const CXQ_QF: SkillDef = {
+  id: 'cxq_qf',
+  name: '群芳谱',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +1；回合结束阶段，若你本回合使用过至少两张牌，你摸两张牌。',
+  effects: [
+    { kind: 'handLimit', n: 1 },
+    { kind: 'selfDraw', n: 2, at: 'onTurnEnd', cond: { k: 'playedThisTurnAtLeast', n: 2 } },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/* 数学 🔢                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 康托尔·集合论：牌堆顶三取二 */
+const KTE_JH: SkillDef = {
+  id: 'kte_jh',
+  name: '集合论',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可展示牌堆顶三张牌，获得其中的两张，其余置入弃牌堆。',
+  effects: [{ kind: 'deckPeek', n: 3, then: 'pickTwo' }],
+};
+
+/** 康托尔·一一对应：上限 +2 + 每回合多摸 1 */
+const KTE_YY: SkillDef = {
+  id: 'kte_yy',
+  name: '一一对应',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；摸牌阶段你额外摸一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'extraDraw', n: 1 },
+  ],
+};
+
+/** 傅里叶·三角级数：偶 → 摸 2；奇 → 其弃 2 */
+const FLY_SJ: SkillDef = {
+  id: 'fly_sj',
+  name: '三角级数',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置一张手牌，令一名角色判定：偶数你摸两张牌；奇数其弃置两张牌。',
+  effects: [
+    { kind: 'costCard', n: 1 },
+    {
+      kind: 'judgeIf',
+      test: 'even',
+      hit: [{ kind: 'selfDraw', n: 2 }],
+      miss: [{ kind: 'targetDiscard', n: 2 }],
+    },
+  ],
+};
+
+/** 傅里叶·热传导：受伤后展示红牌回血 */
+const FLY_RD: SkillDef = {
+  id: 'fly_rd',
+  name: '热传导',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，你可展示一张手牌，若为红色你回复 1 点体力。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'showHand', red: [{ kind: 'selfHeal', n: 1 }], at: 'onDamaged' },
+  ],
+};
+
+/** 帕斯卡·概率论：奇 → 2 伤；偶 → 摸 2 */
+const PSK_GL: SkillDef = {
+  id: 'psk_gl',
+  name: '概率论',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置一张手牌，令一名角色判定：奇数你对其造成 2 点伤害；偶数你摸两张牌。',
+  effects: [
+    { kind: 'costCard', n: 1 },
+    {
+      kind: 'judgeIf',
+      test: 'odd',
+      hit: [{ kind: 'targetDamage', n: 2 }],
+      miss: [{ kind: 'selfDraw', n: 2 }],
+    },
+  ],
+};
+
+/** 帕斯卡·帕斯卡三角：受伤后反制手牌最多者 */
+const PSK_SJJ: SkillDef = {
+  id: 'psk_sjj',
+  name: '帕斯卡三角',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若伤害来源的手牌数多于你，你令其弃置一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'targetDiscard', n: 1, at: 'onDamaged', cond: { k: 'srcHandMoreThanMe' } },
+  ],
+};
+
+/** 贝叶斯·条件概率：交 1 摸 3 */
+const BYS_TJ: SkillDef = {
+  id: 'bys_tj',
+  name: '条件概率',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可将一张手牌交给一名角色，然后你摸三张牌。',
+  effects: [{ kind: 'giveHand', n: 1 }, { kind: 'selfDraw', n: 3 }],
+};
+
+/** 贝叶斯·先验修正：受伤后摸 2，来源手牌多则回 1 */
+const BYS_XY: SkillDef = {
+  id: 'bys_xy',
+  name: '先验修正',
+  kind: 'trigger',
+  timing: 'onDamaged',
+  desc: '受到伤害后，你摸两张牌；若伤害来源的手牌数多于你，你回复 1 点体力。',
+  effects: [
+    { kind: 'selfDraw', n: 2 },
+    { kind: 'selfHeal', n: 1, cond: { k: 'srcHandMoreThanMe' } },
+  ],
+};
+
+/** 黎曼·素数定理：质数 → 2 伤；否则其弃 1（未命中亦有收益，R3 保底） */
+const LM_SS: SkillDef = {
+  id: 'lm_ss',
+  name: '素数定理',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色判定：若点数为质数（2/3/5/7/11/13），你对其造成 2 点伤害；否则其弃置一张牌。',
+  effects: [
+    {
+      kind: 'judgeIf',
+      test: 'prime',
+      hit: [{ kind: 'targetDamage', n: 2 }],
+      miss: [{ kind: 'targetDiscard', n: 1 }],
+    },
+  ],
+};
+
+/** 黎曼·度量：上限 +2 + 距离 −1 */
+const LM_DL: SkillDef = {
+  id: 'lm_dl',
+  name: '度量',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；你计算与其他角色的距离 −1。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'distMod', delta: -1 },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/* 英语 🔤                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 简·奥斯汀·傲慢与偏见：反转抉择 + 自摸 1 */
+const AST_AJ: SkillDef = {
+  id: 'ast_aj',
+  name: '傲慢与偏见',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色选择：交给你一张手牌 / 令你摸两张牌，然后你摸一张牌。',
+  effects: [
+    {
+      kind: 'targetChoose',
+      options: [[{ kind: 'gainHand', n: 1 }], [{ kind: 'selfDraw', n: 2 }]],
+    },
+    { kind: 'selfDraw', n: 1 },
+  ],
+};
+
+/** 简·奥斯汀·理智与情感：受伤后手牌少则回血 */
+const AST_LZ: SkillDef = {
+  id: 'ast_lz',
+  name: '理智与情感',
+  kind: 'trigger',
+  timing: 'onDamaged',
+  desc: '受到伤害后，你摸一张牌；若你的手牌数不超过 2 张，你回复 1 点体力。',
+  effects: [
+    { kind: 'selfDraw', n: 1 },
+    { kind: 'selfHeal', n: 1, cond: { k: 'handAtMost', n: 2 } },
+  ],
+};
+
+/** 海明威·老人与海：拼点，赢则 2 伤摸 1 */
+const HMW_LR: SkillDef = {
+  id: 'hmw_lr',
+  name: '老人与海',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可与一名角色拼点：若你赢，你对其造成 2 点伤害并摸一张牌；若你输，你失去 1 点体力。',
+  effects: [
+    {
+      kind: 'pointDuel',
+      win: [{ kind: 'targetDamage', n: 2 }, { kind: 'selfDraw', n: 1 }],
+      lose: [{ kind: 'selfLoseHp', n: 1 }],
+    },
+  ],
+};
+
+/** 海明威·冰山原则：据守式回合末回血 */
+const HMW_BS: SkillDef = {
+  id: 'hmw_bs',
+  name: '冰山原则',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；回合结束阶段，若你本回合未造成过伤害，你回复 1 点体力。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfHeal', n: 1, at: 'onTurnEnd', cond: { k: 'noDamageDealtThisTurn' } },
+  ],
+};
+
+/** 马丁·路德·金·我有一个梦：群体增益（人均 ≤1 张，收益封顶） */
+const MLD_YGM: SkillDef = {
+  id: 'mld_ygm',
+  name: '我有一个梦',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令至多两名其他角色各摸一张牌，然后你回复 1 点体力。',
+  effects: [{ kind: 'multiDraw', max: 2, n: 1 }, { kind: 'selfHeal', n: 1 }],
+};
+
+/** 马丁·路德·金·非暴力：本回合未出杀则受伤回血 */
+const MLD_FB: SkillDef = {
+  id: 'mld_fb',
+  name: '非暴力',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若你本回合未使用过【杀】，你回复 1 点体力。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfHeal', n: 1, at: 'onDamaged', cond: { k: 'noShaThisTurn' } },
+  ],
+};
+
+/** 萧伯纳·卖花女：反间，猜错则 1 伤 + 自摸 1 */
+const XBN_MH: SkillDef = {
+  id: 'xbn_mh',
+  name: '卖花女',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色选择一种花色，然后展示你的一张手牌：若花色不符，你对其造成 1 点伤害并摸一张牌；若相符，你将此牌交给其。',
+  effects: [
+    {
+      kind: 'guessSuit',
+      miss: [{ kind: 'targetDamage', n: 1 }, { kind: 'selfDraw', n: 1 }],
+      hit: [{ kind: 'giveDuelCard' }],
+    },
+  ],
+};
+
+/** 萧伯纳·讽刺：上限 +2 + 免疫【决斗】 */
+const XBN_FC: SkillDef = {
+  id: 'xbn_fc',
+  name: '讽刺',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；你不能成为【决斗】的目标。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'cardImmune', names: ['决斗'] },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/* 物理 ⚛️                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 开普勒·椭圆轨道：控顶 + 摸 2 */
+const KPL_TY: SkillDef = {
+  id: 'kpl_ty',
+  name: '椭圆轨道',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可将一张手牌置于牌堆顶，然后摸两张牌。',
+  effects: [{ kind: 'toDeckTop', from: 'hand' }, { kind: 'selfDraw', n: 2 }],
+};
+
+/** 开普勒·天空立法者：咆哮变体（每回合额外 1 张，需先弃 1 张） */
+const KPL_TK: SkillDef = {
+  id: 'kpl_tk',
+  name: '天空立法者',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +1；你使用【杀】无次数限制，每回合最多额外 1 张；你每回合使用的第二张及之后的【杀】，需先弃置一张手牌。',
+  effects: [
+    { kind: 'handLimit', n: 1 },
+    { kind: 'shaUnlimited', maxExtra: 1, extraCostHand: 1 },
+  ],
+};
+
+/** 麦克斯韦·电磁场理论：黑 → 2 雷伤；红 → 摸 2 */
+const MKSW_DC: SkillDef = {
+  id: 'mksw_dc',
+  name: '电磁场理论',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置一张手牌，令一名角色判定：黑色其受到 2 点雷属性伤害；红色你摸两张牌。',
+  effects: [
+    { kind: 'costCard', n: 1 },
+    {
+      kind: 'judgeIf',
+      test: 'black',
+      hit: [{ kind: 'targetDamage', n: 2, damageType: 'thunder' }],
+      miss: [{ kind: 'selfDraw', n: 2 }],
+    },
+  ],
+};
+
+/** 麦克斯韦·位移电流：上限 +1 + 出闪摸 1 */
+const MKSW_WY: SkillDef = {
+  id: 'mksw_wy',
+  name: '位移电流',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +1；你使用或打出【闪】后摸一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 1 },
+    { kind: 'selfDraw', n: 1, at: 'onUseShan' },
+  ],
+};
+
+/** 玻尔·互补原理：反间，猜错自摸 2 */
+const BO_HB: SkillDef = {
+  id: 'bo_hb',
+  name: '互补原理',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色选择一种花色，然后展示你的一张手牌：若花色不符，你摸两张牌；若相符，你将此牌交给其。',
+  effects: [
+    {
+      kind: 'guessSuit',
+      miss: [{ kind: 'selfDraw', n: 2 }],
+      hit: [{ kind: 'giveDuelCard' }],
+    },
+  ],
+};
+
+/** 玻尔·不相容原理：受伤后强制反制 */
+const BO_BR: SkillDef = {
+  id: 'bo_br',
+  name: '不相容原理',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，你令伤害来源弃置一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'targetDiscard', n: 1, at: 'onDamaged' },
+  ],
+};
+
+/** 费曼·费曼图：牌堆顶四取二 */
+const FM_FMT: SkillDef = {
+  id: 'fm_fmt',
+  name: '费曼图',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置一张手牌，展示牌堆顶四张牌，获得其中的两张，其余置入弃牌堆。',
+  effects: [{ kind: 'costCard', n: 1 }, { kind: 'deckPeek', n: 4, then: 'pickTwo' }],
+};
+
+/** 费曼·曼哈顿计划：★限定技，3 雷伤自损 1 */
+const FM_MHD: SkillDef = {
+  id: 'fm_mhd',
+  name: '曼哈顿计划',
+  kind: 'limit',
+  timing: 'active',
+  limit: 'perGame',
+  desc: '限定技：出牌阶段，你可令一名角色受到 3 点雷属性伤害，然后你失去 1 点体力（整局限一次）。',
+  effects: [{ kind: 'targetDamage', n: 3, damageType: 'thunder' }, { kind: 'selfLoseHp', n: 1 }],
+};
+
+/* ------------------------------------------------------------------ */
+/* 化学 ⚗️                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 侯德榜·侯氏制碱：弃牌换治疗（双向） */
+const HDB_HS: SkillDef = {
+  id: 'hdb_hs',
+  name: '侯氏制碱',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置至多两张手牌，每弃置一张令一名角色回复 1 点体力。',
+  effects: [{ kind: 'discardToHeal', max: 2 }],
+};
+
+/** 侯德榜·联合制碱：受伤后手牌不落下风则反制 */
+const HDB_LH: SkillDef = {
+  id: 'hdb_lh',
+  name: '联合制碱',
+  kind: 'trigger',
+  timing: 'onDamaged',
+  desc: '受到伤害后，你摸一张牌；若你的手牌数不少于伤害来源，你令其弃置一张牌。',
+  effects: [
+    { kind: 'selfDraw', n: 1 },
+    { kind: 'targetDiscard', n: 1, cond: { k: 'srcHandGeMe' } },
+  ],
+};
+
+/** 阿伏加德罗·分子假说：≤6 → 摸 2 并令其弃 1；否则自摸 1 */
+const AFD_FZ: SkillDef = {
+  id: 'afd_fz',
+  name: '分子假说',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置一张手牌，令一名角色判定：若点数 ≤6，你摸两张牌并令其弃置一张牌；否则你摸一张牌。',
+  effects: [
+    { kind: 'costCard', n: 1 },
+    {
+      kind: 'judgeIf',
+      test: 'le',
+      n: 6,
+      hit: [{ kind: 'selfDraw', n: 2 }, { kind: 'targetDiscard', n: 1 }],
+      miss: [{ kind: 'selfDraw', n: 1 }],
+    },
+  ],
+};
+
+/** 阿伏加德罗·气体定律：空手受伤则摸 2 */
+const AFD_QT: SkillDef = {
+  id: 'afd_qt',
+  name: '气体定律',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若你的手牌数不超过 1 张，你摸两张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfDraw', n: 2, at: 'onDamaged', cond: { k: 'handAtMost', n: 1 } },
+  ],
+};
+
+/** 勒夏特列·平衡移动：令其选择（自摸 2 / 其弃 2） */
+const LXTL_PH: SkillDef = {
+  id: 'lxtl_ph',
+  name: '平衡移动',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色选择：令你摸两张牌 / 令其弃置两张牌。',
+  effects: [
+    {
+      kind: 'targetChoose',
+      options: [[{ kind: 'selfDraw', n: 2 }], [{ kind: 'targetDiscard', n: 2 }]],
+    },
+  ],
+};
+
+/** 勒夏特列·勒夏特列原理：残血受伤回血 */
+const LXTL_YL: SkillDef = {
+  id: 'lxtl_yl',
+  name: '勒夏特列原理',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若你的体力值 ≤2，你回复 1 点体力。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfHeal', n: 1, at: 'onDamaged', cond: { k: 'hpAtMost', n: 2 } },
+  ],
+};
+
+/** 鲍林·电负性：黑牌当雷杀 */
+const BL_DFX: SkillDef = {
+  id: 'bl_dfx',
+  name: '电负性',
+  kind: 'convert',
+  timing: 'passive',
+  desc: '你可将一张黑色手牌当【雷杀】使用（电负性：得电子者带负电）。',
+  effects: [{ kind: 'convert', from: { color: 'black' }, to: 'sha', damageType: 'thunder' }],
+};
+
+/** 鲍林·共振论：上限 +2 + 火/雷减伤 */
+const BL_GZL: SkillDef = {
+  id: 'bl_gzl',
+  name: '共振论',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；你受到的火属性与雷属性伤害 −1（最低 1 点）。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'reduceDamage', types: ['fire', 'thunder'], n: 1 },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/* 生物 🧬                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 施旺·细胞学说：摸 4 交 1（分裂增殖） */
+const SW_XB: SkillDef = {
+  id: 'sw_xb',
+  name: '细胞学说',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可摸四张牌，然后将一张手牌交给一名其他角色。',
+  effects: [{ kind: 'selfDraw', n: 4 }, { kind: 'giveHand', n: 1 }],
+};
+
+/** 施旺·显微观察：受伤后同学科则摸 1 */
+const SW_XW: SkillDef = {
+  id: 'sw_xw',
+  name: '显微观察',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若伤害来源与你同学科，你摸一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfDraw', n: 1, at: 'onDamaged', cond: { k: 'srcSameSubject' } },
+  ],
+};
+
+/** 巴甫洛夫·条件反射：令其弃 2 并自摸 1 */
+const BFLF_TJ: SkillDef = {
+  id: 'bflf_tj',
+  name: '条件反射',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色弃置两张牌，然后你摸一张牌。',
+  effects: [{ kind: 'targetDiscard', n: 2 }, { kind: 'selfDraw', n: 1 }],
+};
+
+/** 巴甫洛夫·抑制：回合内未用锦囊则回血 */
+const BFLF_YZ: SkillDef = {
+  id: 'bflf_yz',
+  name: '抑制',
+  kind: 'trigger',
+  timing: 'onTurnEnd',
+  desc: '回合结束阶段，若你本回合未使用过锦囊牌，你回复 1 点体力。',
+  effects: [{ kind: 'selfHeal', n: 1, cond: { k: 'noTrickThisTurn' } }],
+};
+
+/** 袁隆平·禾下乘凉：群体摸牌（人均 ≤1 张） */
+const YLP_HX: SkillDef = {
+  id: 'ylp_hx',
+  name: '禾下乘凉',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令所有角色各摸一张牌，然后你回复 1 点体力。',
+  effects: [{ kind: 'allDraw', n: 1 }, { kind: 'selfHeal', n: 1 }],
+};
+
+/** 袁隆平·一稻济世：★限定技群体治疗 */
+const YLP_YD: SkillDef = {
+  id: 'ylp_yd',
+  name: '一稻济世',
+  kind: 'limit',
+  timing: 'active',
+  limit: 'perGame',
+  desc: '限定技：出牌阶段，你可令所有已受伤的角色各回复 1 点体力，然后你摸两张牌（整局限一次）。',
+  effects: [{ kind: 'allHeal', n: 1 }, { kind: 'selfDraw', n: 2 }],
+};
+
+/* ------------------------------------------------------------------ */
+/* 历史 🏛️                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 康熙·平定三藩：令其选择（自摸 2 / 其失 1 体力） */
+const KXI_PDSF: SkillDef = {
+  id: 'kxi_pdsf',
+  name: '平定三藩',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色选择：令你摸两张牌 / 令其失去 1 点体力。',
+  effects: [
+    {
+      kind: 'targetChoose',
+      options: [[{ kind: 'selfDraw', n: 2 }], [{ kind: 'targetLoseHp', n: 1 }]],
+    },
+  ],
+};
+
+/** 康熙·康乾盛世：★限定技爆发补牌 */
+const KXI_KQSS: SkillDef = {
+  id: 'kxi_kqss',
+  name: '康乾盛世',
+  kind: 'limit',
+  timing: 'active',
+  limit: 'perGame',
+  desc: '限定技：出牌阶段，你可摸三张牌并回复 1 点体力（整局限一次）。',
+  effects: [{ kind: 'selfDraw', n: 3 }, { kind: 'selfHeal', n: 1 }],
+};
+
+/** 拿破仑·奥斯特里茨：2 伤 + 自损 1 */
+const NPL_OST: SkillDef = {
+  id: 'npl_ost',
+  name: '奥斯特里茨',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色受到 2 点伤害，然后你失去 1 点体力。',
+  effects: [{ kind: 'targetDamage', n: 2 }, { kind: 'selfLoseHp', n: 1 }],
+};
+
+/** 拿破仑·滑铁卢：☆觉醒技 */
+const NPL_HLL: SkillDef = {
+  id: 'npl_hll',
+  name: '滑铁卢',
+  kind: 'awaken',
+  timing: 'awaken',
+  limit: 'perGame',
+  cond: { k: 'hpAtMost', n: 1 },
+  desc: '觉醒技：准备阶段若你的体力为 1，你减 1 点体力上限并永久获得【重整旗鼓】。',
+  effects: [{ kind: 'awaken', replaceWith: 'npl_cq', minusMaxHp: 1 }],
+};
+
+/** 拿破仑觉醒后·重整旗鼓：据守咆哮 */
+const NPL_CQ: SkillDef = {
+  id: 'npl_cq',
+  name: '重整旗鼓',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；你使用【杀】无次数限制，每回合最多额外 1 张。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'shaUnlimited', maxExtra: 1, extraCostHand: 0 },
+  ],
+};
+
+/** 甘地·食盐进军：反间，猜错则失 1 体力并弃 1 */
+const GD_SYJZ: SkillDef = {
+  id: 'gd_syjz',
+  name: '食盐进军',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色选择一种花色，然后展示你的一张手牌：若花色不符，其失去 1 点体力并弃置一张牌；若相符，你摸两张牌。',
+  effects: [
+    {
+      kind: 'guessSuit',
+      miss: [{ kind: 'targetLoseHp', n: 1 }, { kind: 'targetDiscard', n: 1 }],
+      hit: [{ kind: 'selfDraw', n: 2 }],
+    },
+  ],
+};
+
+/** 甘地·苦行：回合内未造成伤害则摸 1 */
+const GD_KX: SkillDef = {
+  id: 'gd_kx',
+  name: '苦行',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；回合结束阶段，若你本回合未造成过伤害，你摸一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfDraw', n: 1, at: 'onTurnEnd', cond: { k: 'noDamageDealtThisTurn' } },
+  ],
+};
+
+/** 俾斯麦·铁血政策：失 2 体力 + 自损 1 */
+const BSM_TX: SkillDef = {
+  id: 'bsm_tx',
+  name: '铁血政策',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色失去 2 点体力，然后你失去 1 点体力。',
+  effects: [{ kind: 'targetLoseHp', n: 2 }, { kind: 'selfLoseHp', n: 1 }],
+};
+
+/** 俾斯麦·关税同盟：反伤 */
+const BSM_GS: SkillDef = {
+  id: 'bsm_gs',
+  name: '关税同盟',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +1；你受到【杀】造成的伤害后，对伤害来源造成 1 点伤害。',
+  effects: [
+    { kind: 'handLimit', n: 1 },
+    { kind: 'reflect', n: 1, when: 'hurtBySha' },
+  ],
+};
+
+/** 罗斯福·新政：换牌 + 自愈 */
+const LSFU_XZ: SkillDef = {
+  id: 'lsfu_xz',
+  name: '新政',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可与一名角色各交换一张手牌，然后你回复 1 点体力。',
+  effects: [{ kind: 'exchangeHand', n: 1 }, { kind: 'selfHeal', n: 1 }],
+};
+
+/** 罗斯福·炉边谈话：受伤后来源手牌多则回血 */
+const LSFU_LB: SkillDef = {
+  id: 'lsfu_lb',
+  name: '炉边谈话',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若伤害来源的手牌数多于你，你回复 1 点体力。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfHeal', n: 1, at: 'onDamaged', cond: { k: 'srcHandMoreThanMe' } },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/* 地理 🌍                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 魏格纳·泛大陆：摸 3 控顶 */
+const WGN_FDL: SkillDef = {
+  id: 'wgn_fdl',
+  name: '泛大陆',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可摸三张牌，然后将一张手牌置于牌堆顶。',
+  effects: [{ kind: 'selfDraw', n: 3 }, { kind: 'toDeckTop', from: 'hand' }],
+};
+
+/** 魏格纳·大陆漂移：距离 −1 + 顺手牵羊无距离限制 */
+const WGN_DLPY: SkillDef = {
+  id: 'wgn_dlpy',
+  name: '大陆漂移',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你计算与其他角色的距离 −1；你使用【顺手牵羊】无距离限制。',
+  effects: [
+    { kind: 'distMod', delta: -1 },
+    { kind: 'shunshouNoDist' },
+  ],
+};
+
+/** 竺可桢·物候学：≤6 回血；否则摸 2 */
+const ZKZ_WH: SkillDef = {
+  id: 'zkz_wh',
+  name: '物候学',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可令一名角色判定：若点数 ≤6，你回复 1 点体力；否则你摸两张牌。',
+  effects: [
+    {
+      kind: 'judgeIf',
+      test: 'le',
+      n: 6,
+      hit: [{ kind: 'selfHeal', n: 1 }],
+      miss: [{ kind: 'selfDraw', n: 2 }],
+    },
+  ],
+};
+
+/** 竺可桢·气候变迁：上限 +2 + 火减伤 */
+const ZKZ_QH: SkillDef = {
+  id: 'zkz_qh',
+  name: '气候变迁',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；你受到的火属性伤害 −1（最低 1 点）。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'reduceDamage', types: ['fire'], n: 1 },
+  ],
+};
+
+/** 洪堡·自然之图：降序观星（与门捷列夫·周期律 asc 对称） */
+const HB_ZRZT: SkillDef = {
+  id: 'hb_zrzt',
+  name: '自然之图',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可观看牌堆顶五张牌，将它们按点数从大到小排序后放回牌堆顶，然后你摸一张牌。',
+  effects: [{ kind: 'starSort', n: 5, dir: 'desc' }, { kind: 'selfDraw', n: 1 }],
+};
+
+/** 洪堡·等温线：回合内多出牌则补牌 */
+const HB_DWX: SkillDef = {
+  id: 'hb_dwx',
+  name: '等温线',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；回合结束阶段，若你本回合使用过至少三张牌，你摸一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfDraw', n: 1, at: 'onTurnEnd', cond: { k: 'playedThisTurnAtLeast', n: 3 } },
+  ],
+};
+
+/** 哥伦布·发现新大陆：摸 2 交 1 */
+const GLB_FX: SkillDef = {
+  id: 'glb_fx',
+  name: '发现新大陆',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可摸两张牌，然后将一张手牌交给一名其他角色。',
+  effects: [{ kind: 'selfDraw', n: 2 }, { kind: 'giveHand', n: 1 }],
+};
+
+/** 哥伦布·新航路：距离陷阱 + 敌人难近 */
+const GLB_XHL: SkillDef = {
+  id: 'glb_xhl',
+  name: '新航路',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '锁定技：与你距离大于 1 的角色不能对你使用【杀】；其他角色计算与你的距离 +1。',
+  effects: [
+    { kind: 'distTrap', min: 1 },
+    { kind: 'distPlusToMe', n: 1 },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/* 政治 ⚖️                                                             */
+/* ------------------------------------------------------------------ */
+
+/** 马克思·资本论：学识 + 摸牌 */
+const MKS_ZBL: SkillDef = {
+  id: 'mks_zbl',
+  name: '资本论',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可获得 1 点学识并摸一张牌。',
+  effects: [{ kind: 'gainKnowledge', n: 1 }, { kind: 'selfDraw', n: 1 }],
+};
+
+/** 马克思·实践：受伤后反制，同学科加码 */
+const MKS_SJ: SkillDef = {
+  id: 'mks_sj',
+  name: '实践',
+  kind: 'trigger',
+  timing: 'onDamaged',
+  desc: '受到伤害后，你令伤害来源弃置一张牌；若其与你同学科，再令其弃置一张牌。',
+  effects: [
+    { kind: 'targetDiscard', n: 1 },
+    { kind: 'targetDiscard', n: 1, cond: { k: 'srcSameSubject' } },
+  ],
+};
+
+/** 亚当·斯密·国富论：群体增益 + 自摸 2 */
+const YDSM_GFL: SkillDef = {
+  id: 'ydsm_gfl',
+  name: '国富论',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可弃置一张手牌，令至多两名其他角色各摸一张牌，然后你摸两张牌。',
+  effects: [
+    { kind: 'costCard', n: 1 },
+    { kind: 'multiDraw', max: 2, n: 1 },
+    { kind: 'selfDraw', n: 2 },
+  ],
+};
+
+/** 亚当·斯密·分工：受伤后异学科则摸 1（与施旺·显微观察互为对称） */
+const YDSM_FG: SkillDef = {
+  id: 'ydsm_fg',
+  name: '分工',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若伤害来源与你不同学科，你摸一张牌。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfDraw', n: 1, at: 'onDamaged', cond: { k: 'srcDiffSubject' } },
+  ],
+};
+
+/** 王阳明·知行合一：学识 + 摸 2 */
+const WYM_ZXHY: SkillDef = {
+  id: 'wym_zxhy',
+  name: '知行合一',
+  kind: 'active',
+  timing: 'active',
+  desc: '出牌阶段，你可获得 1 点学识并摸两张牌。',
+  effects: [{ kind: 'gainKnowledge', n: 1 }, { kind: 'selfDraw', n: 2 }],
+};
+
+/** 王阳明·致良知：空手受伤则回血 */
+const WYM_ZLZ: SkillDef = {
+  id: 'wym_zlz',
+  name: '致良知',
+  kind: 'passive',
+  timing: 'passive',
+  desc: '你的手牌上限 +2；受到伤害后，若你的手牌数不超过 1 张，你回复 1 点体力。',
+  effects: [
+    { kind: 'handLimit', n: 2 },
+    { kind: 'selfHeal', n: 1, at: 'onDamaged', cond: { k: 'handAtMost', n: 1 } },
+  ],
+};
+
 /* ------------------------------------------------------------------ */
 /* 主公技（沿用旧 id，保证 factions.ts 与联机兼容）                     */
 /* ------------------------------------------------------------------ */
@@ -1520,6 +2477,87 @@ export const SKILL_DEFS: Record<string, SkillDef> = Object.fromEntries(
     MZ_JA,
     SZ_BF,
     SZ_XS,
+    // 高中扩展包 50 将（v2.7.0）
+    // 语文
+    QY_LS,
+    QY_JG,
+    SS_CB,
+    SS_KD,
+    CXQ_ST,
+    CXQ_QF,
+    // 数学
+    KTE_JH,
+    KTE_YY,
+    FLY_SJ,
+    FLY_RD,
+    PSK_GL,
+    PSK_SJJ,
+    BYS_TJ,
+    BYS_XY,
+    LM_SS,
+    LM_DL,
+    // 英语
+    AST_AJ,
+    AST_LZ,
+    HMW_LR,
+    HMW_BS,
+    MLD_YGM,
+    MLD_FB,
+    XBN_MH,
+    XBN_FC,
+    // 物理
+    KPL_TY,
+    KPL_TK,
+    MKSW_DC,
+    MKSW_WY,
+    BO_HB,
+    BO_BR,
+    FM_FMT,
+    FM_MHD,
+    // 化学
+    HDB_HS,
+    HDB_LH,
+    AFD_FZ,
+    AFD_QT,
+    LXTL_PH,
+    LXTL_YL,
+    BL_DFX,
+    BL_GZL,
+    // 生物
+    SW_XB,
+    SW_XW,
+    BFLF_TJ,
+    BFLF_YZ,
+    YLP_HX,
+    YLP_YD,
+    // 历史
+    KXI_PDSF,
+    KXI_KQSS,
+    NPL_OST,
+    NPL_HLL,
+    NPL_CQ,
+    GD_SYJZ,
+    GD_KX,
+    BSM_TX,
+    BSM_GS,
+    LSFU_XZ,
+    LSFU_LB,
+    // 地理
+    WGN_FDL,
+    WGN_DLPY,
+    ZKZ_WH,
+    ZKZ_QH,
+    HB_ZRZT,
+    HB_DWX,
+    GLB_FX,
+    GLB_XHL,
+    // 政治
+    MKS_ZBL,
+    MKS_SJ,
+    YDSM_GFL,
+    YDSM_FG,
+    WYM_ZXHY,
+    WYM_ZLZ,
     // 主公技
     LORD_SHISHU,
     LORD_TUIYAN,

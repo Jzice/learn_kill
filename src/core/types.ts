@@ -162,7 +162,8 @@ export type SkillEffect =
   /* ---- 既有 14 个原语（扩展包依赖；新增字段全部可选，不影响扩展包） ---- */
   /** 自己摸牌。cond 为可选触发条件；damageType 仅 targetDamage 有意义 */
   | { kind: 'selfDraw'; n: number; cond?: SkillCond }
-  | { kind: 'targetDiscard'; n: number }
+  /** 令目标弃牌。cond 为可选触发条件（受伤后反制类技能） */
+  | { kind: 'targetDiscard'; n: number; cond?: SkillCond }
   | { kind: 'targetLoseHp'; n: number }
   | { kind: 'targetDamage'; n: number; damageType?: DamageType }
   | { kind: 'targetHeal'; n: number }

@@ -145,6 +145,18 @@ declare global {
       players: { name: string; char: string; role: string; alive: boolean; hp: number }[];
     };
     xtsSkillAudit: () => { total: number; chars: number; missing: string[]; duplicates: string[]; zhuge: string[]; multi: string[] };
+    xtsSeniorPool: () => {
+      count: number;
+      bySubject: Record<string, number>;
+      chars: {
+        id: string;
+        name: string;
+        subject: string;
+        grade: string;
+        hp: number;
+        skills: { id: string; name: string; kind: string; timing: string; effects: { kind: string; at: string | null }[] }[];
+      }[];
+    };
     xtsV21: {
       cardImmune: (idx: number, name: string) => boolean;
       canBeTarget: (idx: number, scope: 'trick' | 'sha' | 'juedou' | 'equip', cardName?: string, cardSuit?: string) => boolean;

@@ -1,9 +1,9 @@
 {
   "name": "xuetangsha",
   "private": true,
-  "version": "2.6.7",
+  "version": "2.7.0",
   "type": "module",
-  "description": "学堂杀 · 九科争鸣 —— v2.5 启发式 AI 博弈论增强层（不完全信息信念·期望效用 EV·机会节点展开·威胁度集火·softmax 混合策略·内奸均衡目标），含可校准权重表与 A/B / CEM 校准脚本（AIPOLICY.useEv 一键开关，默认关闭零回归）；v2.4 大模型接管深化；v2.3 上下文增强；v2.2 接入大模型接管 AI（OpenAI 兼容 + ProviderAdapter 可扩展，失败回退启发式），构建产出单 HTML 文件",
+  "description": "学堂杀 · 九科争鸣 —— v2.7 高中扩展包 50 将（81 名角色 / 193 技能登记项，新增学识经济·反伤·距离陷阱三类机制 + ★限定技 ×3 + ☆觉醒技 ×1，全部按 PP 战力预算校准）；v2.5 启发式 AI 博弈论增强层（不完全信息信念·期望效用 EV·机会节点展开·威胁度集火·softmax 混合策略·内奸均衡目标），含可校准权重表与 A/B / CEM 校准脚本（AIPOLICY.useEv 一键开关，默认关闭零回归）；v2.4 大模型接管深化；v2.3 上下文增强；v2.2 接入大模型接管 AI（OpenAI 兼容 + ProviderAdapter 可扩展，失败回退启发式），构建产出单 HTML 文件",
   "scripts": {
     "dev": "node scripts/dev.mjs cdn",
     "dev:bundled": "node scripts/dev.mjs bundled",
@@ -26,7 +26,9 @@
     "ai:tune": "node scripts/tune-ai.mjs",
     "balance": "node scripts/balance.mjs",
     "repro:net": "node scripts/repro-net.mjs",
+    "repro:senior50": "node scripts/repro-senior50.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
+    "verify:senior50": "node scripts/verify-senior50.mjs",
     "verify:lazy": "node scripts/verify-lazy.mjs",
     "verify:file": "node scripts/verify-file.mjs",
     "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
