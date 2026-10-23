@@ -1,5 +1,7 @@
 /* ==================== 全局领域类型 ==================== */
 
+import type { PacketId } from '../data/packets';
+
 export type Suit = '♠' | '♥' | '♣' | '♦';
 export type CardType = 'basic' | 'trick' | 'equip';
 export type Role = 'lord' | 'loyal' | 'rebel' | 'spy';
@@ -705,6 +707,8 @@ export interface Profile {
   gradeStats: Record<string, number>;
   /** 新手礼包（tier1 装备自选 1 件）是否已发放 */
   newbieGift: boolean;
+  /** 扩展包每日免费使用计数（三包共享，每天 3 次；跨日重置） */
+  packUsage: { date: string; used: number };
 }
 
 export interface PublicProfile extends PlayerIdentity {
@@ -726,6 +730,8 @@ export interface PlayerPref {
   unlockedEquips?: string[];
   /** 加入方的出题范围（房主为该玩家抽题时按其偏好覆盖年级） */
   scope?: QuizScope;
+  /** 加入方本局「叠加启用的扩展包」（已付费/已用免费额度）；房主据此在基础包之上追加角色池 */
+  packets?: PacketId[];
 }
 
 export interface RoomMember {

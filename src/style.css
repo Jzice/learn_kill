@@ -76,6 +76,25 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .opt-btn{flex:1;min-width:60px;background:var(--surface);border:2px solid var(--gold-dim);color:var(--muted);padding:8px 4px;border-radius:7px;cursor:pointer;font-size:12px;transition:all .2s;font-family:inherit;text-align:center}
 .opt-btn:hover{border-color:var(--gold);color:var(--gold)}
 .opt-btn.active{background:var(--surface-accent);border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.4)}
+/* 扩展包按次使用：状态徽标 / 锁定态 / 每日免费额度胶囊 */
+.pk-badges{margin-top:4px;display:flex;justify-content:center}
+.pk-badge{display:inline-block;font-size:10px;line-height:1.4;padding:1px 6px;border-radius:9px;font-weight:600}
+.pk-badge.free{color:#36D399;background:rgba(54,211,153,.14);border:1px solid rgba(54,211,153,.4)}
+.pk-badge.pay{color:#FBBF24;background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.4)}
+.pk-badge.locked{color:#9AA6C0;background:rgba(107,114,128,.18);border:1px solid rgba(107,114,128,.5)}
+.opt-btn.pk-locked{opacity:.5;filter:grayscale(.6);cursor:not-allowed}
+.opt-btn.pk-locked:hover{border-color:var(--gold-dim);color:var(--muted);box-shadow:none}
+.pm-meter{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin:2px 0 4px}
+.pm-label{flex-shrink:0}
+.pm-count{font-size:13px;flex-shrink:0}
+.pm-bar{flex:1;height:7px;border-radius:4px;background:rgba(107,114,128,.25);overflow:hidden;min-width:60px}
+.pm-bar i{display:block;height:100%;border-radius:4px;transition:width .3s}
+.pm-tip{font-size:10.5px;color:var(--muted);line-height:1.5}
+.pm-study{margin-top:6px;background:rgba(79,140,255,.14);border:1px solid rgba(79,140,255,.5);color:#6AA1FF;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11.5px;font-family:inherit;transition:all .2s}
+.pm-study:hover{background:rgba(79,140,255,.28);box-shadow:0 0 12px rgba(79,140,255,.4)}
+.pm-study--hot{background:rgba(251,191,36,.18);border-color:#FBBF24;color:#FBBF24;box-shadow:0 0 12px rgba(251,191,36,.45);animation:pulseHot 1.4s infinite}
+.pm-study--hot:hover{background:rgba(251,191,36,.3)}
+@keyframes pulseHot{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 .opt-btn small{display:block;font-size:9px;margin-top:2px;opacity:.7}
 .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
 .role-card{background:linear-gradient(160deg,#1a1a1a,#0a0a0a);border:2px solid #444;border-radius:8px;padding:7px 4px;cursor:pointer;transition:all .2s;text-align:center}

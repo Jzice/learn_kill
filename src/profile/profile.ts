@@ -132,6 +132,8 @@ function defaultProfile(): Profile {
     // 学段学习量（各学期累计答对题数）与新手礼包发放标记
     gradeStats: {},
     newbieGift: false,
+    // 扩展包每日免费使用计数（三包共享，每天 3 次，跨日重置）
+    packUsage: { date: todayStr(), used: 0 },
   };
 }
 
@@ -191,6 +193,11 @@ function loadProfile(): Profile {
         // 兼容旧档案：补学段学习量与新手礼包字段（v1.8.0 学习成果解锁）
         gradeStats: p.gradeStats && typeof p.gradeStats === 'object' ? p.gradeStats : {},
         newbieGift: typeof p.newbieGift === 'boolean' ? p.newbieGift : false,
+        // 兼容旧档案：补扩展包每日免费计数器（v2.x 学习解锁机制）
+        packUsage:
+          p.packUsage && typeof p.packUsage === 'object' && typeof p.packUsage.date === 'string'
+            ? { date: p.packUsage.date, used: p.packUsage.used || 0 }
+            : { date: todayStr(), used: 0 },
         // 兼容旧档案：补战令与连续学习字段（v1.8.2）
         pass:
           p.pass && typeof p.pass === 'object' && typeof p.pass.semester === 'string'

@@ -146,6 +146,7 @@
   <div class="panel">
     <h3>◈ 选择扩展包 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（决定可选角色的学段与主题技能；题目范围仍由年级决定）</span></h3>
     <div class="opt-row" id="packetPicker"></div>
+    <div id="packMeter"></div>
     <div class="scope-hint" id="packetHint"></div>
   </div>
     <div class="panel">
@@ -212,6 +213,7 @@
     </div>
   </div>
   <div id="joinConfig" style="display:none;">
+    <div class="panel" id="extraPackPanel"></div>
     <div class="panel">
       <h3>◈ 选择你的科目阵营 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（会同步给房主）</span></h3>
       <div class="faction-grid" id="joinFactionPicker"></div>
@@ -466,6 +468,7 @@
       <button class="rule-tab" data-tab="cards" onclick="switchRulesTab('cards')">卡牌说明</button>
       <button class="rule-tab" data-tab="chars" onclick="switchRulesTab('chars')">角色技能</button>
       <button class="rule-tab" data-tab="ach" onclick="switchRulesTab('ach')">成就</button>
+      <button class="rule-tab" data-tab="packs" onclick="switchRulesTab('packs')">扩展包</button>
     </div>
     <div class="rules-content" id="rulesContent"></div>
   </div>

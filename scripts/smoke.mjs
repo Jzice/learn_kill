@@ -154,6 +154,17 @@ const charCards = await page.locator('#charGrid .char-card').count();
 check('角色卡渲染（子界面）', charCards > 0, `${charCards} 名角色`);
 const factions = await page.locator('#factionPicker .faction-card').count();
 check('阵营选择（子界面）', factions === 9, `${factions} 个阵营`);
+// 1.44 扩展包选择器 + 每日免费额度（学习解锁机制）
+const packBtns = await page.locator('#packetPicker .opt-btn').count();
+check('扩展包选择器渲染', packBtns === 4, `${packBtns} 个选项`);
+const packMeterTxt = (await page.textContent('#packMeter')) || '';
+check('每日免费额度条渲染', packMeterTxt.includes('今日扩展包免费'), packMeterTxt.trim().replace(/\s+/g, ' ').slice(0, 24));
+const packBadges = await page.locator('#packetPicker .pk-badge').count();
+check('扩展包状态徽标渲染', packBadges >= 1, `${packBadges} 个徽标`);
+// 选择「按年级」（永久免费）不应抛错，且被标记为 active
+await page.evaluate(() => window.setPacket('grade'));
+const gradeActive = await page.evaluate(() => document.querySelector('#packetPicker .opt-btn.active')?.textContent || '');
+check('按年级包可安全选中（永久免费）', gradeActive.includes('按年级'), gradeActive.trim().slice(0, 12));
 
 // 1.45 随机武将预览卡：完整展示（技能/主公技）+ 换将
 const rcpSkills = await page.locator('#charPreview .rcp-skill').count();
@@ -207,6 +218,12 @@ await page.locator('#topBar button[onclick="openRules()"]').first().click();
 await page.waitForSelector('#rulesModal.show', { timeout: 3000 });
 const rulesLen = (await page.textContent('#rulesContent'))?.length || 0;
 check('规则弹窗', rulesLen > 500, `${rulesLen} 字`);
+// 扩展包规则 tab
+await page.click('.rule-tab[data-tab="packs"]');
+await page.waitForTimeout(120);
+const packsLen = (await page.textContent('#rulesContent'))?.length || 0;
+const packsTxt = (await page.textContent('#rulesContent')) || '';
+check('扩展包规则说明渲染', packsLen > 200 && packsTxt.includes('扩展包') && packsTxt.includes('每日免费'), `${packsLen} 字`);
 await page.click('#rulesModal .rules-close');
 
 const seats = await page.locator('#seatRing .p-card').count();

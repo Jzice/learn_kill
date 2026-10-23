@@ -22,6 +22,10 @@ export interface RoomStateMsg {
   members: { name: string; isHost: boolean; profile: PublicProfile | null }[];
   currentCount: number;
   targetCount: number;
+  /** 房主选定的基础扩展包（加入方据此预览自己的叠加选项与可选角色池） */
+  packet?: string;
+  /** 房主选定的年级 / 学期（加入方据此预览可选角色池） */
+  grade?: string;
 }
 
 export type NetMessage =

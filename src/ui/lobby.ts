@@ -4,11 +4,12 @@ import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS, charPoolForGrade } from '../data/characters';
-import { PACKETS, charPoolForPacket, packetCharCount, packetName, stageOf, withPacketSkills } from '../data/packets';
+import { PACKETS, charPoolForPacket, packetCharCount, packetName, stageOf, withPacketSkills, PACK_TOLL, isExpansion } from '../data/packets';
 import type { PacketId } from '../data/packets';
 import { EXPANSION_CHARS } from '../data/expansion';
 import { gradeSortKey, GRADE_ORDER } from '../data/grades';
 import { isCharUnlocked, credits } from '../profile/credits';
+import { canEnablePacket, packFreeRemaining, packUsePreview } from '../profile/packMeter';
 import { claimableCount } from '../profile/missions';
 import { openShop, renderLoadoutBar } from './shop';
 import { charCardHtml } from './reveal';
@@ -121,24 +122,28 @@ export function updateSetupGradeHint(): void {
   if (el) el.textContent = `📚 当前年级 / 学期：${SELECTED_GRADE}（在首页修改，决定题库与可选角色）`;
 }
 
-/** 扩展包选择器：按年级（累加，默认）/ 初中 / 高中 / 全部；年级只决定题库范围 */
+/** 扩展包选择器：按年级（累加，默认，永久免费）/ 初中 / 高中 / 全部（受每日免费 + 学分约束） */
 export function renderPacketPicker(): void {
   const box = document.getElementById('packetPicker');
   if (!box) return;
   box.innerHTML = PACKETS.map((p) => {
     const n = charPoolForPacket(SELECTED_GRADE, p.id).length;
-    // 四个选项都不按年级累加，n 恒 > 0，此处仅为兜底文案
     const tail = n ? `${n}角色` : '暂无角色';
-    return `<button class="opt-btn ${p.id === SELECTED_PACKET ? 'active' : ''}" data-packet="${p.id}" onclick="setPacket('${p.id}')">${p.icon} ${p.name}<small>${p.desc} · ${tail}</small></button>`;
+    const enabled = canEnablePacket(p.id);
+    const badge = packStateBadge(p.id);
+    const lockedCls = enabled ? '' : ' pk-locked';
+    return `<button class="opt-btn ${p.id === SELECTED_PACKET ? 'active' : ''}${lockedCls}" data-packet="${p.id}" onclick="setPacket('${p.id}')">${p.icon} ${p.name}<small>${p.desc} · ${tail}</small><div class="pk-badges">${badge}</div></button>`;
   }).join('');
   const hint = document.getElementById('packetHint');
   if (hint) {
     const n = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).length;
     hint.textContent =
       SELECTED_PACKET === 'grade'
-        ? `当前：按年级（${SELECTED_GRADE}）—— 角色池随年级累加，共 ${n} 名；不追加学科主题技能`
+        ? `当前：按年级（${SELECTED_GRADE}）—— 角色池随年级累加，共 ${n} 名；不追加学科主题技能（永久免费）`
         : `当前：${packetName(SELECTED_PACKET)} —— 共 ${n} 名（不按年级累加）；题目范围仍由「年级 / 学期」决定`;
   }
+  // 同步刷新每日免费额度胶囊
+  renderPackMeter();
 }
 
 /** 回合限时选择器：不限时 / 10 / 20 / 30 秒 */
@@ -178,6 +183,12 @@ export function setTimerSec(sec: number): void {
 
 export function setPacket(id: PacketId): void {
   Sound.play('click');
+  // 扩展包受每日免费 + 学分约束：无法负担时阻止选择并引导去学习
+  if (!canEnablePacket(id)) {
+    alert(`「${packetName(id)}」今日免费次数已用尽，且学分不足（需 ${PACK_TOLL[id]} 学分/局）。\n\n通过答题、复习错题积累学分后即可使用。`);
+    openStudyFromPack();
+    return;
+  }
   SELECTED_PACKET = id;
   renderPacketPicker();
   // 切换扩展包后角色池变化：确保已选阵营/角色仍有效
@@ -343,10 +354,14 @@ export function rerollRandomChar(): Character | null {
 export function selectChar(id: string): void {
   Sound.play('click');
   USER_CHOSEN = true;
-  // 优先从合并池（含扩展包主题技）取，保证自选角色也带上该学段/学科的主题技能；
-  // 找不到（如切换了扩展包）时回退到原始数据
+  // 优先从「当前上下文的角色池」取，保证自选角色带上对应学段/学科主题技能；
+  // 联机加入方用「房主基础包 ∪ 自己叠加扩展包」的有效池，房主/单机用合并池。找不到时回退原始数据。
+  const searchPool =
+    SELECTED_MODE === 'join'
+      ? effectiveCharPool(REMOTE_BASE_GRADE, REMOTE_BASE_PACKET, SELECTED_EXTRA_PACKETS)
+      : mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
   SELECTED_CHAR =
-    mergedCharPool(SELECTED_GRADE, SELECTED_PACKET).find((c) => c.id === id) ||
+    searchPool.find((c) => c.id === id) ||
     CHARACTERS.find((c) => c.id === id) ||
     EXPANSION_CHARS.find((c) => c.id === id) ||
     null;
@@ -371,7 +386,112 @@ export function mergedCharPool(grade: string, packet: PacketId): Character[] {
   return [...base, ...extra.filter((c) => !ids.has(c.id))];
 }
 
+/**
+ * 某座位的有效角色池 = 基础包（房主统一选包）∪ 该玩家本局叠加启用的扩展包（个人叠加）。
+ * 复用 mergedCharPool 的「基础池 + 已学分解锁扩展角色」规则，逐包合并并去重。
+ */
+export function effectiveCharPool(grade: string, base: PacketId, extra: PacketId[]): Character[] {
+  const seen = new Map<string, Character>();
+  const add = (list: Character[]): void => {
+    for (const c of list) if (!seen.has(c.id)) seen.set(c.id, c);
+  };
+  add(mergedCharPool(grade, base));
+  for (const p of extra) if (p !== base) add(mergedCharPool(grade, p));
+  return [...seen.values()];
+}
+
+/* ==================== 扩展包按次使用（学习解锁机制） ==================== */
+
+/** 联机加入方：房主统一选的基础包与年级（由 room_state 下发，未同步前回退到本地默认值） */
+export let REMOTE_BASE_PACKET: PacketId = 'grade';
+export let REMOTE_BASE_GRADE = '初二上';
+
+/** 本地玩家的「个人叠加扩展包」（联机加入方在房主基础包之上额外启用的包；单机/房主恒为空） */
+export let SELECTED_EXTRA_PACKETS: PacketId[] = [];
+
+/** 渲染「扩展包每日免费额度」胶囊：今日扩展包免费 X/3 */
+export function renderPackMeter(): void {
+  const box = document.getElementById('packMeter');
+  if (!box) return;
+  const left = packFreeRemaining();
+  const total = 3;
+  const used = total - left;
+  const pct = Math.round((used / total) * 100);
+  const color = left > 0 ? 'var(--accent, #4F8CFF)' : '#6B7280';
+  box.innerHTML = `
+    <div class="pm-meter">
+      <span class="pm-label">🎟️ 今日扩展包免费</span>
+      <span class="pm-count"><b style="color:${left > 0 ? '#36D399' : '#FBBF24'}">${left}</b>/${total}</span>
+      <span class="pm-bar"><i style="width:${pct}%;background:${color}"></i></span>
+    </div>
+    <div class="pm-tip">${left > 0 ? `今日还剩 ${left} 次免费使用任意扩展包，超出后按次消耗学分` : '今日免费已用尽，继续使用扩展包将按次消耗学分'}</div>
+    <button class="pm-study ${left > 0 ? '' : 'pm-study--hot'}" onclick="openStudyFromPack()">📖 去学习赚学分</button>`;
+}
+
+/** 把一次扩展包使用预览渲染成状态徽标文案 */
+function packStateBadge(id: PacketId): string {
+  if (!isExpansion(id)) return '<span class="pk-badge free">永久免费</span>';
+  const toll = PACK_TOLL[id];
+  const pv = packUsePreview([id]);
+  if (pv.viaFree) return `<span class="pk-badge free">免费 ${packFreeRemaining()}/3</span>`;
+  if (pv.affordable) return `<span class="pk-badge pay">💰 ${toll}/局</span>`;
+  return `<span class="pk-badge locked">🔒 学分不足</span>`;
+}
+
+/** 学习引导按钮：跳转题库浏览 / 刷题（答题、复习赚取学分） */
+export function openStudyFromPack(): void {
+  Sound.play('click');
+  // 复用题库浏览入口（内含刷题 / 复习），引导用户通过答题积累学分
+  try {
+    (window as unknown as { openBankBrowser?: () => void }).openBankBrowser?.();
+  } catch {
+    /* ignore */
+  }
+}
+
 /* ==================== 加入档：阵营 / 角色选择（同步给房主） ==================== */
+
+/** 联机加入方：在房主基础包之上叠加启用自己的扩展包（个人叠加，不受房主限制） */
+export function toggleExtraPacket(id: PacketId): void {
+  Sound.play('click');
+  if (!isExpansion(id)) return;
+  if (!canEnablePacket(id)) {
+    alert(`「${packetName(id)}」今日免费次数已用尽，且学分不足（需 ${PACK_TOLL[id]} 学分/局）。\n\n通过答题、复习错题积累学分后即可启用。`);
+    openStudyFromPack();
+    return;
+  }
+  if (SELECTED_EXTRA_PACKETS.includes(id)) SELECTED_EXTRA_PACKETS = SELECTED_EXTRA_PACKETS.filter((x) => x !== id);
+  else SELECTED_EXTRA_PACKETS = [...SELECTED_EXTRA_PACKETS, id];
+  renderExtraPackPicker();
+  renderJoinPickers();
+  pushGuestPref();
+}
+
+/** 渲染加入方的「个人叠加扩展包」面板：展示房主基础包 + 可叠加的扩展包开关 */
+export function renderExtraPackPicker(): void {
+  const box = document.getElementById('extraPackPanel');
+  if (!box) return;
+  const base = REMOTE_BASE_PACKET;
+  const baseName = packetName(base);
+  const baseFree = base === 'grade';
+  const toggles = (['junior', 'senior', 'all'] as PacketId[])
+    .map((id) => {
+      const on = SELECTED_EXTRA_PACKETS.includes(id);
+      const enabled = canEnablePacket(id);
+      const p = PACKETS.find((x) => x.id === id)!;
+      const badge = packStateBadge(id);
+      const lockedCls = enabled ? '' : ' pk-locked';
+      return `<button class="opt-btn ${on ? 'active' : ''}${lockedCls}" data-epacket="${id}" onclick="toggleExtraPacket('${id}')">${p.icon} ${p.name}<small>叠加到 ${baseName} 之上</small><div class="pk-badges">${badge}</div></button>`;
+    })
+    .join('');
+  const eff = effectiveCharPool(REMOTE_BASE_GRADE, base, SELECTED_EXTRA_PACKETS);
+  box.innerHTML = `
+    <h3>◈ 扩展包 · 个人叠加 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（房主基础包：${baseName}${baseFree ? '（免费）' : '（房主已选）'}；你可叠加启用自己的扩展包，不受房主限制）</span></h3>
+    <div class="opt-row" id="extraPackPicker">${toggles}</div>
+    <div class="scope-hint" id="extraPackHint">本局你的可选角色池共 <b>${eff.length}</b> 名（基础 + 已叠加扩展包）</div>
+    <button class="pm-study" onclick="openStudyFromPack()">📖 去学习赚学分</button>`;
+}
+
 /** 渲染加入方专用选择器（使用全量角色池，不限定年级） */
 export function renderJoinPickers(): void {
   const fp = document.getElementById('joinFactionPicker');
@@ -388,8 +508,11 @@ export function renderJoinPickers(): void {
   }
   const cg = document.getElementById('joinCharGrid');
   if (cg) {
-    const pool = CHARACTERS.filter((c) => c.faction === SELECTED_FACTION);
-    if (!SELECTED_CHAR || SELECTED_CHAR.faction !== SELECTED_FACTION) SELECTED_CHAR = pool[0] ?? null;
+    // 加入方可选角色 = 房主基础包 ∪ 自己叠加启用的扩展包（年级按房主选定）
+    const pool = effectiveCharPool(REMOTE_BASE_GRADE, REMOTE_BASE_PACKET, SELECTED_EXTRA_PACKETS).filter(
+      (c) => c.faction === SELECTED_FACTION,
+    );
+    if (!SELECTED_CHAR || !pool.some((c) => c.id === SELECTED_CHAR!.id)) SELECTED_CHAR = pool[0] ?? null;
     cg.innerHTML = pool
       .map((c) => {
         const f = FACTIONS[c.faction];
@@ -418,6 +541,8 @@ export function pushGuestPref(): void {
       // 联机配装同步：上报本局携带的装备与道具，以及已解锁装备列表供房主校验
       loadout: PROFILE.loadout,
       unlockedEquips: PROFILE.unlockedEquips,
+      // 个人叠加启用的扩展包（已付费/已用免费额度），房主据此在基础包之上追加角色池
+      packets: SELECTED_EXTRA_PACKETS.slice(),
     },
   });
   renderJoinPickers();
@@ -439,8 +564,12 @@ export function enterSetup(mode: 'single' | 'host' | 'join'): void {
   document.getElementById('screenLobby')!.classList.remove('active');
   document.getElementById('screenSetup')!.classList.add('active');
   renderLoadoutBar();
-  // 加入方进入设置界面即同步一次偏好（含局前配装），确保房主开局时已收到
-  if (mode === 'join') pushGuestPref();
+  // 非加入方（单机 / 房主）不存在个人叠加，清空残留；加入方渲染个人叠加面板并同步偏好
+  if (mode !== 'join') SELECTED_EXTRA_PACKETS = [];
+  if (mode === 'join') {
+    renderExtraPackPicker();
+    pushGuestPref();
+  }
   Sound.play('click');
 }
 
@@ -697,6 +826,10 @@ interface RoomStateLike {
   members: { name: string; isHost: boolean; profile: PublicProfile | null }[];
   currentCount: number;
   targetCount: number;
+  /** 房主统一选的基础扩展包（加入方据此预览个人叠加） */
+  packet?: string;
+  /** 房主选定的年级 / 学期 */
+  grade?: string;
 }
 
 function memberListHtml(members: RoomStateLike['members'], currentCount: number, targetCount: number, tail: string): string {
@@ -760,8 +893,13 @@ export function updateGuestRoomInfo(state: RoomStateLike): void {
   );
   lb!.style.display = 'inline-block';
   jb!.style.display = 'none';
+  // 记录房主统一选的基础包与年级，使个人叠加选项与可选角色池与房主一致
+  if (state.packet) REMOTE_BASE_PACKET = state.packet as PacketId;
+  if (state.grade) REMOTE_BASE_GRADE = state.grade;
+  renderExtraPackPicker();
+  renderJoinPickers();
   renderSeatPanel();
-  // 连接已建立：补发偏好（含局前配装），确保房主开局时收到（此前未连接时的发送会丢失）
+  // 连接已建立：补发偏好（含局前配装与叠加扩展包），确保房主开局时收到（此前未连接时的发送会丢失）
   pushGuestPref();
 }
 

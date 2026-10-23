@@ -29,6 +29,31 @@ export const PACKETS: Packet[] = [
   { id: 'all', name: '全部', icon: '🎓', desc: '包含所有角色，不分年级与学段' },
 ];
 
+/**
+ * 扩展包按次学分档位（纯按次付费，不永久解锁）：
+ *   - grade 永久免费（默认年级解锁不受限制）
+ *   - 其余三包按本局用到的最高阶档位计费（建议值，可调）
+ * 与「每日 3 次免费（三包共享）」共同构成使用门槛（见 profile/packMeter.ts）。
+ */
+export const PACK_TOLL: Record<PacketId, number> = { grade: 0, junior: 20, senior: 30, all: 50 };
+
+/** 扩展包阶序：grade < junior < senior < all（计费取合并池中的最高阶） */
+export function packetRank(id: PacketId): number {
+  return id === 'all' ? 3 : id === 'senior' ? 2 : id === 'junior' ? 1 : 0;
+}
+
+/** 是否为受额度/学分约束的扩展包（grade 为默认免费包） */
+export function isExpansion(id: PacketId): boolean {
+  return id !== 'grade';
+}
+
+/** 合并多个扩展包后的最高阶学分档位（无扩展包返回 0） */
+export function packTollOf(ids: PacketId[]): number {
+  let best = 0;
+  for (const id of ids) if (isExpansion(id)) best = Math.max(best, PACK_TOLL[id]);
+  return best;
+}
+
 /** 角色所属学段：由年级派生（初一~初三=初中；高一~高三=高中） */
 export function stageOf(grade: string): Stage {
   const i = GRADE_ORDER.indexOf(grade);

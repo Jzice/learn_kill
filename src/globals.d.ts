@@ -1,7 +1,7 @@
 /* ==================== 内联事件处理函数的 Window 全局声明 ====================
  * 原版 HTML 通过 onclick="fn()" 直接调用全局函数；模块化后由 main.ts 统一挂载。
  */
-import type { PublicProfile, SubjectBankSlice } from './core/types';
+import type { PublicProfile, SubjectBankSlice, PacketId } from './core/types';
 
 declare global {
   /** 构建期由 vite define 注入（取自 package.json 的 version），供顶栏显示版本号 */
@@ -60,8 +60,11 @@ declare global {
     setTimerOn: (on: boolean) => void;
     setTimerSec: (sec: number) => void;
     // 扩展包：决定可选角色的学段（初中 / 高中 / 全部）
-    setPacket: (id: 'all' | 'junior' | 'senior') => void;
+    setPacket: (id: PacketId) => void;
+    toggleExtraPacket: (id: PacketId) => void;
+    openStudyFromPack: () => void;
     renderPacketPicker: () => void;
+    renderExtraPackPicker: () => void;
     clearWrongBook: () => void;
     // 首页学习情况：展开错题解析 / 展开已攻克列表 / 标记已复习 / 复习模式
     toggleStudyItem: (key: string) => void;

@@ -121,6 +121,11 @@ await guest.locator('#joinFactionPicker .faction-card').nth(1).click();
 await guest.waitForTimeout(150);
 const jc = await guest.locator('#joinCharGrid .char-card').count();
 check('加入档角色选择器渲染', jc > 0, `${jc} 名`);
+// 个人叠加扩展包面板（学习解锁机制：房主基础包 + 个人叠加）
+const extraPanel = await guest.locator('#extraPackPanel').count();
+check('个人叠加扩展包面板渲染', extraPanel === 1, `${extraPanel} 个`);
+const extraTitle = (await guest.textContent('#extraPackPanel')) || '';
+check('叠加面板含房主基础包说明', extraTitle.includes('基础包'), extraTitle.trim().replace(/\s+/g, ' ').slice(0, 20));
 await guest.fill('#joinCode', roomCode);
 await guest.click('#joinRoomBtn');
 await guest.waitForFunction(

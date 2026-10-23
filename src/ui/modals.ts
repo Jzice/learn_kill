@@ -3,10 +3,11 @@ import { FACTIONS } from '../data/factions';
 import { GRADE_ORDER } from '../data/grades';
 import { CHARACTERS } from '../data/characters';
 import { ACHIEVEMENTS, PROFILE } from '../profile/profile';
+import { PACK_FREE_DAILY, packFreeRemaining } from '../profile/packMeter';
 import { defOf } from '../data/skilldefs';
 
-/** 五个 tab（顺序即高度测量顺序） */
-const RULE_TABS = ['basic', 'factions', 'cards', 'chars', 'ach'];
+/** 各 tab（顺序即高度测量顺序） */
+const RULE_TABS = ['basic', 'factions', 'cards', 'chars', 'ach', 'packs'];
 /** 各 tab 内容自然高度的最大值（与视口无关，缓存以免重复测量） */
 let rulesNaturalMax = 0;
 /** 视口尺寸变化监听（窗口变小/变大时重新套用 85vh 上限） */
@@ -160,5 +161,23 @@ function renderRulesContent(tab: string): void {
         return `<div class="ach-item ${un ? 'unlocked' : 'locked'}"><div class="ach-icon">${un ? a.icon : '🔒'}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
       }).join('')
     }</div></div>`;
+  } else if (tab === 'packs') {
+    const freeLeft = packFreeRemaining();
+    el.innerHTML = `<div class="rule-section"><h4>🎁 扩展包与学习解锁</h4><ul>
+      <li><b>按年级（grade）</b>：<b>永久免费</b>，角色池随所选年级累加，不追加学科主题技能。</li>
+      <li><b>初中 / 高中 / 全部</b>：三包需满足学习条件，与答题、复习获取的<b>学分</b>挂钩，<b>不永久解锁</b>。</li>
+      <li><b>每日免费</b>：三包<b>共享</b>每天 ${PACK_FREE_DAILY} 次免费使用（今日剩余 <b>${freeLeft}/${PACK_FREE_DAILY}</b>），跨日自动重置。</li>
+      <li><b>按次付费</b>：免费用尽后，每开一局「用到扩展包」按本局有效池中的<b>最高阶</b>扣学分：初中 20 / 高中 30 / 全部 50 学分·局。</li>
+      <li><b>启用门控</b>：免费剩余&gt;0 或学分足够方可启用；否则选项置灰并高亮「📖 去学习赚学分」引导（题库浏览 / 刷题）。</li>
+    </ul></div>
+    <div class="rule-section"><h4>👥 联机：房主统一选包 + 个人叠加</h4><ul>
+      <li>房主统一选<b>基础包</b>；每位玩家可在基础包之上<b>按自身情况叠加启用</b>扩展包，角色池 = 基础 ∪ 个人叠加，不受房主限制。</li>
+      <li><b>计费归属</b>：单机 / 房主为自己基础包付费；联机加入方仅为自己叠加的扩展包付费，基础包由房主结算，加入方不代付。</li>
+      <li>中途加入接管 AI 角色；重新开局前可重选已启用扩展包内的任意角色。</li>
+    </ul></div>
+    <div class="rule-section"><h4>🪙 学分来源</h4><ul>
+      <li>答对题目、复习错题、完成每日学习任务、学期战令奖励均可获得学分（无随机、无新增渠道）。</li>
+      <li>当前学分：<b>${PROFILE.credits}</b>，今日扩展包免费剩余 <b>${freeLeft}/${PACK_FREE_DAILY}</b>。</li>
+    </ul></div>`;
   }
 }

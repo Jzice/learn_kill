@@ -16,3 +16,10 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# 智能体工作区数据（本地，不入库）
+.codebuddy/
+
+# 测试/作业临时文件
+jobs.json
+

@@ -63,6 +63,9 @@ import {
   renderTimerPicker,
   setQuizScopeMode,
   setPacket,
+  toggleExtraPacket,
+  openStudyFromPack,
+  renderExtraPackPicker,
   setTimerOn,
   setTimerSec,
   renderProfileEditor,
@@ -190,6 +193,9 @@ window.enterSetup = enterSetup;
 window.setNetMode = setNetMode;
 window.setQuizScopeMode = setQuizScopeMode;
 window.setPacket = setPacket;
+window.toggleExtraPacket = toggleExtraPacket;
+window.openStudyFromPack = openStudyFromPack;
+window.renderExtraPackPicker = renderExtraPackPicker;
 window.setTimerOn = setTimerOn;
 window.setTimerSec = setTimerSec;
 window.renderPacketPicker = renderPacketPicker;
