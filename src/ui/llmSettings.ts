@@ -11,8 +11,6 @@ import { applyLlmModes } from '../game/setup';
 import { SELECTED_COUNT } from './lobby';
 import { G } from '../game/state';
 import { NET, syncStateToClients } from '../net/network';
-import { pushNotify } from './notify';
-import { render } from './render';
 
 const PROVIDERS: LlmProvider[] = ['openai', 'deepseek', 'qwen', 'zhipu', 'ollama', 'custom'];
 
@@ -28,26 +26,6 @@ export function openLlmSettings(): void {
 
 export function closeLlmSettings(): void {
   document.getElementById('llmSettingsModal')?.classList.remove('show');
-}
-
-/**
- * 顶栏一键开关：翻转大模型接管开关并立即生效。
- * 单机 / 房主可编辑；联机客人点击仅提示「仅房主可设置」，不修改本地配置。
- * 房主切换后立即 syncStateToClients，把新状态同步给客人端。
- */
-export function llmQuickToggle(): void {
-  if (NET.mode === 'host' && !NET.isHost) {
-    pushNotify('sys', '仅房主可设置大模型接管');
-    return;
-  }
-  const c = cfg();
-  c.enabled = !c.enabled;
-  setLlmConfig(c);
-  applyLlmModes(); // 对局进行中实时生效：开→接管座位转 llm，关→回退启发式
-  if (NET.isHost) syncStateToClients(); // 立即把开关状态同步给客人端
-  renderLlmSetupPanel();
-  renderLlmSettings(); // 若设置弹窗已打开则同步勾选框
-  render(); // 刷新顶栏一键开关按钮状态
 }
 
 /** 设置弹窗内容渲染 */
@@ -154,7 +132,6 @@ export function llmSetEnabled(on: boolean): void {
   applyLlmModes(); // 对局进行中实时生效：开→指定座位转 llm，关→全部回退启发式
   if (NET.isHost) syncStateToClients(); // 立即同步给客人端
   renderLlmSetupPanel();
-  render(); // 刷新顶栏一键开关按钮状态
 }
 
 export function llmSetTakeoverAll(on: boolean): void {
@@ -165,7 +142,6 @@ export function llmSetTakeoverAll(on: boolean): void {
   applyLlmModes();
   if (NET.isHost) syncStateToClients();
   renderLlmSettings();
-  render(); // 刷新顶栏一键开关按钮状态
 }
 
 export function llmSetDebug(on: boolean): void {
@@ -185,7 +161,6 @@ export function llmToggleSeat(i: number): void {
   applyLlmModes();
   if (NET.isHost) syncStateToClients();
   renderLlmSettings();
-  render(); // 刷新顶栏一键开关按钮状态
 }
 
 export function llmSetField(field: 'baseURL' | 'apiKey' | 'model' | 'temperature' | 'timeoutMs', value: string): void {

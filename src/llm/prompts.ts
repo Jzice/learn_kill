@@ -341,7 +341,9 @@ export function buildDecisionMessages(
   return [
     {
       role: 'system',
-      content: SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + EVAL_PRINCIPLES + '\n' + roleHint + '\n' + RULE_REF,
+      content:
+        SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + EVAL_PRINCIPLES + '\n' + roleHint + '\n' +
+        RULE_REF + '\n（提示词版本 ' + PROMPT_VER + '）',
     },
     { role: 'user', content: user },
   ];
@@ -370,7 +372,9 @@ export function buildPlanMessages(idx: number, opts: ChoiceOption[], maxSteps: n
   return [
     {
       role: 'system',
-      content: SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + EVAL_PRINCIPLES + '\n' + roleHint + '\n' + RULE_REF,
+      content:
+        SYSTEM_BASE + '\n' + FORMAT_EXAMPLES + '\n' + EVAL_PRINCIPLES + '\n' + roleHint + '\n' +
+        RULE_REF + '\n（提示词版本 ' + PROMPT_VER + '）',
     },
     { role: 'user', content: user },
   ];
@@ -387,4 +391,14 @@ export function buildQuizMessages(idx: number): LlmMessage[] {
     { role: 'system', content: SYSTEM_BASE + '\n' + `你的身份目标：${ROLE_OBJ[p.role] ?? '隐藏'}。` },
     { role: 'user', content: user },
   ];
+}
+
+/* ------------------------------------------------------------------ */
+/* 提示词版本戳：任何影响 LLM 决策质量的提示词改动都应递增此版本。       */
+/* 注入到 system 段，并暴露到 window.__PROMPT_VER__，供 ai-eval 记录对照。 */
+/* ------------------------------------------------------------------ */
+export const PROMPT_VER = '2.6.2';
+
+if (typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).__PROMPT_VER__ = PROMPT_VER;
 }

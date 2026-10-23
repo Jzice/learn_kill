@@ -15,6 +15,9 @@ const SEED = 0x5eed1234;
 const { page, errors, close } = await launchSim(file, 8904);
 await installSeededRandom(page);
 
+// 读取构建内注入的提示词版本戳（window.__PROMPT_VER__），供 LLM 接管对局溯源对照。
+const promptVer = await page.evaluate(() => window.__PROMPT_VER__ || '未知');
+
 const ARMS = [
   { key: 'baseline', label: '基线 useEv=false', policy: { useEv: false } },
   { key: 'ev', label: 'EV   useEv=true ', policy: { useEv: true } },
@@ -33,6 +36,9 @@ const wa = winRates(A.acc);
 const wb = winRates(B.acc);
 
 console.log(`\n=== AI 策略 A/B 对比：${N} 局/臂 · ${SEATS} 人局 · 同种子配对 ===`);
+console.log(`  提示词版本 PROMPT_VER = ${promptVer}`);
+console.log(`  注：本脚本比较「启发式 useEv」两臂（无头模拟不触发 LLM），胜率差与提示词无关；`);
+console.log(`      PROMPT_VER 仅用于记录，便于将来在 LLM 接管模式对局时溯源对照。`);
 console.log('  指标              基线          EV          差值');
 const row = (name, a, b, digits = 1, unit = '%') => {
   const d = (b - a) * (unit === '%' ? 100 : 1);
@@ -76,6 +82,7 @@ if (jsonPath) {
         games: N,
         seats: SEATS,
         seed: SEED,
+        promptVer,
         baseline: { winRates: wa, avgTurns: A.acc.avgTurns, stalls: A.acc.stalls, score: sa, ms: A.ms },
         ev: { winRates: wb, avgTurns: B.acc.avgTurns, stalls: B.acc.stalls, score: sb, ms: B.ms },
       },

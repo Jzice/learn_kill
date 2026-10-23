@@ -417,6 +417,9 @@ system 尾部追加动态身份目标：`你的身份目标：反贼（目标：
 - **选项语义注解 `deriveHint`**：每个枚举选项行尾追加「— <效果说明>」。技能直接复用 `skilldefs` 的 `desc`（含「需答题」等提示）；卡牌按 `sub`/属性生成一行效果（如 `sha_*` →「造成1点伤害」、`tiesuo` →「横置,受属性伤害时传导」）。实现位于 `src/llm/prompts.ts`，由 `cardById` 按 `value` 中的卡牌 id 反查 `G` 取精确语义，无需调用点逐个填充。
 - **规则摘要 + 评估准则**：`RULE_REF`（基本牌/锦囊/装备/答题门槛速查，约 250 token）与 `EVAL_PRINCIPLES`（5 条决策准则）注入 `system`，弥补模型对游戏机制的常识缺口，但不注入完整规则文档。
 - **差异化采样温度**：`agent.ts` 的 `tempForKind` 按决策种类覆盖 `temperature`——防御/救援/无懈类（`discard`/`shan`/`rescue`/`save`/`counter`）用 0.3 更确定，攻击/规划类（`play`/`target`）用 0.8 保留探索性，其余 0.5；规划固定 0.7，布尔/答题决策 0.4。
+- **提示词版本戳 `PROMPT_VER`**：任何影响 LLM 决策质量的提示词改动都应递增 `src/llm/prompts.ts` 中的 `PROMPT_VER`（当前 `2.6.2`）。它会被注入 `system` 段末尾、并暴露到 `window.__PROMPT_VER__`，供 `scripts/ai-eval.mjs`（记录到报告与 JSON）与 `scripts/ai-eval-prompt.mjs`（离线对照两个 build 的版本边界）溯源对照。
+
+> 注意：`ai-eval` 比较的是「启发式 `useEv`」两臂（无头模拟 `isSim` 下不触发 LLM），胜率差与提示词无关；要量化提示词对 **LLM 接管**胜率的影响，需在已配置 LLM API 的 build 上以 LLM 接管模式跑对局，再凭 `PROMPT_VER` 做前后对照。
 
 #### 请求与解析
 

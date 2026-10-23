@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [2.6.6] - 2026-10-23
+
+### 变更
+- **移除顶栏大模型接管一键开关**：顶栏按钮过多，`🤖 开/关` 一键开关下架，顶栏恢复 `🔊 / 🎨 / 🤖(设置)`；实时开 / 关大模型接管改由 **🤖 设置弹窗** 为唯一入口（对局中打开弹窗翻转开关即经 `applyLlmModes()` 即时生效，单机 / 房主）
+  - 联机客人只读状态与「思考中」指示同步保留不变
+  - 同步清理 `llmQuickToggle` / `syncLlmToggleButton` 及其全局挂载、类型声明与专用样式
+
+### 新增
+- **提示词版本戳 `PROMPT_VER`**（`src/llm/prompts.ts`，当前 `2.6.2`）：注入 `system` 段末尾并暴露到 `window.__PROMPT_VER__`，供 `scripts/ai-eval.mjs`（报告与 JSON 记录）与新增的 `scripts/ai-eval-prompt.mjs`（离线对照两个 build 的版本边界）溯源对照提示词改动
+
+### 验证
+- typecheck 零错误；`verify:dist` 待构建后验证
+
 ## [2.6.5] - 2026-10-23
 
 ### 新增
