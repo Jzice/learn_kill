@@ -5,7 +5,7 @@ import { isSim } from '../core/dom';
 import { Sound } from '../core/sound';
 import { addLog } from './log';
 import { render } from '../ui/render';
-import { NET, isLocalPlayer, syncStateToClients } from '../net/network';
+import { NET, isLocalPlayer, syncStateToClients, syncTimerToClients } from '../net/network';
 import { defaultChoiceFor, timerActionText, timerEnabled, timerSec } from './timer';
 
 /** 当前决策环节的计时器（房主权威；本地单人即为自己） */
@@ -45,7 +45,7 @@ export function waitChoice(
     G.pendingPlayer = playerIdx;
     G.pendingResolve = resolve;
     // 回合限时：真人玩家的每个决策环节独立计时，超时按默认规则自动处理并跳到下一步
-    //（AI 不计时；联机由房主为所有真人玩家计时，倒计时随 state_sync 下发到客人端）
+    //（AI 不计时；联机由房主为所有真人玩家计时，倒计时随 state_sync / timer_sync 下发到客人端）
     if (timerEnabled() && !p.isAI) {
       const ms = timerSec() * 1000;
       G.timerEnd = Date.now() + ms;
@@ -61,6 +61,8 @@ export function waitChoice(
     }
     if (isLocalPlayer(playerIdx)) {
       render();
+      // 房主自己出牌：pendingOptions 是房主自己的，不能下发；改发 timer_sync 让客人端显示房主倒计时
+      if (NET.isHost) syncTimerToClients();
     } else if (NET.isHost) {
       const send = (): void => {
         NET.sendToPlayer(p.peerId!, {

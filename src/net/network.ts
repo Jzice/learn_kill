@@ -11,6 +11,7 @@ import { SELECTED_COUNT, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInf
 import { backToRoomForRematch, hostHandleRematchRequest } from '../ui/settle';
 import { onAskQuizRequest } from '../game/quiz';
 import { applyLlmModes } from '../game/setup';
+import { resolveChoice } from '../game/choice';
 import { identityFromProfile, localIdentity, maybeSettle, publicProfile } from '../profile/profile';
 import { FX } from '../core/fx';
 import { ROLES } from '../data/characters';
@@ -413,19 +414,19 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
     const nm = NET.roomMembers.find((m) => m.peerId === conn.peer)?.name || '玩家';
     hostHandleRematchRequest(nm);
   } else if (data.type === 'choose_response') {
-    if (G.pendingPlayer != null && G.pendingResolve) {
-      const r = G.pendingResolve;
-      G.pendingResolve = null;
-      G.pendingOptions = null;
-      G.pendingPlayer = null;
-      r(data.value);
-    }
+    // 走统一的 resolveChoice：清理房主端 choiceTimer 与 G.timerEnd，并同步给客人端，避免倒计时残留
+    if (G.pendingResolve) resolveChoice(data.value);
   } else if (data.type === 'quiz_response') {
     const pq = NET.pendingQuiz;
     // 仅接受与当前挂起答题编号一致的回复，迟到的旧回复直接丢弃
     if (pq && pq.quizId === data.quizId) {
       if (pq.timer) clearTimeout(pq.timer);
       NET.pendingQuiz = null;
+      // 远程答题结束：清理房主端这次答题设置的 G.timerEnd（客人端由 displayQuiz 自行清理）
+      if (G.timerEnd) {
+        G.timerEnd = null;
+        syncTimerToClients();
+      }
       pq.resolve(data.correct);
     }
   } else if (data.type === 'chat') {
@@ -497,6 +498,12 @@ export function onClientData(data: NetMessage): void {
         void FX.death(i, ROLES[p.role].name, p.killedBy ? `被 ${p.killedBy} 击杀` : '');
       }
     });
+  } else if (data.type === 'timer_sync') {
+    // 房主自己出牌时只同步计时字段（不带 pendingOptions），客人端据此显示房主倒计时
+    G.timerOn = data.timerOn ?? G.timerOn;
+    G.timerSec = data.timerSec ?? G.timerSec;
+    G.timerEnd = data.timerEnd ?? null;
+    render();
   } else if (data.type === 'choose_request') {
     G.pendingOptions = data.options;
     G.pendingPlayer = data.myPlayerIdx;
@@ -550,6 +557,21 @@ export function syncStateToClients(): void {
     pendingType: G.pendingType,
     pendingPlayer: G.pendingPlayer,
     playLog: playLog.slice(-60),
+    timerOn: G.timerOn,
+    timerSec: G.timerSec,
+    timerEnd: G.timerEnd ?? null,
+  });
+}
+
+/**
+ * 只同步回合限时字段（timerOn / timerSec / timerEnd），不携带 pendingOptions / pendingPlayer。
+ * 用于房主自己出牌时：此时决策选项是房主自己的，绝不能下发给客人端，
+ * 否则客人端会误以为轮到自己决策。客人端据此显示房主的倒计时。
+ */
+export function syncTimerToClients(): void {
+  if (!NET.isHost) return;
+  NET.broadcast({
+    type: 'timer_sync',
     timerOn: G.timerOn,
     timerSec: G.timerSec,
     timerEnd: G.timerEnd ?? null,

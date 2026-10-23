@@ -67,6 +67,13 @@ export type NetMessage =
       timerEnd?: number | null;
     }
   | {
+      /** 仅同步回合限时字段：房主自己出牌（pendingOptions 属房主，不得下发）时广播倒计时用 */
+      type: 'timer_sync';
+      timerOn?: boolean;
+      timerSec?: number;
+      timerEnd?: number | null;
+    }
+  | {
       type: 'choose_request';
       options: ChoiceOption[];
       myPlayerIdx: number;
