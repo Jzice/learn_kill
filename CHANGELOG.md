@@ -33,7 +33,7 @@
   与 `scripts/repro-senior50.mjs`（AI 自动对局回归）；`smoke-skills.mjs` 断言升级到 81 角色 / ≥191 技能
 
 ### 验证
-- typecheck 零错误；`npm run build` 双模式成功产出单文件（CDN 503 KB / 离线 590 KB）
+- typecheck 零错误；`npm run build` 双模式成功产出单文件（CDN 602 KB / 离线 689 KB）
 - `verify:senior50` **14/14** 通过（50 名 / 九科 4~6 / 71 技能全部登记 / 无死原语 / PP 全部落入预算带）
 - `smoke-skills` **12/12**、`smoke` **66/66**、`smoke-net` **20/20** 通过，均 0 console error
 - `repro-senior50` 20 局 6 人 AI 对战：0 卡死、0 控制台错误
