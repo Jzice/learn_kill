@@ -419,8 +419,13 @@ export function onPeerData(conn: PeerJS.DataConnection, data: NetMessage): void 
     const nm = NET.roomMembers.find((m) => m.peerId === conn.peer)?.name || '玩家';
     hostHandleRematchRequest(nm);
   } else if (data.type === 'choose_response') {
+    // 仅接受「当前正挂起等待的该玩家」的回复：客人端陈旧界面（超时/同步延迟后未刷新的按钮）
+    // 产生的迟到点击必须丢弃，否则会错误解析掉房主本人或他人正在进行的决策
+    //（曾经的漏洞：迟到回复若值为 'end'，会让他人的出牌阶段被提前结束并跳进弃牌阶段）。
     // 走统一的 resolveChoice：清理房主端 choiceTimer 与 G.timerEnd，并同步给客人端，避免倒计时残留
-    if (G.pendingResolve) resolveChoice(data.value);
+    const pendingIdx = G.pendingPlayer;
+    const pendingPeer = pendingIdx == null ? undefined : G.players[pendingIdx]?.peerId;
+    if (G.pendingResolve && pendingIdx != null && pendingPeer === conn.peer) resolveChoice(data.value);
   } else if (data.type === 'quiz_response') {
     const pq = NET.pendingQuiz;
     // 仅接受与当前挂起答题编号一致的回复，迟到的旧回复直接丢弃

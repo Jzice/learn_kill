@@ -191,12 +191,16 @@ export async function playPhase(idx: number): Promise<void> {
   let planRequests = 0;
   // 单回合大模型决策时长硬上限：累计超过即强制降级为启发式并结束本回合，
   // 杜绝「大模型过慢导致 AI 长时间不出牌」卡住整局（默认 30s，足够多步决策且远小于一局时长）。
+  // 仅对大模型接管座位生效：真人玩家的出牌节奏由本人掌控（回合限时是独立的可选机制）。
+  // 曾经的漏洞——该检查未加 isAI/aiMode 门禁，真人出牌阶段累计超 30s
+  //（思考 + 选目标 + 技能答题的读题与 1.5s 反馈延迟均计入）后，被静默强制
+  // 「结束出牌」并直接跳进弃牌阶段，且无任何日志提示。
   const turnStart = Date.now();
   const LLM_TURN_BUDGET_MS = 30000;
   /** 取下一步动作：优先消费规划队列（仍可用才用），否则回退单步决策 */
   const nextPlay = async (opts: ChoiceOption[]): Promise<string | number> => {
     // 单回合超时保护：大模型决策累计过久直接降级并结束本回合（降级后后续回合走启发式）
-    if (Date.now() - turnStart > LLM_TURN_BUDGET_MS) {
+    if (p.isAI && p.aiMode === 'llm' && Date.now() - turnStart > LLM_TURN_BUDGET_MS) {
       demoteLlmSeat(idx);
       return 'end';
     }
