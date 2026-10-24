@@ -10,12 +10,21 @@ import { defaultChoiceFor, timerActionText, timerEnabled, timerSec } from './tim
 
 /** 当前决策环节的计时器（房主权威；本地单人即为自己） */
 let choiceTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * 计时器归属令牌：每次开启一个新的决策计时器自增。setTimeout 回调只在本令牌
+ * 仍是最新（即没有更新的 waitChoice 接管）时才允许清 G.timerEnd / 解析选择。
+ * 用于杜绝「嵌套或重入 waitChoice 覆盖全局 choiceTimer 后，旧的孤儿定时器回调
+ * 把当前正在显示的 G.timerEnd 抹掉、或替别人做默认选择」这类隐患。
+ */
+let activeTimerId = 0;
 
 function clearChoiceTimer(): void {
   if (choiceTimer) {
     clearTimeout(choiceTimer);
     choiceTimer = null;
   }
+  // 使任何在途（已调度但未触发）的旧定时器回调失效，防止其后续误动作
+  activeTimerId++;
   if (G.timerEnd) G.timerEnd = null;
 }
 
@@ -49,7 +58,12 @@ export function waitChoice(
     if (timerEnabled() && !p.isAI) {
       const ms = timerSec() * 1000;
       G.timerEnd = Date.now() + ms;
+      const myId = ++activeTimerId;
       choiceTimer = setTimeout(() => {
+        // 仅当本定时器仍是当前等待的环节时才行动：若期间又发起了新的
+        // waitChoice（嵌套/重入），旧的回调必须直接放弃，既不抹掉新的
+        // G.timerEnd，也不替别人做默认选择。
+        if (myId !== activeTimerId) return;
         choiceTimer = null;
         G.timerEnd = null;
         if (G.pendingResolve !== resolve) return;
@@ -105,6 +119,9 @@ export function resolveChoice(v: string | number): void {
 export function clientResolveChoice(v: string | number): void {
   Sound.play('click');
   if (!G.pendingOptions) return;
+  // 清掉客人端本地自己的决策计时器，避免选择已上报房主后本地倒计时仍挂起、
+  // 触发孤儿回调导致重复解析（房主端由 choose_response 统一处理）
+  clearChoiceTimer();
   G.pendingOptions = null;
   G.pendingPlayer = null;
   NET.sendToHost({ type: 'choose_response', value: v });

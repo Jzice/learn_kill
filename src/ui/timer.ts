@@ -19,7 +19,7 @@ export function initTimerTicker(): void {
       }
       return;
     }
-    const left = Math.max(0, Math.ceil((G.timerEnd - Date.now()) / 1000));
+    const left = Math.max(0, Math.floor((G.timerEnd - Date.now()) / 1000));
     const txt = `⏱ ${left}s`;
     if (el.textContent !== txt) el.textContent = txt;
     el.className = 'timer-chip' + (left <= 5 ? ' urgent' : '');
