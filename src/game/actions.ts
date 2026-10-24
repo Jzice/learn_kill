@@ -12,6 +12,7 @@ import {
   canBeTarget,
   canConvertAs,
   cardImmuneTo,
+  chooseSelfDiscard,
   consumeRedirect,
   enemyEquipVoidOf,
   equipImmune,
@@ -57,12 +58,9 @@ function shaDamage(a: Player, t: Player): number {
   return dmg;
 }
 
-/** 弃置指定玩家手牌末尾 n 张（AI/自动弃牌用） */
-function dumpHand(p: Player, n: number): void {
-  for (let k = 0; k < n && p.hand.length > 0; k++) {
-    const c = p.hand.pop()!;
-    G.discard.push(c);
-  }
+/** AI 代取策略：取手牌末尾 n 张（与历史 dumpHand 行为一致） */
+function tailPick(p: Player, n: number): Card[] {
+  return p.hand.slice(-n);
 }
 
 /** 转移候选人的 AI 评分：优先非同阵营 + 手牌多（把祸水引向"敌人"） */
@@ -206,7 +204,8 @@ export async function useSha(
           ], 'list');
     }
     if (ch === 'discard' && t.hand.length > 0) {
-      dumpHand(t, 1);
+      const dropped = await chooseSelfDiscard(t, 1, { aiPick: tailPick });
+      for (const c of dropped) discardCard(t, c);
       addLog(`${t.name} 弃置一张手牌`, 'dmg');
     } else {
       drawCards(a, 1);
@@ -239,11 +238,15 @@ export async function useSha(
             { label: '不发动', value: 'no' },
           ], 'list')) === 'yes';
       if (force) {
-        dumpHand(a, 2);
-        addLog(`${a.name} 贯石斧：弃两张牌，此杀不可闪避`, 'hl');
-        render();
-        await resolveHit();
-        return;
+        // 由发动者自己选择弃置的两张牌（取消则不发动）
+        const dropped = await chooseSelfDiscard(a, 2, { aiPick: tailPick, cancelable: true });
+        if (dropped.length === 2) {
+          for (const c of dropped) discardCard(a, c);
+          addLog(`${a.name} 贯石斧：弃两张牌，此杀不可闪避`, 'hl');
+          render();
+          await resolveHit();
+          return;
+        }
       }
     }
     // 青龙偃月刀：杀被闪后可对同目标再出一张杀
@@ -283,11 +286,17 @@ export async function useSha(
           { label: '正常造成伤害', value: 'no' },
         ], 'list')) === 'yes';
     if (useSkill) {
-      dumpHand(a, 2);
-      dumpHand(t, 2);
-      addLog(`【寒冰剑】${t.name} 弃置两张手牌，免除伤害`, 'hl');
-      render();
-      return;
+      // 攻击者自己选择弃置的两张费用牌（取消则不发动，正常造成伤害）
+      const mine = await chooseSelfDiscard(a, 2, { aiPick: tailPick, cancelable: true });
+      if (mine.length === 2) {
+        // 被弃方自行选择弃置的牌（人类自选；AI 自动）
+        const theirs = await chooseSelfDiscard(t, 2, { aiPick: tailPick });
+        for (const c of mine) discardCard(a, c);
+        for (const c of theirs) discardCard(t, c);
+        addLog(`【寒冰剑】${t.name} 弃置两张手牌，免除伤害`, 'hl');
+        render();
+        return;
+      }
     }
   }
   await resolveHit();

@@ -133,12 +133,44 @@ function floatDown(p: Player, n: number): void {
   addLog(`${p.name} 失去 ${n} 点体力`, 'dmg');
 }
 
-/** 随机取 n 张手牌到弃牌堆 */
-function dumpHand(p: Player, n: number): void {
-  for (let k = 0; k < n && p.hand.length > 0; k++) {
-    const c = p.hand[Math.floor(Math.random() * p.hand.length)];
-    discardCard(p, c);
+/** AI 取牌策略：随机取 n 张（不重复，与历史 dumpHand 行为一致） */
+function randomPick(p: Player, n: number): Card[] {
+  const pool = [...p.hand];
+  const out: Card[] = [];
+  for (let k = 0; k < n && pool.length; k++) {
+    out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   }
+  return out;
+}
+
+/**
+ * 由玩家自己选择弃置 n 张手牌（人类逐张 waitChoice 选择；AI 按策略自动取）。
+ * 返回的牌尚未离手，由调用方 discardCard。
+ * - 默认不可取消（强制弃牌，与弃牌阶段一致）；cancelable 时人类可中途取消，返回已选牌
+ */
+export async function chooseSelfDiscard(
+  p: Player,
+  n: number,
+  opts: { aiPick?: (p: Player, n: number) => Card[]; cancelable?: boolean } = {},
+): Promise<Card[]> {
+  if (n <= 0 || !p.hand.length) return [];
+  if (p.isAI) return (opts.aiPick || randomPick)(p, Math.min(n, p.hand.length));
+  const idx = G.players.indexOf(p);
+  const picked: Card[] = [];
+  const total = Math.min(n, p.hand.length);
+  for (let k = 0; k < total; k++) {
+    const rest = p.hand.filter((c) => !picked.some((x) => x.id === c.id));
+    if (!rest.length) break;
+    const options: ChoiceOption[] = rest.map((c) => ({ label: cardLabel(c), value: c.id }));
+    if (opts.cancelable) options.push({ label: '取消', value: -1 });
+    const ch = await waitChoice(idx, options, 'list');
+    const id = Number(ch);
+    if (!Number.isFinite(id) || id < 0) break;
+    const c = rest.find((x) => x.id === id);
+    if (!c) break;
+    picked.push(c);
+  }
+  return picked;
 }
 /** 把 from 的一张手牌交给 to */
 function stealOne(from: Player, to: Player): void {
@@ -439,11 +471,17 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
       case 'targetDiscard': {
         const ti = await resolveTarget(idx, ctx, false);
         if (ti < 0) break;
-        dumpHand(G.players[ti], e.n);
+        const t = G.players[ti];
+        const picked = await chooseSelfDiscard(t, e.n);
+        for (const c of picked) discardCard(t, c);
         break;
       }
       case 'allDiscard':
-        for (const i of aliveIdxs(idx)) dumpHand(G.players[i], e.n);
+        for (const i of aliveIdxs(idx)) {
+          const q = G.players[i];
+          const picked = await chooseSelfDiscard(q, e.n);
+          for (const c of picked) discardCard(q, c);
+        }
         break;
       case 'allDraw':
         for (const q of G.players) if (q.alive) drawCards(q, e.n);
