@@ -7,6 +7,10 @@ import { FACTIONS } from '../data/factions';
 import { NET } from '../net/network';
 import { G } from '../game/state';
 import { victoryFx, type WinCamp } from '../core/fx';
+import { clearPlayZone } from './playzone';
+import { renderStudyPanel } from './study';
+import { renderSetupSummary } from './lobby';
+import { refreshProfileUI } from '../profile/profile';
 
 export interface SettleInfo {
   win: boolean;
@@ -107,7 +111,7 @@ export function showSettle(info: SettleInfo): void {
             : '<button class="btn btn-accent" onclick="requestRematch()">📨 申请再来一局</button>'
           : '<button class="btn btn-accent" onclick="closeSettle();startSingleGame()">🔁 再来一局</button>'
       }
-      <button class="btn" onclick="closeSettle()">返回</button>
+      <button class="btn" onclick="settleReturn()">返回</button>
     </div>`;
   modal.classList.add('show');
   victoryFx(camp, 'settleHero');
@@ -116,6 +120,48 @@ export function showSettle(info: SettleInfo): void {
 /** 关闭结算面板 */
 export function closeSettle(): void {
   document.getElementById('settleModal')?.classList.remove('show');
+}
+
+/**
+ * 结算面板「返回」：
+ *  - 单机：退出对局，回到主界面（首页）
+ *  - 联机：二次确认后回到房间准备界面（保留房间与成员，可重新开始），
+ *    与「再来一局」同向但不直接重开
+ */
+export function settleReturn(): void {
+  const net = NET.mode === 'host' || NET.mode === 'join';
+  if (net) {
+    if (!confirm('返回后将结束当前对局并回到房间准备界面（房间与成员保留，可重新开始）。确定返回吗？')) return;
+    Sound.play('click');
+    closeSettle();
+    showRoomForRematch();
+    return;
+  }
+  Sound.play('click');
+  closeSettle();
+  exitToLobby();
+}
+
+/** 单机：退出对局回到主界面（首页）——停局、作废待决选择、切屏并刷新主界面各面板 */
+function exitToLobby(): void {
+  // 停局：主循环与触发技均以 G.gameOver 为闸；待决选择直接作废
+  //（悬空的 Promise 不再被续接，其计时器/心跳回调会自行失效，见 choice.ts）
+  G.gameOver = true;
+  G.started = false;
+  G.pendingOptions = null;
+  G.pendingResolve = null;
+  G.pendingPlayer = null;
+  G.timerEnd = null;
+  G.thinkingSeat = null;
+  document.getElementById('screenGame')?.classList.remove('active');
+  document.getElementById('screenLobby')?.classList.add('active');
+  document.getElementById('topBar')?.classList.remove('in-game');
+  document.getElementById('chatPanel')!.style.display = 'none';
+  clearPlayZone();
+  // 主界面刷新：积分/等级（结算时已入账） + 学习面板 + 设置摘要
+  refreshProfileUI();
+  renderStudyPanel();
+  renderSetupSummary();
 }
 
 /** 单机：直接重开一局（由 main.ts 绑定 startSingle 包装） */

@@ -22,7 +22,7 @@ import { G } from './state';
 import { FX, drawFx } from '../core/fx';
 import { addLog, addPlayLog } from './log';
 import { drawCards, discardCard } from './rules';
-import { dealDamage, dyingPhase } from './damage';
+import { dealDamage, checkWin, dyingPhase } from './damage';
 import { waitChoice } from './choice';
 import { askQuizForPlayer } from './quiz';
 import { render } from '../ui/render';
@@ -389,7 +389,12 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
       case 'selfLoseHp':
         loseHp(p, e.n);
         render();
-        if (p.hp <= 0 && p.alive) await dyingPhase(idx, -1);
+        if (p.hp <= 0 && p.alive) {
+          await dyingPhase(idx, -1);
+          // 体力流失致死同样要判定胜负（如主公被自己的技能反噬击杀），
+          // 否则 G.gameOver 不置位，主循环会带着已阵亡的主公继续跑
+          checkWin();
+        }
         break;
       case 'allHeal':
         for (const q of G.players) if (q.alive && q.hp < q.maxHp) healPlayer(q, e.n);

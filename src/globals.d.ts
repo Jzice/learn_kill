@@ -87,6 +87,7 @@ declare global {
     randomizeSeats: () => void;
     // 一局结束结算
     closeSettle: () => void;
+    settleReturn: () => void;
     requestRematch: () => void;
     startSingleGame: () => void;
     // 二级菜单 / 对局设置子界面

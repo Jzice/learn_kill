@@ -106,7 +106,7 @@ import {
   toggleStudyItem,
 } from './ui/study';
 import { initTimerTicker } from './ui/timer';
-import { closeSettle, requestRematch, startSingleGame } from './ui/settle';
+import { closeSettle, requestRematch, settleReturn, startSingleGame } from './ui/settle';
 import { closeRoom, createRoom, joinRoom, leaveRoom } from './net/rooms';
 import { EXTERNAL_BANK_URLS, loadBankFromUrl } from './data/questionBank';
 import {
@@ -224,6 +224,7 @@ window.requestSeatMove = requestSeatMove;
 window.pickSeatMember = pickSeatMember;
 window.randomizeSeats = randomizeSeats;
 window.closeSettle = closeSettle;
+window.settleReturn = settleReturn;
 window.requestRematch = requestRematch;
 window.startSingleGame = startSingleGame;
 window.selectFaction = (k: string) => selectFaction(k as FactionId);
