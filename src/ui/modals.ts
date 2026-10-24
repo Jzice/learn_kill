@@ -1,5 +1,7 @@
 /* ==================== 规则弹窗 ==================== */
 import { FACTIONS } from '../data/factions';
+import { KNOWLEDGE_TRICKS, type KtSubject } from '../data/knowledgeTricks';
+import type { FactionId } from '../core/types';
 import { GRADE_ORDER } from '../data/grades';
 import { CHARACTERS } from '../data/characters';
 import { ACHIEVEMENTS, PROFILE } from '../profile/profile';
@@ -8,6 +10,28 @@ import { defOf } from '../data/skilldefs';
 
 /** 各 tab（顺序即高度测量顺序） */
 const RULE_TABS = ['basic', 'factions', 'cards', 'chars', 'ach', 'packs'];
+
+/** 知识点锦囊规则书分区：按学科分组渲染（📝=答题触发，🎯=直接生效） */
+function knowledgeTrickHtml(): string {
+  const order: KtSubject[] = [
+    'chinese', 'math', 'english', 'physics', 'chemistry', 'biology',
+    'history', 'geography', 'politics', 'campus',
+  ];
+  const groups = order
+    .map((s) => {
+      const items = Object.values(KNOWLEDGE_TRICKS).filter((d) => d.subject === s);
+      if (!items.length) return '';
+      const f = s === 'campus' ? null : FACTIONS[s as FactionId];
+      const head = f ? `${f.icon} ${f.name}` : '🏫 校园生活';
+      const color = f ? f.color : '#f5c542';
+      const lis = items
+        .map((d) => `<li><b>【${d.name}】</b>${d.kind === 'quiz' ? '📝' : '🎯'} ${d.desc}</li>`)
+        .join('');
+      return `<div style="padding:6px 8px;background:rgba(0,0,0,.18);border-radius:6px;border-left:3px solid ${color};margin-bottom:6px"><div style="font-size:12px;font-weight:700;color:${color}">${head}</div><ul style="margin-top:2px">${lis}</ul></div>`;
+    })
+    .join('');
+  return `<div class="rule-section"><h4>📚 知识点锦囊</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">由学科知识点与校园生活凝练的锦囊；📝 需答题触发，🎯 直接生效；均可被【无懈可击】抵消。</div>${groups}</div>`;
+}
 /** 各 tab 内容自然高度的最大值（与视口无关，缓存以免重复测量） */
 let rulesNaturalMax = 0;
 /** 视口尺寸变化监听（窗口变小/变大时重新套用 85vh 上限） */
@@ -117,7 +141,7 @@ function renderRulesContent(tab: string): void {
       .join('');
   } else if (tab === 'cards') {
     el.innerHTML = `<div class="rule-section"><h4>⚔️ 基本牌</h4><ul><li><b>杀</b>：造成1点伤害（共30张：普通杀20 / 火杀5 / 雷杀5）</li><li><b>火杀 · 雷杀</b>：属性杀，可触发【铁索连环】传导；火杀受【藤甲】放大</li><li><b>闪</b>：抵消杀</li><li><b>桃</b>：回复1点体力或濒死自救</li><li><b>酒</b>：下张杀伤害+1，濒死时可自救</li></ul></div>
-    <div class="rule-section"><h4>🎴 锦囊</h4><ul><li><b>无中生有</b>：摸2张</li><li><b>过河拆桥</b>：弃一张牌</li><li><b>顺手牵羊</b>：获得距离1内一张牌</li><li><b>决斗</b>：轮流出杀</li><li><b>南蛮/万箭</b>：需出杀/闪（【藤甲】可免疫）</li><li><b>桃园结义</b>：全体回血</li><li><b>无懈可击</b>：抵消锦囊</li><li><b>乐不思蜀</b>：判定红桃则失效</li><li><b>闪电</b>：判定黑桃2-9受3点雷伤</li><li><b>借刀杀人</b>：令其出杀，否则交出武器</li><li><b>五谷丰登</b>：亮牌后依次各取一张</li><li><b>铁索连环</b>：横置/重置，或重铸摸一张</li><li><b>火攻</b>：弃同花色牌造成1点火伤</li></ul></div>
+    <div class="rule-section"><h4>🎴 锦囊</h4><ul><li><b>无中生有</b>：摸2张</li><li><b>过河拆桥</b>：弃一张牌</li><li><b>顺手牵羊</b>：获得距离1内一张牌</li><li><b>决斗</b>：轮流出杀</li><li><b>南蛮/万箭</b>：需出杀/闪（【藤甲】可免疫）</li><li><b>桃园结义</b>：全体回血</li><li><b>无懈可击</b>：抵消锦囊</li><li><b>乐不思蜀</b>：判定红桃则失效</li><li><b>闪电</b>：判定黑桃2-9受3点雷伤</li><li><b>借刀杀人</b>：令其出杀，否则交出武器</li><li><b>五谷丰登</b>：亮牌后依次各取一张</li><li><b>铁索连环</b>：横置/重置，或重铸摸一张</li><li><b>火攻</b>：弃同花色牌造成1点火伤</li></ul></div>${knowledgeTrickHtml()}
     <div class="rule-section"><h4>🛡️ 装备</h4><ul><li><b>诸葛连弩</b>：无限杀</li><li><b>青龙偃月刀</b>：杀被闪后可再出杀</li><li><b>丈八蛇矛</b>：两张手牌当杀</li><li><b>青釭剑</b>：无视目标防具</li><li><b>雌雄双股剑</b>：对异性用杀，对方令你摸一张或自弃一张</li><li><b>贯石斧</b>：杀被闪后弃两张牌强制命中</li><li><b>方天画戟</b>：最后一张手牌为杀时可打3个目标</li><li><b>寒冰剑</b>：弃两张牌改为令其弃两张牌</li><li><b>古锭刀</b>：目标无手牌时伤害+1</li><li><b>八卦阵</b>：判定红视为闪</li><li><b>仁王盾</b>：黑杀无效</li><li><b>藤甲</b>：普通杀/南蛮/万箭无效，火焰伤害+1</li><li><b>白银狮子</b>：每次受伤最多1点，失去时回1血</li><li><b>+1/-1马</b>：影响距离</li></ul></div>
     <div class="rule-section"><h4>🔗 连环与翻面</h4><ul><li><b>连环（横置）</b>：被【铁索连环】横置的角色受到属性伤害时，伤害传导给所有横置角色，随后全部重置</li><li><b>翻面</b>：与连环相互独立；翻面角色跳过其下一个回合并翻回正面</li></ul></div>`;
   } else if (tab === 'chars') {

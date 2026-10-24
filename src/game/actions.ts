@@ -5,6 +5,7 @@ import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
+import { KNOWLEDGE_TRICKS } from '../data/knowledgeTricks';
 import { addLog, addPlayLog } from './log';
 import { discardCard, drawCards, genderOf, inRange, sameFaction } from './rules';
 import {
@@ -16,6 +17,7 @@ import {
   equipImmune,
   fire,
   markConvertUse,
+  runEffects,
   shaLimitOf,
   shanNeeded,
   tryNumGuard,
@@ -331,8 +333,9 @@ export async function useTrick(
   let targetIdx = targetIdxIn;
   const tn = targetIdx != null ? G.players[targetIdx].name : '';
   addPlayLog(a.name, 'use', card.name, tn);
-  addLog(`📘 玩法·【${card.name}】：${TRICK_DESC[card.sub] || '（暂无说明）'}`, 'explain');
-  showPlayHint('锦囊', card.name, TRICK_DESC[card.sub] || '');
+  const trickDesc = TRICK_DESC[card.sub] || KNOWLEDGE_TRICKS[card.sub]?.desc || '（暂无说明）';
+  addLog(`📘 玩法·【${card.name}】：${trickDesc}`, 'explain');
+  showPlayHint('锦囊', card.name, trickDesc);
   showPlayCard(card, a.name, FACTIONS[a.faction].color);
   render();
   // 锦囊释放特效与音效：按子类区分
@@ -367,7 +370,7 @@ export async function useTrick(
     'wuzhong', 'guohe', 'shunshou', 'juedou', 'nanman', 'wanjian', 'taoyuan',
     'jiedao', 'wugu', 'tiesuo', 'huogong',
   ];
-  if (COUNTERABLE.includes(card.sub)) {
+  if (COUNTERABLE.includes(card.sub) || KNOWLEDGE_TRICKS[card.sub]) {
     const res = await counterChain(attackerIdx, card.sub, targetIdx);
     if (res.countered) {
       addLog(`【无懈可击】生效，${card.name} 被抵消`, 'hl');
@@ -385,7 +388,8 @@ export async function useTrick(
 
   // 墨子【兼爱】：单体锦囊结算前，目标可将其转移给另一名角色
   const SINGLE_TARGET_TRICKS = ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo'];
-  if (targetIdx != null && SINGLE_TARGET_TRICKS.includes(card.sub)) {
+  const ktOneTarget = KNOWLEDGE_TRICKS[card.sub]?.target === 'one';
+  if (targetIdx != null && (SINGLE_TARGET_TRICKS.includes(card.sub) || ktOneTarget)) {
     targetIdx = await tryTrickRedirect(attackerIdx, targetIdx);
   }
 
@@ -643,6 +647,13 @@ export async function useTrick(
       }
       break;
     }
+    default: {
+      // 知识点锦囊：策略型直接套用 effects；答题型先答题再套用（见 useKnowledgeTrick）
+      if (KNOWLEDGE_TRICKS[card.sub]) {
+        await useKnowledgeTrick(attackerIdx, card, targetIdx, secondTarget);
+      }
+      break;
+    }
   }
   // 使用锦囊后：诗成（顺序连锁）/ 随笔 / 讽刺小说 / 诗辩 / 区位 …
   if (a.alive) {
@@ -654,6 +665,40 @@ export async function useTrick(
     });
   }
   render();
+}
+
+/**
+ * 知识点锦囊结算（由 useTrick 的 default 分支调起）：
+ *   - 策略型：直接套用 effects 原语（runEffects 分派执行）；
+ *   - 答题型：先经 askQuizForPlayer 答题（联机远端 / AI 已内置），
+ *     答对套用 effects（学习奖励已在 displayQuiz 内自动发放），答错执行 onWrong 或哑火。
+ * 目标 / 反噬均通过 SkillEffect 原语完成，不新增 Card 字段、不改 G 结构。
+ */
+export async function useKnowledgeTrick(
+  attackerIdx: number,
+  card: Card,
+  targetIdx: number | null,
+  _secondTarget: number | null = null,
+): Promise<void> {
+  const def = KNOWLEDGE_TRICKS[card.sub];
+  const a = G.players[attackerIdx];
+  if (!def || !a || !a.alive) return;
+  const ctx = { idx: attackerIdx, targetIdx: targetIdx ?? undefined, card };
+  addLog(`📘 玩法·【${card.name}】：${def.desc}`, 'explain');
+  if (def.kind === 'strategy') {
+    if (def.effects?.length) await runEffects(attackerIdx, a, def.effects, ctx);
+  } else {
+    const ok = await askQuizForPlayer(a, false, def.quizSubject);
+    if (ok) {
+      addLog(`${a.name} 答对，【${card.name}】生效`, 'hl');
+      if (def.effects?.length) await runEffects(attackerIdx, a, def.effects, ctx);
+    } else {
+      addLog(`${a.name} 答错，【${card.name}】未生效`, 'dmg');
+      if (def.onWrong?.length) await runEffects(attackerIdx, a, def.onWrong, ctx);
+    }
+  }
+  render();
+  if (NET.isHost) scheduleSync();
 }
 
 /** 无懈可击响应链：返回该锦囊是否最终被抵消（支持无懈可叠，每人每条链一次） */

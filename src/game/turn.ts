@@ -4,6 +4,7 @@ import { G } from './state';
 import { FX } from '../core/fx';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
+import { KNOWLEDGE_TRICKS } from '../data/knowledgeTricks';
 import { addLog, addPlayLog } from './log';
 import { drawCards, discardCard, distBetween, inRange, handLimit } from './rules';
 import { Sound } from '../core/sound';
@@ -430,7 +431,7 @@ export async function playPhase(idx: number): Promise<void> {
         }
         tgt = tgts[0];
         second = tgts[1] ?? null;
-      } else if (['guohe', 'shunshou', 'juedou', 'lebu', 'huogong'].includes(card.sub)) {
+      } else if (['guohe', 'shunshou', 'juedou', 'lebu', 'huogong'].includes(card.sub) || KNOWLEDGE_TRICKS[card.sub]?.target === 'one') {
         const targets: ChoiceOption[] = [];
         for (let i = 0; i < G.players.length; i++) {
           if (i === idx || !G.players[i].alive) continue;

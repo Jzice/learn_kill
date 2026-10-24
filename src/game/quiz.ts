@@ -61,8 +61,9 @@ async function scopedBank(scope: QuizScope | undefined, grade: string): Promise<
 }
 
 /** 取题：范围过滤 → 剔除已掌握 → 错题加权 → 学科偏好
- *  scope 缺省用本地设置；联机时房主为某玩家出题可传该玩家的范围 */
-export async function pickQ(p?: Player, scope?: QuizScope): Promise<Question> {
+ *  scope 缺省用本地设置；联机时房主为某玩家出题可传该玩家的范围
+ *  subjectBias：答题型知识点锦囊可指定学科，以高概率优先抽该科题目（不影响其余路径） */
+export async function pickQ(p?: Player, scope?: QuizScope, subjectBias?: string): Promise<Question> {
   const grade = G.grade;
   let pool = await scopedBank(scope, grade);
   if (!pool.length) pool = await scopedBank('grade', grade);
@@ -96,6 +97,11 @@ export async function pickQ(p?: Player, scope?: QuizScope): Promise<Question> {
       const sub = cand.filter((q) => q.s === p.subject);
       if (sub.length) cand = sub;
     }
+  }
+  // 学科偏好（知识点锦囊）：指定学科时以高概率优先抽该科题目
+  if (subjectBias) {
+    const sub = cand.filter((q) => q.s === subjectBias);
+    if (sub.length && Math.random() < 0.85) cand = sub;
   }
   return weightedPick(cand, kps) || base[0];
 }
@@ -197,19 +203,19 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
   });
 }
 
-export async function askQuiz(player: Player, isSkill = false): Promise<boolean> {
-  const q = await pickQ(player);
+export async function askQuiz(player: Player, isSkill = false, subjectBias?: string): Promise<boolean> {
+  const q = await pickQ(player, undefined, subjectBias);
   return displayQuiz(q, player, isSkill);
 }
 
 let quizSeq = 0;
 
-async function askQuizRemote(player: Player, isSkill: boolean): Promise<boolean> {
+async function askQuizRemote(player: Player, isSkill: boolean, subjectBias?: string): Promise<boolean> {
   const conn = NET.playerConns[player.peerId!];
   if (!conn) return aiQuiz(0.6);
   // 房主按该玩家自己同步来的出题范围出题（未同步则用房主本地设置）
   const member = NET.roomMembers.find((m) => m.peerId === player.peerId);
-  const q = await pickQ(player, member?.scope);
+  const q = await pickQ(player, member?.scope, subjectBias);
   return new Promise((resolve) => {
     const quizId = ++quizSeq;
     const entry: PendingQuiz = { resolve, player, q, quizId, timer: null };
@@ -235,12 +241,12 @@ export async function onAskQuizRequest(question: Question, isSkill: boolean, qui
   NET.sendToHost({ type: 'quiz_response', correct, quizId });
 }
 
-export async function askQuizForPlayer(player: Player, isSkill = false): Promise<boolean> {
+export async function askQuizForPlayer(player: Player, isSkill = false, subjectBias?: string): Promise<boolean> {
   if (!player) return false;
   if (player.isAI) return aiQuiz(isSkill ? 0.62 : 0.6);
   const idx = G.players.indexOf(player);
-  if (isLocalPlayer(idx)) return await askQuiz(player, isSkill);
-  if (NET.isHost && player.peerId) return await askQuizRemote(player, isSkill);
+  if (isLocalPlayer(idx)) return await askQuiz(player, isSkill, subjectBias);
+  if (NET.isHost && player.peerId) return await askQuizRemote(player, isSkill, subjectBias);
   return aiQuiz(0.6);
 }
 
