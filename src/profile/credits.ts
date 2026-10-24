@@ -213,7 +213,13 @@ export function loadoutItemCount(): number {
   const l = PROFILE.loadout.items || {};
   return Object.values(l).reduce((a, b) => a + b, 0);
 }
-export function setLoadoutSlot(slot: EquipSlot, equipId: string | null): boolean {
+/**
+ * 局前配装支持的槽位。宝物槽（treasure）只存在于**对局内**的运行时 Equips，
+ * 不参与局前配装，故此处排除，避免 Loadout 被新槽位污染。
+ */
+export type LoadoutSlot = Exclude<EquipSlot, 'treasure'>;
+
+export function setLoadoutSlot(slot: LoadoutSlot, equipId: string | null): boolean {
   if (equipId && !isEquipUnlocked(equipId)) return false;
   if (equipId) {
     const e = expansionEquipById(equipId);

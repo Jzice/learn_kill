@@ -280,7 +280,7 @@ function condOk(p: Player, c: SkillCond | undefined, ctx: SkillCtx): boolean {
     case 'handAtMost': return p.hand.length <= c.n;
     case 'outsideTurn': return G.current !== G.players.indexOf(p);
     case 'roleIn': return c.roles.includes(p.role);
-    case 'targetHasNoEquip': return !!tgt && !tgt.equip.armor && !tgt.equip.weapon && !tgt.equip.horsePlus && !tgt.equip.horseMinus;
+    case 'targetHasNoEquip': return !!tgt && !tgt.equip.armor && !tgt.equip.weapon && !tgt.equip.horsePlus && !tgt.equip.horseMinus && !tgt.equip.treasure;
     case 'targetChained': return !!tgt && !!tgt.chained;
     case 'targetIsLord': return !!tgt && tgt.role === 'lord';
     case 'lastCardBlack': return isBlack(ctx.card);

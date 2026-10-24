@@ -1,10 +1,14 @@
 /* ==================== 开局装配 / 启动 ==================== */
 import type { Card, Character, EquipSlot, Loadout, Player, PlayerIdentity, Role } from '../core/types';
 import type { PacketId } from '../data/packets';
+import type { CardPackId } from '../data/cardPacks';
+import { withCore } from '../data/cardPacks';
 import { G, quizStats } from './state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG } from '../data/characters';
 import { charPoolForPacket, PACK_TOLL, isExpansion, packetName } from '../data/packets';
+import { SELECTED_CARD_PACKS } from '../ui/lobby';
+import { applyDeckComposition } from './aicounts';
 import { expansionEquipById, expansionItemById } from '../data/expansion';
 import { buildDeck, shuffle } from '../data/cards';
 import { loadGrade } from '../data/questionBank';
@@ -121,9 +125,12 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   // 收集全部成员的「个人叠加扩展包」，构成房间总可用池（供 AI 座位抽取）；
   // 房主统一选基础包 + 各玩家叠加 = 个人叠加模型（不受房主限制）。
   const extraAll: PacketId[] = [];
+  // 牌库扩展包：房主自身选择 ∪ 各加入方叠加（与角色扩展包的合并逻辑同构）
+  const cardPacks: CardPackId[] = SELECTED_CARD_PACKS.filter((p) => p !== 'core');
   if (NET.isHost) {
     for (const m of NET.roomMembers) {
       for (const p of m.pref?.packets || []) if (p !== base && !extraAll.includes(p)) extraAll.push(p);
+      for (const p of m.pref?.cardPacks || []) if (p !== 'core' && !cardPacks.includes(p)) cardPacks.push(p);
     }
   }
   const roomPool = effectiveCharPool(grade, base, extraAll);
@@ -138,7 +145,10 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   G.winnerText = '';
   G.settled = false;
   G.myKills = 0;
-  G.deck = buildDeck();
+  const deckPacks = withCore(cardPacks);
+  G.deck = buildDeck({ packs: deckPacks });
+  // AI 信息集：牌堆构成随启用卡包变化（概率分母），须与实际牌堆同步
+  applyDeckComposition(deckPacks);
   G.discard = [];
   quizStats.total = 0;
   quizStats.correct = 0;
@@ -175,7 +185,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       hp: role === 'lord' ? char.hp + 1 : char.hp,
       maxHp: role === 'lord' ? char.hp + 1 : char.hp,
       hand: [],
-      equip: { weapon: null, armor: null, horsePlus: null, horseMinus: null },
+      equip: { weapon: null, armor: null, horsePlus: null, horseMinus: null, treasure: null },
       judge: [],
       knowledge: 0,
       shield: 0,

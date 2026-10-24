@@ -1,5 +1,5 @@
 /* ==================== 规则原语（距离/手牌/技能判定） ==================== */
-import type { Card, Gender, Player } from '../core/types';
+import type { Card, EquipSlot, Gender, Player } from '../core/types';
 import { G } from './state';
 import { shuffle } from '../data/cards';
 import { CHAR_GENDER } from '../data/characters';
@@ -56,6 +56,49 @@ export function attackRange(p: Player): number {
 
 export function inRange(fi: number, ti: number): boolean {
   return distBetween(fi, ti) <= attackRange(G.players[fi]);
+}
+
+/**
+ * 【借月清辉】（银月枪）花色封锁：该角色不能使用或打出其封锁花色的手牌。
+ * 封锁在其**自己**的下个回合开始时清除（见 runTurn 的回合初重置）。
+ */
+export function blockedSuitOf(p: Player): string | null {
+  return p.flags.blockSuit || null;
+}
+
+/** 该角色当前能否使用 / 打出这张牌（花色封锁判定；弃置不受影响） */
+export function canUseCard(p: Player, c: Card): boolean {
+  const b = blockedSuitOf(p);
+  return !b || c.suit !== b;
+}
+
+/** 手牌中「可使用」且满足谓词的牌（统一过滤花色封锁，供出杀 / 出闪 / 响应 AOE 复用） */
+export function usableHand(p: Player, pred: (c: Card) => boolean): Card[] {
+  return p.hand.filter((c) => pred(c) && canUseCard(p, c));
+}
+
+/** 宝物槽技能（【补给书包】等）是否生效 */
+export function treasureSkillOf(p: Player): string | undefined {
+  return p.equip.treasure?.skill;
+}
+
+/** 装备区里所有坐骑牌所在的槽位（【投石问路】弃置目标坐骑用） */
+export function horseSlotsOf(p: Player): ('horsePlus' | 'horseMinus')[] {
+  const out: ('horsePlus' | 'horseMinus')[] = [];
+  if (p.equip.horsePlus) out.push('horsePlus');
+  if (p.equip.horseMinus) out.push('horseMinus');
+  return out;
+}
+
+/** 装备区里所有非空槽位（【调虎离山】/【水漫考场】弃置装备用） */
+export function filledEquipSlots(p: Player): EquipSlot[] {
+  const out: EquipSlot[] = [];
+  if (p.equip.weapon) out.push('weapon');
+  if (p.equip.armor) out.push('armor');
+  if (p.equip.horsePlus) out.push('horsePlus');
+  if (p.equip.horseMinus) out.push('horseMinus');
+  if (p.equip.treasure) out.push('treasure');
+  return out;
 }
 
 export function drawCards(p: Player, n: number): void {

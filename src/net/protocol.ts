@@ -26,6 +26,8 @@ export interface RoomStateMsg {
   packet?: string;
   /** 房主选定的年级 / 学期（加入方据此预览可选角色池） */
   grade?: string;
+  /** 房主启用的**牌库扩展包**（不含恒启用的 core）；加入方据此预览牌堆构成 */
+  cardPacks?: string[];
 }
 
 export type NetMessage =

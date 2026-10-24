@@ -104,6 +104,10 @@ jobs:
         continue-on-error: true
         run: npm run smoke:net:settle
 
+      - name: 卡牌扩展包冒烟测试（零回归门禁，非阻断）
+        continue-on-error: true
+        run: npm run smoke:cards
+
       - name: 铁索连环·横置机制回归（非阻断）
         continue-on-error: true
         run: npm run smoke:tiesuo

@@ -30,6 +30,7 @@ export function powerOf(j: number): number {
   if (p.equip.armor) eq++;
   if (p.equip.horsePlus) eq++;
   if (p.equip.horseMinus) eq++;
+  if (p.equip.treasure) eq++;
   const active = p.skills.some((s) => s.type === 'active' && !p.flags.skillUsed);
   return (
     p.hp +
@@ -182,8 +183,12 @@ function outputOf(j: number): number {
   if (!p || !p.alive) return 0;
   const range = attackRange(p);
   const liannu = p.equip.weapon?.skill === 'liannu' ? 1.0 : 0;
+  // 扩展卡包武器：命中后的追加收益（弃坐骑 / 封花色 / 令弃牌 / 追加伤害 / 转火杀）
+  const wskill = p.equip.weapon?.skill;
+  const extraWeapon =
+    wskill === 'qilin' ? 0.25 : wskill === 'yinyue' ? 0.3 : wskill === 'qixing' ? 0.25 : wskill === 'wuliu' ? 0.35 : wskill === 'zhuque' ? 0.15 : 0;
   const active = p.skills.some((s) => s.type === 'active' && !p.flags.skillUsed) ? 0.4 : 0;
-  return 1 + (range - 1) * 0.25 + liannu + Math.min(p.hand.length, 8) * 0.12 + active;
+  return 1 + (range - 1) * 0.25 + liannu + extraWeapon + Math.min(p.hand.length, 8) * 0.12 + active;
 }
 
 /** j 的威胁度：能打到多少人 × 输出能力 */
@@ -214,7 +219,12 @@ export function evSha(i: number, t: number, dmg = 1, elemental = false): number 
   const tp = G.players[t];
   if (!tp || !tp.alive) return -99;
   const pHit = 1 - dodgeProb(i, t, elemental);
-  let gain = damageGain(i, t, dmg) + killBonus(i, t, dmg);
+  // 【明光护甲】减伤 1（最低 1 点）；【白银狮子】每次受伤最多 1 点
+  let eff = dmg;
+  const armor = tp.equip.armor?.skill;
+  if (armor === 'mingguang') eff = Math.max(1, dmg - 1);
+  else if (armor === 'baiyin') eff = Math.min(1, dmg);
+  let gain = damageGain(i, t, eff) + killBonus(i, t, eff);
   // 连环传导：属性杀命中横置目标 → 传导给其余横置角色
   if (elemental && tp.chained) {
     for (let k = 0; k < G.players.length; k++) {

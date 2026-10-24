@@ -45,6 +45,9 @@ import type { QuizScope } from '../core/types';
 import { SCOPES, quizScope, setQuizScope, scopeDesc, scopeLabel, renderWrongBook } from '../profile/quizbook';
 import { renderStudyPanel } from './study';
 import { DEFAULT_TIMER_SEC, TIMER_OPTIONS } from '../game/timer';
+import { CARD_PACKS, cardPackName, normalizeCardPacks } from '../data/cardPacks';
+import type { CardPackId } from '../data/cardPacks';
+import { CARD_CATALOG } from '../data/cardCatalog';
 
 /* ---- 大厅选择状态（原版全局变量，仅本模块写入，其他模块只读） ---- */
 export let SELECTED_GRADE = '初二上';
@@ -61,6 +64,11 @@ export let SELECTED_ROLE: Role | 'random' = 'random';
 /** 回合限时：开关 + 档位（10 / 20 / 30 秒），默认开启 20 秒 */
 export let SELECTED_TIMER_ON = true;
 export let SELECTED_TIMER_SEC: number = DEFAULT_TIMER_SEC;
+/**
+ * 牌库扩展包（与角色扩展包 SELECTED_PACKET 相互独立）：决定牌堆在基础 125 张之上追加哪些扩展卡。
+ * 由本模块独占持有（其他模块只读 / 通过 toggleCardPack 修改），不对外赋值。
+ */
+export let SELECTED_CARD_PACKS: CardPackId[] = [];
 
 /** 开局选择本地记忆：玩家总数 / 回合限时（开关与秒数），写入 localStorage 记住上一次选择 */
 const SETUP_PREFS_KEY = 'xuetangsha_setup_v1';
@@ -68,6 +76,7 @@ interface SetupPrefs {
   count?: number;
   timerOn?: boolean;
   timerSec?: number;
+  cardPacks?: string[];
 }
 
 /** 读取上一次的开局选择并套用（须在渲染选择器 / 绑定滑块之前调用） */
@@ -79,6 +88,7 @@ export function restoreSetupPrefs(): void {
     if (typeof p.count === 'number') SELECTED_COUNT = Math.max(2, Math.min(8, Math.round(p.count)));
     if (typeof p.timerOn === 'boolean') SELECTED_TIMER_ON = p.timerOn;
     if (typeof p.timerSec === 'number') SELECTED_TIMER_SEC = Math.max(5, Math.min(120, Math.round(p.timerSec)));
+    if (Array.isArray(p.cardPacks)) SELECTED_CARD_PACKS = normalizeCardPacks(p.cardPacks);
   } catch {
     /* 忽略损坏的本地数据，沿用默认值 */
   }
@@ -89,7 +99,12 @@ export function saveSetupPrefs(): void {
   try {
     localStorage.setItem(
       SETUP_PREFS_KEY,
-      JSON.stringify({ count: SELECTED_COUNT, timerOn: SELECTED_TIMER_ON, timerSec: SELECTED_TIMER_SEC }),
+      JSON.stringify({
+        count: SELECTED_COUNT,
+        timerOn: SELECTED_TIMER_ON,
+        timerSec: SELECTED_TIMER_SEC,
+        cardPacks: SELECTED_CARD_PACKS,
+      }),
     );
   } catch {
     /* 隐私模式 / 存储不可用时静默忽略 */
@@ -144,6 +159,41 @@ export function renderPacketPicker(): void {
   }
   // 同步刷新每日免费额度胶囊
   renderPackMeter();
+}
+
+/**
+ * 牌库扩展包选择器（多选）：在基础牌堆之上追加扩展卡牌。
+ * 与「角色扩展包」#packetPicker 相互独立——前者管牌堆，后者管角色池。
+ */
+export function renderCardPackPicker(): void {
+  const box = document.getElementById('cardPackPicker');
+  if (!box) return;
+  box.innerHTML = CARD_PACKS.map((p) => {
+    if (p.id === 'core') {
+      return `<button class="opt-btn pk-locked" data-cardpack="core" title="基础牌堆恒启用，不可关闭">${p.icon} ${p.name}<small>${p.desc}</small><div class="pk-badges"><span class="pk-badge">✅ 恒启用</span></div></button>`;
+    }
+    const types = Object.values(CARD_CATALOG).filter((d) => d.pack === p.id).length;
+    const cards = Object.values(CARD_CATALOG).reduce((s, d) => s + (d.pack === p.id ? d.count : 0), 0);
+    const on = SELECTED_CARD_PACKS.includes(p.id);
+    return `<button class="opt-btn ${on ? 'active' : ''}" data-cardpack="${p.id}" onclick="toggleCardPack('${p.id}')">${p.icon} ${p.name}<small>${p.desc}</small><div class="pk-badges"><span class="pk-badge">${types}种 · ${cards}张</span>${on ? '<span class="pk-badge">✅ 已启用</span>' : ''}</div></button>`;
+  }).join('');
+  const hint = document.getElementById('cardPackHint');
+  if (hint) {
+    hint.textContent = SELECTED_CARD_PACKS.length
+      ? `当前牌库：基础 125 张 + ${SELECTED_CARD_PACKS.map(cardPackName).join(' / ')}（房主勾选后随房间同步，单人对局按本地记忆）`
+      : '当前牌库：仅基础 125 张（未启用任何扩展卡包）';
+  }
+}
+
+/** 勾选 / 取消一个牌库扩展包（core 不可切换） */
+export function toggleCardPack(id: CardPackId): void {
+  if (id === 'core') return;
+  Sound.play('click');
+  const at = SELECTED_CARD_PACKS.indexOf(id);
+  if (at >= 0) SELECTED_CARD_PACKS.splice(at, 1);
+  else SELECTED_CARD_PACKS.push(id);
+  saveSetupPrefs();
+  renderCardPackPicker();
 }
 
 /** 回合限时选择器：不限时 / 10 / 20 / 30 秒 */
@@ -543,6 +593,8 @@ export function pushGuestPref(): void {
       unlockedEquips: PROFILE.unlockedEquips,
       // 个人叠加启用的扩展包（已付费/已用免费额度），房主据此在基础包之上追加角色池
       packets: SELECTED_EXTRA_PACKETS.slice(),
+      // 牌库扩展包（与角色扩展包相互独立）：房主据此与自身选择取并集后合成牌堆
+      cardPacks: SELECTED_CARD_PACKS.filter((p) => p !== 'core'),
     },
   });
   renderJoinPickers();

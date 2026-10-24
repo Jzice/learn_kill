@@ -29,19 +29,24 @@ export async function dealDamage(
   amount: number,
   type: DamageType = 'normal',
   ignoreArmor = false,
-): Promise<void> {
+): Promise<boolean> {
   const tgt = G.players[tgtIdx];
-  if (!tgt || !tgt.alive) return;
+  if (!tgt || !tgt.alive) return false;
   // AI 信念事件：谁攻击了谁（所有存活 AI 观察，受害者记仇）
   if (srcIdx >= 0) noteAttack(srcIdx, tgtIdx);
-  await applyDamage(tgtIdx, amount, type, true, srcIdx, ignoreArmor);
+  const dealt = await applyDamage(tgtIdx, amount, type, true, srcIdx, ignoreArmor);
   render();
   checkWin();
+  return dealt;
 }
 
 /**
  * 实际扣血结算：防具修正 → 护盾/学识吸收 → 扣血 → 铁索连环传导。
  * allowChain=false 用于传导伤害本身，避免连环互相触发形成死循环。
+ */
+/**
+ * @returns 是否实际造成了体力损失（被护盾 / 学识完全吸收时返回 false，
+ *          供【投石问路】等「造成伤害后」类武器技能判定是否触发）
  */
 async function applyDamage(
   tgtIdx: number,
@@ -50,9 +55,9 @@ async function applyDamage(
   allowChain: boolean,
   srcIdx: number,
   ignoreArmor = false,
-): Promise<void> {
+): Promise<boolean> {
   const tgt = G.players[tgtIdx];
-  if (!tgt || !tgt.alive) return;
+  if (!tgt || !tgt.alive) return false;
   let dmg = amount;
   // 防具修正：白银狮子（每次受到的伤害最多 1 点）/ 藤甲（火焰伤害 +1）
   // 青釭剑（ignoreArmor）无视目标防具，上述修正整体失效
@@ -74,6 +79,11 @@ async function applyDamage(
       dmg += 1;
       addLog(`【藤甲】${tgt.name} 受到火焰伤害 +1`, 'dmg');
     }
+    // 【明光护甲】（明光铠）：每次受到的伤害 -1（最低 1 点）
+    if (armor === 'mingguang' && dmg > 1) {
+      dmg = Math.max(1, dmg - 1);
+      addLog(`【明光护甲】${tgt.name} 受到的伤害 -1`, 'heal');
+    }
   } else if (armor) {
     addLog(`【青釭剑】无视 ${tgt.name} 的防具（${armor}）`, 'hl');
   }
@@ -94,11 +104,13 @@ async function applyDamage(
     dmg--;
     addLog(`${tgt.name} 消耗2学识抵挡1点`, 'heal');
   }
+  let hpLost = false;
   if (dmg > 0) {
     await FX.slash(tgtIdx);
     floatTextFx(tgtIdx, '-' + dmg, '#ff3b30');
     Sound.play('hit');
     tgt.hp -= dmg;
+    hpLost = true;
     addPlayLog('', 'damage', dmg, tgt.name, 'dmg');
     render();
     // 声明式触发技：受伤后（横眉 / 适者生存 / 显性性状 / 术势 / 莫须有 / 哈姆雷特 / 避雷针 …）
@@ -117,6 +129,7 @@ async function applyDamage(
   if (allowChain && type !== 'normal' && tgt.chained) {
     await propagateChain(tgtIdx, amount, type);
   }
+  return hpLost;
 }
 
 /** 连环传导：所有横置角色（含最初受击者）解除连环，其余各承受一次同属性同数值伤害 */

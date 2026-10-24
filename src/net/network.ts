@@ -7,7 +7,7 @@ import { addChat } from '../game/chat';
 import { addLog, appendPlayLog, playLog, setPlayLog } from '../game/log';
 import { render } from '../ui/render';
 import { clearPlayZone } from '../ui/playzone';
-import { SELECTED_COUNT, SELECTED_EXTRA_PACKETS, SELECTED_GRADE, SELECTED_PACKET, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
+import { SELECTED_CARD_PACKS, SELECTED_COUNT, SELECTED_EXTRA_PACKETS, SELECTED_GRADE, SELECTED_PACKET, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
 import { backToRoomForRematch, hostHandleRematchRequest } from '../ui/settle';
 import { onAskQuizRequest } from '../game/quiz';
 import { consumePackUse } from '../profile/packMeter';
@@ -143,6 +143,8 @@ export const NET = {
       // 同步房主统一选的基础包与年级，使加入方能预览个人叠加选项与可选角色池
       packet: SELECTED_PACKET,
       grade: SELECTED_GRADE,
+      // 牌库扩展包：加入方据此预览牌堆构成（房主开局时与自身选择取并集）
+      cardPacks: SELECTED_CARD_PACKS.filter((p) => p !== 'core'),
     };
     this.broadcast(state);
     updateHostRoomInfo(state);

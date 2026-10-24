@@ -2,6 +2,7 @@
  * 原版 HTML 通过 onclick="fn()" 直接调用全局函数；模块化后由 main.ts 统一挂载。
  */
 import type { PublicProfile, SubjectBankSlice, PacketId } from './core/types';
+import type { CardPackId } from './data/cardPacks';
 
 declare global {
   /** 构建期由 vite define 注入（取自 package.json 的 version），供顶栏显示版本号 */
@@ -65,6 +66,11 @@ declare global {
     openStudyFromPack: () => void;
     renderPacketPicker: () => void;
     renderExtraPackPicker: () => void;
+    // 牌库扩展包：决定牌堆在基础 125 张之上追加哪些扩展卡牌（与角色扩展包相互独立）
+    renderCardPackPicker: () => void;
+    toggleCardPack: (id: CardPackId) => void;
+    /** 冒烟测试专用：按卡包合成牌堆并返回 sub → 张数统计 */
+    __xtsDeckStats: (packs?: string[]) => Record<string, number>;
     clearWrongBook: () => void;
     // 首页学习情况：展开错题解析 / 展开已攻克列表 / 标记已复习 / 复习模式
     toggleStudyItem: (key: string) => void;

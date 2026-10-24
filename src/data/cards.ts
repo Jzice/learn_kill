@@ -1,6 +1,8 @@
 /* ==================== 卡牌 ==================== */
 import type { Card, CardType } from '../core/types';
 import { KNOWLEDGE_TRICKS } from './knowledgeTricks';
+import { CARD_CATALOG } from './cardCatalog';
+import type { CardPackId } from './cardPacks';
 
 export const SUITS: string[] = ['♠', '♥', '♣', '♦'];
 let cid = 0;
@@ -19,7 +21,16 @@ export function C(
 /** 【杀】的三种子类（普通杀 / 火杀 / 雷杀），出牌与手牌点击判定共用 */
 export const SHA_SUBS: string[] = ['sha', 'huo', 'lei'];
 
-export function buildDeck(): Card[] {
+/**
+ * 构建牌堆。
+ *
+ * **零回归底线**：不传 `opts`（或 packs 仅含 'core'）时，产物与改造前的 125 张
+ * 基础牌堆**逐项一致**（同名同数、同样的花色点数生成规则），由 scripts/smoke-cards.mjs 断言。
+ *
+ * 扩展卡为**追加式**入池：在基础牌之后 push，不改写基础配比，
+ * 因此不启用扩展包时牌堆构成完全不变。
+ */
+export function buildDeck(opts?: { packs?: CardPackId[] }): Card[] {
   const d: Card[] = [];
   // 基本牌：杀共 30（普通杀 20 + 火杀 5 + 雷杀 5，与原版总数一致），闪 15 / 桃 8 / 酒 5
   for (let i = 0; i < 20; i++)
@@ -50,6 +61,15 @@ export function buildDeck(): Card[] {
   tr.forEach(([n, s, e, c]) => {
     for (let i = 0; i < c; i++) d.push(C(n, 'trick', s, SUITS[i % 4], (i % 13) + 1, e));
   });
+  // 扩展卡：按 cardCatalog 追加（仅投放已启用卡包的卡牌；具名坐骑等 sub 重复项按记录各自投放）
+  const packs = opts?.packs;
+  if (packs && packs.length) {
+    for (const def of Object.values(CARD_CATALOG)) {
+      if (!packs.includes(def.pack)) continue;
+      for (let i = 0; i < def.count; i++)
+        d.push(C(def.name, def.type, def.sub, SUITS[i % 4], (i % 13) + 1, def.extra ? { ...def.extra } : {}));
+    }
+  }
   // 知识点锦囊：按定义表批量注入（type='trick'，sub=定义表 key），张数受 KtDef.deck 控制，
   // 不改变基本牌 30/15/8/5 比例；随牌堆洗牌后与其他牌混合。
   for (const [sub, def] of Object.entries(KNOWLEDGE_TRICKS)) {

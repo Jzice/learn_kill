@@ -10,9 +10,11 @@
  */
 import type { Card } from '../core/types';
 import { G } from './state';
+import { CARD_CATALOG } from '../data/cardCatalog';
+import type { CardPackId } from '../data/cardPacks';
 
-/** 牌堆构成（与 data/cards.ts::buildDeck 一一对应，共 125 张） */
-export const DECK_TOTAL: Record<string, number> = {
+/** 基础牌堆构成（与 data/cards.ts::buildDeck 无参调用一一对应，共 125 张） */
+export const BASE_DECK_TOTAL: Record<string, number> = {
   // 基本牌 58
   sha: 20,
   huo: 5,
@@ -42,7 +44,25 @@ export const DECK_TOTAL: Record<string, number> = {
   'horse-': 3,
 };
 
-export const DECK_SIZE = Object.values(DECK_TOTAL).reduce((s, n) => s + n, 0);
+/**
+ * 当前牌堆构成 = 基础 125 张 + 已启用扩展卡包的投放量。
+ * 由 game/setup.ts 在 buildDeck 之后调用 applyDeckComposition() 刷新，
+ * 否则 AI 的概率分母仍停留在「仅基础包」的口径（偏差可接受但不够准）。
+ */
+export const DECK_TOTAL: Record<string, number> = { ...BASE_DECK_TOTAL };
+export let DECK_SIZE = Object.values(DECK_TOTAL).reduce((s, n) => s + n, 0);
+
+/** 按启用的牌库扩展包重算牌堆构成（幂等，可重复调用） */
+export function applyDeckComposition(packs: CardPackId[]): void {
+  for (const k of Object.keys(DECK_TOTAL)) delete DECK_TOTAL[k];
+  Object.assign(DECK_TOTAL, BASE_DECK_TOTAL);
+  for (const def of Object.values(CARD_CATALOG)) {
+    if (!packs.includes(def.pack)) continue;
+    DECK_TOTAL[def.sub] = (DECK_TOTAL[def.sub] || 0) + def.count;
+  }
+  DECK_SIZE = Object.values(DECK_TOTAL).reduce((s, n) => s + n, 0);
+  pubVer = -1; // 强制重算公开牌池缓存
+}
 
 /** 局前配装注入的装备不来自牌堆（id ≥ 90000、花色 '✦'），计数时排除 */
 function fromDeck(c: Card | null | undefined): boolean {
@@ -63,6 +83,7 @@ function publicVersion(): number {
     if (fromDeck(p.equip.armor)) v++;
     if (fromDeck(p.equip.horsePlus)) v++;
     if (fromDeck(p.equip.horseMinus)) v++;
+    if (fromDeck(p.equip.treasure)) v++;
   }
   return v;
 }
@@ -89,6 +110,7 @@ function publicPool(): { counts: Record<string, number>; total: number } {
     drop(p.equip.armor);
     drop(p.equip.horsePlus);
     drop(p.equip.horseMinus);
+    drop(p.equip.treasure);
   }
   const total = Math.max(0, DECK_SIZE - removed);
   pubVer = v;

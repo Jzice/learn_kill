@@ -18,14 +18,24 @@ const EQUIP_ICON: Record<string, string> = {
   armor: '🛡️',
   horsePlus: '🐎',
   horseMinus: '🐎',
+  treasure: '🎒',
 };
 const EQUIP_LABEL: Record<string, string> = {
   weapon: '武器',
   armor: '防具',
   horsePlus: '+1马',
   horseMinus: '-1马',
+  treasure: '宝物',
 };
-const JUDGE_ICON: Record<string, string> = { lebu: '🎋', shandian: '⚡' };
+/** 装备槽展示顺序（宝物为扩展槽，旧存档无此字段时渲染为空槽） */
+const EQUIP_SLOTS: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure')[] = [
+  'weapon',
+  'armor',
+  'horsePlus',
+  'horseMinus',
+  'treasure',
+];
+const JUDGE_ICON: Record<string, string> = { lebu: '🎋', shandian: '⚡', bingliang: '📝' };
 
 function buildPlayerCard(p: Player, i: number): string {
   // 当前出牌（回合）角色：游戏进行中高亮其座位；对局结束不再标识
@@ -55,18 +65,16 @@ function buildPlayerCard(p: Player, i: number): string {
     const low = p.hp <= 1 && f;
     return `<span class="hp-gem ${f ? '' : 'empty'} ${low ? 'low' : ''}"></span>`;
   }).join('');
-  const equipSlots = ['weapon', 'armor', 'horsePlus', 'horseMinus']
-    .map((k) => {
-      const eq = p.equip[k as keyof typeof p.equip];
-      const f = !!eq;
-      const tip = f ? eq!.name : EQUIP_LABEL[k] + '（空）';
-      const short = f ? EQUIP_SHORT[eq!.name] || eq!.name.slice(0, 1) : '';
-      return `<div class="equip-slot ${f ? 'filled' : ''}" title="${tip}"><span class="eq-icon">${EQUIP_ICON[k]}</span>${f ? `<span class="eq-short">${short}</span>` : ''}</div>`;
-    })
-    .join('');
+  const equipSlots = EQUIP_SLOTS.map((k) => {
+    const eq = p.equip[k];
+    const f = !!eq;
+    const tip = f ? eq!.name : EQUIP_LABEL[k] + '（空）';
+    const short = f ? EQUIP_SHORT[eq!.name] || eq!.name.slice(0, 1) : '';
+    return `<div class="equip-slot ${f ? 'filled' : ''}" title="${tip}"><span class="eq-icon">${EQUIP_ICON[k]}</span>${f ? `<span class="eq-short">${short}</span>` : ''}</div>`;
+  }).join('');
   const equipNames: string[] = [];
-  ['weapon', 'armor', 'horsePlus', 'horseMinus'].forEach((k) => {
-    if (p.equip[k as keyof typeof p.equip]) equipNames.push(p.equip[k as keyof typeof p.equip]!.name);
+  EQUIP_SLOTS.forEach((k) => {
+    if (p.equip[k]) equipNames.push(p.equip[k]!.name);
   });
   const equipNamesHtml = equipNames.length
     ? `<div class="pequip-names" title="${equipNames.join(' · ')}">${equipNames.join(' · ')}</div>`

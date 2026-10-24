@@ -137,7 +137,12 @@ console.log('客人已连接');
 
 // 客人先选角色（默认随机即可），房主开始
 await host.click('#hostStartBtn');
-await host.waitForSelector('#screenGame.active', { timeout: 10000 });
+// 随机模式：先弹「亮将确认」，确认后才进入对局（与 smoke-net.mjs 口径一致）
+await host
+  .waitForSelector('#revealModal.show', { timeout: 5000 })
+  .then(() => host.click('#revealBody button[onclick="revealConfirm()"]'))
+  .catch(() => {});
+await host.waitForSelector('#screenGame.active', { timeout: 15000 });
 await guest.waitForSelector('#screenGame.active', { timeout: 10000 });
 console.log('双方开局');
 

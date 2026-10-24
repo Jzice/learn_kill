@@ -39,9 +39,96 @@ import {
   tauNow,
 } from './aieval';
 import { SHA_SUBS } from '../data/cards';
+import { filledEquipSlots } from './rules';
 
 export function aiQuiz(rate = 0.6): boolean {
   return Math.random() < rate;
+}
+
+/**
+ * AI 使用**扩展包锦囊**（卡牌扩展包启用后才可能出现）。
+ * 原则：新卡必须有显式决策，且一律保守——
+ *   - 收益给自己的（远交近攻 / 以逸待劳）优先给同阵营；
+ *   - 群体牌（联军盛宴 / 班长敕令）按存活敌我比例决定；
+ *   - 无合法目标时保留手牌，绝不强行打出，也绝不卡住回合。
+ */
+async function aiPlayExtraTricks(idx: number): Promise<void> {
+  const p = G.players[idx];
+  const alive = () => G.players.filter((q, i) => i !== idx && q.alive);
+  const enemies = () => alive().filter((q) => !sameFaction(q, p));
+  const allies = () => alive().filter((q) => sameFaction(q, p));
+  /** 敌方优先、其次任意存活其他角色 */
+  const pickEnemy = (need?: (q: Player) => boolean): number => {
+    const es = enemies().filter((q) => !need || need(q));
+    if (es.length) return G.players.indexOf(es[0]);
+    const any = alive().filter((q) => !need || need(q));
+    return any.length ? G.players.indexOf(any[0]) : -1;
+  };
+  const play = async (sub: string, tgt: number | null): Promise<void> => {
+    const c = p.hand.find((x) => x.sub === sub);
+    if (!c || !p.alive) return;
+    if (tgt === null) return; // 无合法目标：保留手牌
+    discardCard(p, c);
+    await useTrick(idx, c, tgt);
+    await sleep(300);
+  };
+  // 作业未交（兵粮寸断）：给敌方主力断补给（【太平讲义】免疫延时锦囊，须排除）
+  if (p.hand.some((c) => c.sub === 'bingliang')) {
+    await play('bingliang', pickEnemy((q) => q.equip.armor?.skill !== 'taiping'));
+  }
+  // 草木皆兵：敌方手牌 ≥2 才值得
+  if (p.hand.some((c) => c.sub === 'caomu')) {
+    await play('caomu', pickEnemy((q) => q.hand.length >= 2));
+  }
+  // 摸底测验：敌方有手牌才看
+  if (p.hand.some((c) => c.sub === 'zhiji')) {
+    await play('zhiji', pickEnemy((q) => q.hand.length >= 1));
+  }
+  // 水漫考场 / 调虎离山：优先拆敌方装备
+  if (p.hand.some((c) => c.sub === 'shuishui')) {
+    await play('shuishui', pickEnemy((q) => filledEquipSlots(q).length > 0));
+  }
+  if (p.hand.some((c) => c.sub === 'diaohu')) {
+    await play('diaohu', pickEnemy((q) => filledEquipSlots(q).length > 0));
+  }
+  // 火烧连营：对敌方造成火伤（连环目标额外 +1）
+  if (p.hand.some((c) => c.sub === 'huoshao')) {
+    await play('huoshao', pickEnemy());
+  }
+  // 远交近攻（目标 1 / 自己 2）：给同阵营，无同阵营则不用（避免资敌）
+  if (p.hand.some((c) => c.sub === 'yuanjiao')) {
+    const al = allies();
+    await play('yuanjiao', al.length ? G.players.indexOf(al[0]) : null);
+  }
+  // 以逸待劳（目标 2 / 自己 1）：同理只给同阵营
+  if (p.hand.some((c) => c.sub === 'yiyi')) {
+    const al = allies();
+    await play('yiyi', al.length ? G.players.indexOf(al[0]) : null);
+  }
+  // 联军盛宴（全员各摸 1）：己方存活数 ≥ 敌方时才开
+  if (p.hand.some((c) => c.sub === 'lianjun')) {
+    const ok = allies().length >= enemies().length;
+    if (ok) {
+      const c = p.hand.find((x) => x.sub === 'lianjun');
+      if (c) {
+        discardCard(p, c);
+        await useTrick(idx, c, null);
+        await sleep(300);
+      }
+    }
+  }
+  // 班长敕令（全员各弃 1）：敌方 ≥ 己方时才开
+  if (p.hand.some((c) => c.sub === 'chiling')) {
+    const ok = enemies().length >= allies().length;
+    if (ok) {
+      const c = p.hand.find((x) => x.sub === 'chiling');
+      if (c) {
+        discardCard(p, c);
+        await useTrick(idx, c, null);
+        await sleep(300);
+      }
+    }
+  }
 }
 
 /** AI 主动技可用性：由技能声明（费用 + 每回合 / 整局限制）统一判定 */
@@ -132,6 +219,9 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       } else if (c.sub === 'horse-') {
         if (p.equip.horseMinus) G.discard.push(p.equip.horseMinus);
         p.equip.horseMinus = c;
+      } else if (c.sub === 'treasure') {
+        if (p.equip.treasure) G.discard.push(p.equip.treasure);
+        p.equip.treasure = c;
       }
       addLog(`${p.name} 装备【${c.name}】`);
       Sound.play('equip');
@@ -255,6 +345,8 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       }
     }
   }
+  // 扩展包锦囊（卡牌扩展包启用后才会在手牌里出现）：按「敌方/己方」与手牌规模做保守决策
+  await aiPlayExtraTricks(idx);
   // 咆哮（伽利略·自由落体）放开每回合出杀上限
   const shaCap = shaLimitOf(p);
   if (p.alive && !p.flags.noSha && (p.flags.shaUsed || 0) < shaCap) {

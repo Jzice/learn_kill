@@ -1,6 +1,7 @@
 /* ==================== 全局领域类型 ==================== */
 
 import type { PacketId } from '../data/packets';
+import type { CardPackId } from '../data/cardPacks';
 
 export type Suit = '♠' | '♥' | '♣' | '♦';
 export type CardType = 'basic' | 'trick' | 'equip';
@@ -29,7 +30,8 @@ export type LogAction =
   | 'sys';
 export type ChatKind = 'ai' | 'self' | 'sys';
 export type NetMode = 'single' | 'host' | 'join';
-export type EquipSlot = 'weapon' | 'armor' | 'horsePlus' | 'horseMinus';
+/** 装备槽位；'treasure' 为【木牛流马】等宝物槽（可选，旧存档解包为 undefined） */
+export type EquipSlot = 'weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure';
 /** 玩家自选性别（仅用于个性化展示，不影响玩法） */
 export type Gender = 'male' | 'female' | 'hidden';
 
@@ -320,7 +322,7 @@ export type SkillEffect =
   /** 转移杀：你成为【杀】目标时，可将其转移给另一名角色（卢瑟福·散射偏转） */
   | { kind: 'shaRedirect' }
   /** 装备失效：其他角色装备区中指定槽位的牌对你无效（墨子·非攻：收缴兵器） */
-  | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus')[] }
+  | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure')[] }
   /** 马政：装备区每有一张马，你计算距离额外 −n（郑和·航海图） */
   | { kind: 'horseDist'; n: number }
   | { kind: 'reduceDamage'; types: DamageType[]; n: number }
@@ -493,7 +495,7 @@ export interface Card {
   range?: number;
   skill?: string;
   dist?: number;
-  judgeType?: 'lebu' | 'shandian';
+  judgeType?: 'lebu' | 'shandian' | 'bingliang';
   /** 该牌造成的伤害属性（火杀/雷杀/火攻/闪电），缺省按普通伤害处理 */
   damageType?: DamageType;
 }
@@ -511,6 +513,8 @@ export interface Equips {
   armor: Card | null;
   horsePlus: Card | null;
   horseMinus: Card | null;
+  /** 宝物槽（【补给书包】等）：可选字段，保证旧存档 / 旧客户端可正常解包 */
+  treasure?: Card | null;
 }
 
 export interface PlayerFlags {
@@ -537,6 +541,10 @@ export interface PlayerFlags {
   trickCount?: number;
   /** 本回合使用的最后一张牌类型（朱自清·荷塘月色判据） */
   lastCardType?: CardType | null;
+  /** 【作业未交】生效：跳过本回合的摸牌阶段（回合初随 skipPlay 一并清零） */
+  skipDraw?: boolean;
+  /** 【借月清辉】封锁花色：本角色不能使用或打出该花色的手牌，直到其下个回合开始 */
+  blockSuit?: string | null;
 }
 
 export interface Player {
@@ -732,6 +740,8 @@ export interface PlayerPref {
   scope?: QuizScope;
   /** 加入方本局「叠加启用的扩展包」（已付费/已用免费额度）；房主据此在基础包之上追加角色池 */
   packets?: PacketId[];
+  /** 加入方本局启用的**牌库扩展包**（与角色扩展包相互独立）；房主据此合成牌堆 */
+  cardPacks?: CardPackId[];
 }
 
 export interface RoomMember {

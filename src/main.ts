@@ -14,6 +14,8 @@ import { CHARACTERS } from './data/characters';
 import { FACTIONS } from './data/factions';
 import { defOf, SKILL_DEFS } from './data/skilldefs';
 import { stageOf } from './data/packets';
+import { buildDeck } from './data/cards';
+import { normalizeCardPacks, withCore } from './data/cardPacks';
 import {
   canBeTarget,
   cardImmuneTo,
@@ -60,6 +62,8 @@ import {
   renderGradePicker,
   renderScopePicker,
   renderPacketPicker,
+  renderCardPackPicker,
+  toggleCardPack,
   renderTimerPicker,
   setQuizScopeMode,
   setPacket,
@@ -199,6 +203,19 @@ window.renderExtraPackPicker = renderExtraPackPicker;
 window.setTimerOn = setTimerOn;
 window.setTimerSec = setTimerSec;
 window.renderPacketPicker = renderPacketPicker;
+window.renderCardPackPicker = renderCardPackPicker;
+window.toggleCardPack = toggleCardPack;
+/**
+ * 冒烟测试专用：按给定卡包合成牌堆并返回「sub → 张数」统计。
+ * 用于断言「不启用扩展包时牌堆与基础 125 张逐项一致」（scripts/smoke-cards.mjs）。
+ */
+window.__xtsDeckStats = (packs?: string[]): Record<string, number> => {
+  const ids = Array.isArray(packs) ? normalizeCardPacks(packs) : [];
+  const deck = buildDeck({ packs: withCore(ids) });
+  const out: Record<string, number> = {};
+  for (const c of deck) out[c.sub] = (out[c.sub] || 0) + 1;
+  return out;
+};
 window.clearWrongBook = () => {
   clearWrongBook();
   resetStudyPanel(); // 清空后首页学习面板同步复位
@@ -536,6 +553,7 @@ function init(): void {
   renderGradePicker();
   renderScopePicker();
   renderPacketPicker();
+  renderCardPackPicker();
   renderTimerPicker();
   renderFactionPicker();
   renderCharPicker();
