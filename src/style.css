@@ -518,7 +518,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 /* 操作提示区：始终保留固定高度（不再 display:none），避免手牌区随其显隐上下跳动；
    有本地方决策时显示操作提示，否则显示其他角色的操作信息（内容由 render 决定）。
    flex 纵向布局：提示行不压缩，按钮区弹性填充剩余空间（超出内部滚动），高度收紧减少留白 */
-.center-area{display:flex;flex-direction:column;box-sizing:border-box;background:rgba(12,6,3,.92);border:1px solid var(--border);border-radius:7px;padding:5px 8px;margin-bottom:5px;height:70px;overflow:hidden;position:sticky;bottom:6px;z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.55)}
+.center-area{display:flex;flex-direction:column;box-sizing:border-box;background:rgba(12,6,3,.92);border:1px solid var(--border);border-radius:7px;padding:5px 8px;margin-bottom:5px;height:auto;min-height:56px;max-height:42vh;overflow:hidden;position:sticky;bottom:6px;z-index:5;box-shadow:0 -6px 18px rgba(0,0,0,.55)}
 .action-hint{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px;line-height:1.4;flex-shrink:0;padding-right:64px}
 .action-hint.hint-play{color:var(--gold);font-weight:600}
 .action-hint.hint-target{color:#e74c3c;font-weight:600}
@@ -558,6 +558,10 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .quiz-box{width:100%;max-width:460px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold-dim);box-shadow:0 0 0 2px var(--gold),0 20px 60px rgba(0,0,0,.9);border-radius:10px;padding:16px;color:var(--ink);animation:cardIn .3s ease-out}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
 .quiz-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+/* 答题弹窗内独立倒计时：仅开启限时且正在答题时显示，与底部计时条并存 */
+.quiz-timer{font-size:11px;font-weight:700;color:#7a2a1a;border:1px solid rgba(139,101,40,.5);border-radius:10px;padding:1px 8px;background:rgba(139,101,40,.12);white-space:nowrap;line-height:1.4;flex-shrink:0}
+.quiz-timer:empty{display:none}
+.quiz-timer.urgent{color:#fff;background:#c0392b;border-color:#ff7b6b;animation:hintPulse .8s infinite}
 .quiz-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:radial-gradient(circle,rgba(139,101,40,.25),transparent 70%);border:2px solid var(--gold-dim)}
 .quiz-meta{flex:1}
 .quiz-subject{font-size:11px;letter-spacing:2px;color:var(--gold-dim);font-weight:700}
@@ -793,7 +797,7 @@ sub{bottom:-.16em}
   .badge{font-size:7px;line-height:10px;height:10px;padding:0 3px}
   .judge-tag{font-size:6px;padding:0 2px}
   .p-card.is-self::before{font-size:8px;padding:0 4px;top:-6px;right:-4px}
-  .center-area{padding:4px 6px;height:62px}
+  .center-area{padding:4px 6px;height:auto;min-height:50px}
   .action-hint{font-size:10px;margin-bottom:3px;padding-right:56px}
   .action-btns .btn{font-size:10px;padding:4px 8px}
   .hand-row{min-height:78px;padding:2px 1px 4px;gap:3px}

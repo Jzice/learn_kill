@@ -11,17 +11,25 @@ export function initTimerTicker(): void {
   if (ticker) return;
   ticker = setInterval(() => {
     const el = document.getElementById('timerChip');
-    if (!el) return;
+    const qel = document.getElementById('quizTimer');
+    if (!el && !qel) return;
     if (!G.timerOn || !G.timerEnd) {
-      if (el.textContent) {
+      if (el && el.textContent) {
         el.textContent = '';
         el.className = 'timer-chip';
       }
+      if (qel && qel.textContent) qel.textContent = '';
       return;
     }
     const left = Math.max(0, Math.floor((G.timerEnd - Date.now()) / 1000));
     const txt = `⏱ ${left}s`;
-    if (el.textContent !== txt) el.textContent = txt;
-    el.className = 'timer-chip' + (left <= 5 ? ' urgent' : '');
+    if (el) {
+      if (el.textContent !== txt) el.textContent = txt;
+      el.className = 'timer-chip' + (left <= 5 ? ' urgent' : '');
+    }
+    if (qel) {
+      if (qel.textContent !== txt) qel.textContent = txt;
+      qel.className = 'quiz-timer' + (left <= 5 ? ' urgent' : '');
+    }
   }, 250);
 }
