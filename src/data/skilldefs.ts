@@ -2590,9 +2590,29 @@ export const SKILL_DEFS: Record<string, SkillDef> = Object.fromEntries(
   ].map((d) => [d.id, d]),
 );
 
-/** 按 id 取定义 */
+/** 运行时注册的技能定义（自定义扩展包通过 registerSkillDef 注入，零编译期改动） */
+const RUNTIME_SKILL_DEFS: Record<string, SkillDef> = {};
+
+/** 注册一条自定义技能定义（覆盖同名内置定义） */
+export function registerSkillDef(d: SkillDef): void {
+  RUNTIME_SKILL_DEFS[d.id] = d;
+}
+/** 注销一条运行时技能定义 */
+export function unregisterSkillDef(id: string): void {
+  delete RUNTIME_SKILL_DEFS[id];
+}
+/** 列出当前所有运行时注册的技能 id（用于整体重建时清理） */
+export function runtimeSkillIds(): string[] {
+  return Object.keys(RUNTIME_SKILL_DEFS);
+}
+
+/**
+ * 按 id 取定义。
+ * 运行时注册优先于内置，便于自定义扩展包覆盖同名技能。
+ * 自定义角色技能经此注册后，即可由 src/game/skillEngine.ts 用全套 SkillE 原语执行。
+ */
 export function defOf(id: string): SkillDef | undefined {
-  return SKILL_DEFS[id];
+  return RUNTIME_SKILL_DEFS[id] ?? SKILL_DEFS[id];
 }
 
 /**

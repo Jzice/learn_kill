@@ -1,0 +1,100 @@
+{
+  "format": "xts-pack",
+  "version": 1,
+  "id": "campus_sports",
+  "name": "校园运动会",
+  "author": "示例作者",
+  "desc": "以运动会为主题的扩展包示例：2 名角色 + 2 张锦囊 + 若干物理题。可直接用「🧩 从文件导入」试用。",
+  "characters": [
+    {
+      "id": "custom_runner",
+      "name": "飞人",
+      "title": "短跑健将",
+      "faction": "physics",
+      "subject": "物理",
+      "hp": 4,
+      "avatar": "🏃",
+      "grade": "初二上",
+      "skills": [
+        {
+          "id": "custom_runner_sk",
+          "name": "冲刺",
+          "kind": "active",
+          "timing": "active",
+          "desc": "出牌阶段，弃 1 张手牌，摸 2 张牌（起跑加速）",
+          "effects": [
+            { "kind": "costCard", "n": 1 },
+            { "kind": "selfDraw", "n": 2 }
+          ]
+        },
+        {
+          "id": "custom_runner_tr",
+          "name": "热身",
+          "kind": "trigger",
+          "timing": "passive",
+          "desc": "手牌上限 +1，计算距离 −1",
+          "effects": [
+            { "kind": "handLimit", "n": 1 },
+            { "kind": "distMod", "delta": -1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "custom_thrower",
+      "name": "投掷手",
+      "title": "铅球选手",
+      "faction": "physics",
+      "subject": "物理",
+      "hp": 4,
+      "avatar": "🥇",
+      "grade": "初二下",
+      "skills": [
+        {
+          "id": "custom_thrower_sk",
+          "name": "全力投掷",
+          "kind": "active",
+          "timing": "active",
+          "desc": "出牌阶段，弃 1 张手牌，对一名角色造成 1 点伤害",
+          "effects": [
+            { "kind": "costCard", "n": 1 },
+            { "kind": "targetDamage", "n": 1 }
+          ]
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "key": "custom_relay",
+      "name": "接力赛",
+      "subject": "campus",
+      "kind": "strategy",
+      "target": "none",
+      "deck": 2,
+      "desc": "观看牌堆顶 2 张，取 1 张入手（交接接力棒）",
+      "effects": [
+        { "kind": "deckPeek", "n": 2, "then": "pickOne" }
+      ]
+    },
+    {
+      "key": "custom_cheer",
+      "name": "全班加油",
+      "subject": "campus",
+      "kind": "quiz",
+      "target": "none",
+      "deck": 1,
+      "desc": "答对一道物理题，则所有其他角色各摸 1 张牌；答错哑火",
+      "quizSubject": "物理",
+      "effects": [
+        { "kind": "allDraw", "n": 1 }
+      ]
+    }
+  ],
+  "questions": {
+    "初二上": [
+      { "s": "物理", "kp": "运动学", "q": "下列物理量中是矢量的是？", "o": ["质量", "位移", "时间", "路程"], "a": 1 },
+      { "s": "物理", "kp": "运动学", "q": "速度的国际单位是？", "o": ["m/s", "km/h", "m/s²", "N"], "a": 0 }
+    ]
+  }
+}

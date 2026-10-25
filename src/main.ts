@@ -16,6 +16,7 @@ import { defOf, SKILL_DEFS } from './data/skilldefs';
 import { stageOf } from './data/packets';
 import { buildDeck } from './data/cards';
 import { normalizeCardPacks, withCore } from './data/cardPacks';
+import { initPacks } from './data/packRegistry';
 import {
   canBeTarget,
   cardImmuneTo,
@@ -58,6 +59,16 @@ import {
   loadBankFromUrlInput,
   renderAchievements,
   renderCharPicker,
+  // 自定义扩展包管理
+  openPackMenu,
+  closePackMenu,
+  renderPackList,
+  importPackFile,
+  loadPackFromUrl,
+  togglePack,
+  removePackConfirm,
+  clearAllPacksConfirm,
+  editPackFromMenu,
   renderFactionPicker,
   renderGradePicker,
   renderScopePicker,
@@ -192,6 +203,16 @@ window.selectRole = selectRole;
 window.openProfileMenu = openProfileMenu;
 window.openBankMenu = openBankMenu;
 window.closeBankMenu = closeBankMenu;
+// 自定义扩展包管理
+window.openPackMenu = openPackMenu;
+window.closePackMenu = closePackMenu;
+window.renderPackList = renderPackList;
+window.importPackFile = importPackFile;
+window.loadPackFromUrl = loadPackFromUrl;
+window.togglePack = togglePack;
+window.removePackConfirm = removePackConfirm;
+window.clearAllPacksConfirm = clearAllPacksConfirm;
+window.editPackFromMenu = editPackFromMenu;
 window.backToLobby = backToLobby;
 window.enterSetup = enterSetup;
 window.setNetMode = setNetMode;
@@ -542,6 +563,7 @@ function bindPlayLogRelayout(): void {
 function init(): void {
   applyTheme();
   restoreSetupPrefs(); // 恢复上次选择的玩家总数 / 回合限时（须在渲染选择器与绑定滑块前）
+  initPacks(); // 重建自定义扩展包的运行时注册表（须在选将池渲染前）
   loadSoundPref();
   updateSoundButtons();
   refreshSoundSwitch();

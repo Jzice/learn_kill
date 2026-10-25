@@ -40,6 +40,16 @@ import {
   setters,
   showAchievements,
 } from '../profile/profile';
+import {
+  customCharsFor,
+  getInstalledPacks,
+  installPackFromText,
+  setPackEnabled,
+  removePack,
+  clearAllPacks,
+  setCustomAllowed,
+} from '../data/packRegistry';
+import { openPackEditor } from './packEditor';
 import { startSingle } from '../game/setup';
 import type { QuizScope } from '../core/types';
 import { SCOPES, quizScope, setQuizScope, scopeDesc, scopeLabel, renderWrongBook } from '../profile/quizbook';
@@ -433,7 +443,9 @@ export function mergedCharPool(grade: string, packet: PacketId): Character[] {
     })
     .map((c) => withPacketSkills(c, packet));
   const ids = new Set(base.map((c) => c.id));
-  return [...base, ...extra.filter((c) => !ids.has(c.id))];
+  // 自定义扩展包角色：追加式并入，受「仅单机/房主」限制（联机加入方返回空）
+  const custom = customCharsFor(grade, packet).filter((c) => !ids.has(c.id));
+  return [...base, ...extra.filter((c) => !ids.has(c.id)), ...custom];
 }
 
 /**
@@ -672,6 +684,141 @@ export function closeBankMenu(): void {
   document.getElementById('bankModal')!.classList.remove('show');
 }
 
+/* ==================== 自定义扩展包管理 ==================== */
+
+/** 联机加入方不可用自定义扩展包（仅房主/单机生效） */
+function packDisabledHint(): string {
+  if (SELECTED_MODE === 'join') {
+    return '<div class="bank-info warn">⚠️ 你正在「加入服务器」，自定义扩展包仅房主 / 单机可用。加入后由房主统一携带。</div>';
+  }
+  return '';
+}
+
+export function openPackMenu(): void {
+  Sound.play('click');
+  renderPackList();
+  document.getElementById('packModal')!.classList.add('show');
+}
+
+export function closePackMenu(): void {
+  document.getElementById('packModal')!.classList.remove('show');
+}
+
+export function renderPackList(): void {
+  const box = document.getElementById('packList');
+  if (!box) return;
+  const packs = getInstalledPacks();
+  if (SELECTED_MODE === 'join') {
+    box.innerHTML = packDisabledHint() + '<div class="bank-info">暂无（加入服务器时不显示自定义扩展包）</div>';
+    return;
+  }
+  if (!packs.length) {
+    box.innerHTML = '<div class="bank-info">尚未安装任何扩展包。<br>点下方「导入本地文件」或「从 URL 加载」，或用「🧩 编辑器」自制。</div>';
+    return;
+  }
+  box.innerHTML = packs
+    .map((p) => {
+      const nC = (p.characters || []).length;
+      const nK = (p.cards || []).length;
+      const nQ = Object.values(p.questions || {}).reduce((s, a) => s + a.length, 0);
+      return `<div class="pack-item">
+        <label class="pack-enable"><input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="togglePack('${p.id}')"> 启用</label>
+        <div class="pack-meta">
+          <b>${escapeHtml(p.name)}</b> <span class="pack-id">${escapeHtml(p.id)}</span>
+          <span class="pack-counts">角色 ${nC} · 锦囊 ${nK} · 题 ${nQ}</span>
+          ${p.author ? `<span class="pack-author">by ${escapeHtml(p.author)}</span>` : ''}
+        </div>
+        <div class="pack-desc">${escapeHtml(p.desc || '')}</div>
+        <div class="pack-actions">
+          <button class="btn btn-sm" onclick="editPackFromMenu('${p.id}')">✏️ 编辑</button>
+          <button class="btn btn-sm" onclick="removePackConfirm('${p.id}')">🗑️ 移除</button>
+        </div>
+      </div>`;
+    })
+    .join('');
+}
+
+export function togglePack(id: string): void {
+  const p = getInstalledPacks().find((x) => x.id === id);
+  if (!p) return;
+  setPackEnabled(id, !p.enabled);
+  renderPackList();
+  // 角色池变化：刷新选将 / 阵营 / 扩展包展示
+  renderCharPicker();
+  renderFactionPicker();
+  renderPacketPicker();
+}
+
+export function removePackConfirm(id: string): void {
+  const p = getInstalledPacks().find((x) => x.id === id);
+  if (!p) return;
+  if (!confirm(`确认移除扩展包「${p.name}」？该操作不可恢复（已落盘内容会删除）。`)) return;
+  removePack(id);
+  renderCharPicker();
+  renderFactionPicker();
+  renderPacketPicker();
+  renderPackList();
+}
+
+export function clearAllPacksConfirm(): void {
+  if (!confirm('确认清空全部自定义扩展包？')) return;
+  clearAllPacks();
+  renderCharPicker();
+  renderFactionPicker();
+  renderPacketPicker();
+  renderPackList();
+}
+
+export function importPackFile(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const r = installPackFromText(String(reader.result ?? ''));
+    if (r.ok) {
+      renderPackList();
+      renderCharPicker();
+      renderFactionPicker();
+      alert(`✅ 扩展包「${r.pack!.name}」已安装并启用\n\n告警：${r.warnings.length ? r.warnings.join('\n') : '无'}`);
+    } else {
+      alert('❌ 安装失败：\n' + r.errors.join('\n'));
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+export function loadPackFromUrl(): void {
+  const v = inputValue('packUrlInput').trim();
+  if (!v) {
+    alert('请输入扩展包 URL（.json）');
+    return;
+  }
+  fetch(v)
+    .then((r) => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then((t) => {
+      const r = installPackFromText(t);
+      if (r.ok) {
+        renderPackList();
+        renderCharPicker();
+        renderFactionPicker();
+        alert(`✅ 扩展包「${r.pack!.name}」已安装并启用`);
+      } else {
+        alert('❌ 安装失败：\n' + r.errors.join('\n'));
+      }
+    })
+    .catch((e) => alert('❌ 加载失败：' + (e as Error).message));
+}
+
+/** 编辑指定 id 的已安装包（无 id 则新建空白包） */
+export function editPackFromMenu(id?: string): void {
+  openPackEditor(id);
+}
+
 /* ==================== 固定顶栏 / 个人成就 / 设置抽屉 ==================== */
 export function renderTopBar(): void {
   const lv = levelOf(PROFILE.score);
@@ -724,6 +871,8 @@ export function updateLobbyMode(): void {
   const sb = document.getElementById('startBtn') as HTMLButtonElement | null;
   const rc = document.getElementById('roomConfig');
   const title = document.getElementById('setupTitle');
+  // 自定义扩展包「仅单机 / 房主」可用：联机加入方关闭
+  setCustomAllowed(SELECTED_MODE !== 'join');
   if (title) title.textContent = MODE_TITLE[SELECTED_MODE];
   // 联机方式二选一只在联机模式显示
   np.style.display = SELECTED_MODE === 'single' ? 'none' : 'block';

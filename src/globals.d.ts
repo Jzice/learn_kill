@@ -102,6 +102,26 @@ declare global {
     closeBankMenu: () => void;
     openBankBrowser: () => void;
     closeBankBrowser: () => void;
+    // 自定义扩展包管理
+    openPackMenu: () => void;
+    closePackMenu: () => void;
+    renderPackList: () => void;
+    importPackFile: (event: Event) => void;
+    loadPackFromUrl: () => void;
+    togglePack: (id: string) => void;
+    removePackConfirm: (id: string) => void;
+    clearAllPacksConfirm: () => void;
+    editPackFromMenu: (id?: string) => void;
+    closePackEditor: () => void;
+    peApplyMeta: () => void;
+    peAddCharacter: () => void;
+    peAddCard: () => void;
+    peAddQuestion: () => void;
+    peLoadJson: () => void;
+    peValidate: () => void;
+    peCopy: () => void;
+    peExport: () => void;
+    peSave: () => void;
     copyInviteLink: () => void;
     nativeShare: () => void;
     setNetMode: (net: 'host' | 'join') => void;

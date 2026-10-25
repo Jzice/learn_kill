@@ -4,6 +4,26 @@
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-26
+
+### 新增
+- **自定义扩展包（xts-pack v1）**：玩家无需改引擎、无需重新构建即可自制并导入角色 / 锦囊 / 题库，数据驱动追加式并入；不安装任何包时行为与改造前逐项一致
+- **角色**：每条技能经运行时 `registerSkillDef` 注入 `SKILL_DEFS` 的运行时表，由 `skillEngine` 用全套 `SkillE` 原语（转化技 / 免疫 / 观星 / 学识经济等）执行（与 v2.7 高中包声明式技能同源）
+- **卡牌**：每条锦囊经运行时 `registerTrick` 注入 `KNOWLEDGE_TRICKS` 的运行时表，由 `cards.ts` 自动入牌堆、`actions.ts` 通用结算（`quiz` 型先答题再生效），基础牌堆 30/15/8/5 配比零改动
+- **题目**：走既有 `mergeBankData` 合并通道，按年级懒加载
+- **UI**：首页顶栏 🧩 入口 → 扩展包管理弹窗（列表 / 启用开关 / 导入本地文件 / 从 URL 加载 / 移除 / 清空）+ **Web 表单编辑器**（结构化表单快捷添加角色/锦囊/题目，实时 JSON 预览、校验、保存启用、导出/复制）
+- **工具链**：`scripts/validate-pack.mjs` 离线校验（格式 + 原语白名单 + PP 战力预算告警）、`docs/自定义扩展包规范.md`、`data/packs/example.json`（校园运动会主题示例）
+
+### 变更
+- `skilldefs.ts` 的 `defOf` 改为「运行时注册优先于内置」，新增 `registerSkillDef`/`unregisterSkillDef`；`knowledgeTricks.ts` 新增 `allTrickDefs`/`trickDefOf` 与 `registerTrick`/`unregisterTrick`，`cards.ts`/`actions.ts`/`turn.ts`/`modals.ts` 的锦囊查找统一走合并表
+- `lobby.ts` 的 `mergedCharPool` 追加式并入已启用扩展包角色；`main.ts` 启动时 `initPacks()` 重建运行时注册表
+- **范围约束**：自定义扩展包「仅单机 / 房主」可用，联机加入方通过 `setCustomAllowed(false)` 关闭，由房主统一携带（`start_game` 下发角色对象、`ask_quiz_request` 下发题目），加入方无需安装且不破坏 `state_sync` 结构
+
+### 验证
+- `tsc --noEmit` 0 错误；`npm run build` 双模式成功
+- **卡牌冒烟 20/20**（基础牌堆构成与改造前完全一致，零回归）
+- `node scripts/validate-pack.mjs data/packs/example.json` 通过
+
 ## [3.3.1] - 2026-10-26
 
 ### 变更

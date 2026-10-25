@@ -4,7 +4,7 @@ import { G } from './state';
 import { FX } from '../core/fx';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
-import { KNOWLEDGE_TRICKS } from '../data/knowledgeTricks';
+import { trickDefOf } from '../data/knowledgeTricks';
 import { DELAY_TRICK_SUBS, ONE_TARGET_TRICKS, RESPONSE_ONLY_TRICKS } from '../data/cardCatalog';
 import { addLog, addPlayLog } from './log';
 import {
@@ -483,7 +483,7 @@ export async function playPhase(idx: number): Promise<void> {
         ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong'].includes(card.sub) ||
         ONE_TARGET_TRICKS.includes(card.sub) ||
         DELAY_TRICK_SUBS.includes(card.sub) ||
-        KNOWLEDGE_TRICKS[card.sub]?.target === 'one'
+        trickDefOf(card.sub)?.target === 'one'
       ) {
         const targets: ChoiceOption[] = [];
         for (let i = 0; i < G.players.length; i++) {

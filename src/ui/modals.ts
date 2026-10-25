@@ -1,6 +1,6 @@
 /* ==================== 规则弹窗 ==================== */
 import { FACTIONS } from '../data/factions';
-import { KNOWLEDGE_TRICKS, type KtSubject } from '../data/knowledgeTricks';
+import { allTrickDefs, type KtSubject } from '../data/knowledgeTricks';
 import type { FactionId } from '../core/types';
 import { GRADE_ORDER } from '../data/grades';
 import { CHARACTERS } from '../data/characters';
@@ -21,7 +21,7 @@ function knowledgeTrickHtml(): string {
   ];
   const groups = order
     .map((s) => {
-      const items = Object.values(KNOWLEDGE_TRICKS).filter((d) => d.subject === s);
+      const items = Object.values(allTrickDefs()).filter((d) => d.subject === s);
       if (!items.length) return '';
       const f = s === 'campus' ? null : FACTIONS[s as FactionId];
       const head = f ? `${f.icon} ${f.name}` : '🏫 校园生活';

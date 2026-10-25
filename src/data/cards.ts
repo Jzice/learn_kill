@@ -1,6 +1,6 @@
 /* ==================== 卡牌 ==================== */
 import type { Card, CardType } from '../core/types';
-import { KNOWLEDGE_TRICKS } from './knowledgeTricks';
+import { allTrickDefs } from './knowledgeTricks';
 import { CARD_CATALOG } from './cardCatalog';
 import type { CardPackId } from './cardPacks';
 
@@ -72,7 +72,7 @@ export function buildDeck(opts?: { packs?: CardPackId[] }): Card[] {
   }
   // 知识点锦囊：按定义表批量注入（type='trick'，sub=定义表 key），张数受 KtDef.deck 控制，
   // 不改变基本牌 30/15/8/5 比例；随牌堆洗牌后与其他牌混合。
-  for (const [sub, def] of Object.entries(KNOWLEDGE_TRICKS)) {
+  for (const [sub, def] of Object.entries(allTrickDefs())) {
     for (let i = 0; i < (def.deck ?? 1); i++)
       d.push(C(def.name, 'trick', sub, SUITS[i % 4], (i % 13) + 1));
   }

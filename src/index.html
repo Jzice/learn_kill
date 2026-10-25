@@ -50,6 +50,7 @@
       <span class="tb-actions">
         <button class="tb-icon" onclick="openShop('chars')" title="学分商店">🪙<i class="tb-dot" id="tbShopDot" style="display:none"></i></button>
         <button class="tb-icon" onclick="openBankBrowser()" title="浏览全部题库">📚</button>
+        <button class="tb-icon" onclick="openPackMenu()" title="自定义扩展包">🧩</button>
         <button class="tb-icon" onclick="openRules()" title="规则说明">📖</button>
         <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">⏏</button>
         <button class="tb-icon tb-notify" onclick="toggleNotifyPanel()" title="消息通知">🔔<span class="notify-badge" id="notifyBadge"></span></button>
@@ -451,6 +452,36 @@
       <input type="file" id="fileInput" class="file-input" accept=".json,.js" onchange="importQuestionBank(event)">
     </div>
     <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closeBankMenu()">完成</button></div>
+  </div>
+</div>
+
+<!-- 自定义扩展包管理（二级菜单） -->
+<div id="packModal" class="rules-modal">
+  <div class="rules-box" style="max-width:600px">
+    <div class="rules-header"><span>🧩 自定义扩展包</span><button onclick="closePackMenu()" class="rules-close">✕</button></div>
+    <div class="rules-content">
+      <div class="bank-info">自定义扩展包「仅单机 / 房主」可用：联机加入方由房主统一携带，自己无需安装。</div>
+      <div id="packList" class="pack-list"></div>
+      <div class="input-row" style="margin:8px 0 6px">
+        <input type="text" id="packUrlInput" placeholder="扩展包 URL（.json）">
+      </div>
+      <div class="opt-row" style="margin-bottom:0;flex-wrap:wrap">
+        <button class="btn" style="flex:1" onclick="loadPackFromUrl()">🌐 从 URL 加载</button>
+        <button class="btn btn-accent" style="flex:1" onclick="document.getElementById('packFileInput').click()">📂 导入本地文件</button>
+        <button class="btn" style="flex:0 0 auto" onclick="editPackFromMenu()">🧩 新建 / 编辑器</button>
+        <button class="btn" style="flex:0 0 auto" onclick="clearAllPacksConfirm()">🗑️ 清空全部</button>
+      </div>
+      <input type="file" id="packFileInput" class="file-input" accept=".json" onchange="importPackFile(event)">
+    </div>
+    <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closePackMenu()">完成</button></div>
+  </div>
+</div>
+
+<!-- 自定义扩展包 Web 表单编辑器 -->
+<div id="packEditorModal" class="rules-modal">
+  <div class="rules-box" style="max-width:680px">
+    <div class="rules-header"><span>🧩 扩展包编辑器</span><button onclick="closePackEditor()" class="rules-close">✕</button></div>
+    <div class="rules-content"><div id="packEditorBody"></div></div>
   </div>
 </div>
 

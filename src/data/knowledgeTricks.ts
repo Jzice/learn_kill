@@ -166,7 +166,30 @@ export const KNOWLEDGE_TRICKS: Record<string, KtDef> = {
   },
 };
 
+/** 运行时注册的锦囊定义（自定义扩展包注入；不参与基础牌堆常量） */
+const RUNTIME_TRICKS: Record<string, KtDef> = {};
+/** 注册一条运行时锦囊（覆盖同名内置锦囊） */
+export function registerTrick(sub: string, def: KtDef): void {
+  RUNTIME_TRICKS[sub] = def;
+}
+/** 注销一条运行时锦囊 */
+export function unregisterTrick(sub: string): void {
+  delete RUNTIME_TRICKS[sub];
+}
+/** 列出当前所有运行时注册的锦囊 sub（用于整体重建时清理） */
+export function runtimeTrickSubs(): string[] {
+  return Object.keys(RUNTIME_TRICKS);
+}
+/** 合并内置与运行时锦囊（用于牌堆注入 / 规则书 / 结算查找） */
+export function allTrickDefs(): Record<string, KtDef> {
+  return { ...KNOWLEDGE_TRICKS, ...RUNTIME_TRICKS };
+}
+/** 按 sub 取锦囊定义（含运行时注册，结算与描述统一走这里） */
+export function trickDefOf(sub: string): KtDef | undefined {
+  return allTrickDefs()[sub];
+}
+
 /** 是否为知识点锦囊（按卡牌 sub 判定） */
 export function isKnowledgeTrick(sub: string): boolean {
-  return !!KNOWLEDGE_TRICKS[sub];
+  return !!allTrickDefs()[sub];
 }

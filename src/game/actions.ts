@@ -5,7 +5,7 @@ import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
-import { KNOWLEDGE_TRICKS } from '../data/knowledgeTricks';
+import { trickDefOf, allTrickDefs } from '../data/knowledgeTricks';
 import { COUNTERABLE_EXTRA_TRICKS, DELAY_TRICK_SUBS, ONE_TARGET_TRICKS } from '../data/cardCatalog';
 import { addLog, addPlayLog } from './log';
 import {
@@ -451,7 +451,7 @@ export async function useTrick(
   let targetIdx = targetIdxIn;
   const tn = targetIdx != null ? G.players[targetIdx].name : '';
   addPlayLog(a.name, 'use', card.name, tn);
-  const trickDesc = TRICK_DESC[card.sub] || KNOWLEDGE_TRICKS[card.sub]?.desc || '（暂无说明）';
+  const trickDesc = TRICK_DESC[card.sub] || trickDefOf(card.sub)?.desc || '（暂无说明）';
   addLog(`📘 玩法·【${card.name}】：${trickDesc}`, 'explain');
   showPlayHint('锦囊', card.name, trickDesc);
   showPlayCard(card, a.name, FACTIONS[a.faction].color);
@@ -490,7 +490,7 @@ export async function useTrick(
     // 扩展包锦囊（应变篇 / 国战）；延时类 lebu / shandian / bingliang 不在此列，与既有口径一致
     ...COUNTERABLE_EXTRA_TRICKS,
   ];
-  if (COUNTERABLE.includes(card.sub) || KNOWLEDGE_TRICKS[card.sub]) {
+  if (COUNTERABLE.includes(card.sub) || trickDefOf(card.sub)) {
     const res = await counterChain(attackerIdx, card.sub, targetIdx);
     if (res.countered) {
       addLog(`【无懈可击】生效，${card.name} 被抵消`, 'hl');
@@ -513,7 +513,7 @@ export async function useTrick(
     ...ONE_TARGET_TRICKS,
     ...DELAY_TRICK_SUBS,
   ];
-  const ktOneTarget = KNOWLEDGE_TRICKS[card.sub]?.target === 'one';
+  const ktOneTarget = trickDefOf(card.sub)?.target === 'one';
   if (targetIdx != null && (SINGLE_TARGET_TRICKS.includes(card.sub) || ktOneTarget)) {
     targetIdx = await tryTrickRedirect(attackerIdx, targetIdx);
   }
@@ -939,7 +939,7 @@ export async function useTrick(
     }
     default: {
       // 知识点锦囊：策略型直接套用 effects；答题型先答题再套用（见 useKnowledgeTrick）
-      if (KNOWLEDGE_TRICKS[card.sub]) {
+      if (trickDefOf(card.sub)) {
         await useKnowledgeTrick(attackerIdx, card, targetIdx, secondTarget);
       }
       break;
@@ -970,7 +970,7 @@ export async function useKnowledgeTrick(
   targetIdx: number | null,
   _secondTarget: number | null = null,
 ): Promise<void> {
-  const def = KNOWLEDGE_TRICKS[card.sub];
+  const def = trickDefOf(card.sub);
   const a = G.players[attackerIdx];
   if (!def || !a || !a.alive) return;
   const ctx = { idx: attackerIdx, targetIdx: targetIdx ?? undefined, card };
