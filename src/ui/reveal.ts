@@ -11,8 +11,11 @@ import { charConditions, masterySnapshot } from '../profile/unlockCondition';
 export interface CharCardOpts {
   /** 角标文案：「✅ 已选择」/「🎲 随机派发」 */
   label: string;
-  /** 随机派发模式：显示「🎲 换一个」按钮 */
+  /** 随机派发模式：控制「🎲 随机派发」角标与样式（不决定是否显示卡内换将按钮） */
   random: boolean;
+  /** 是否在武将卡内部显示「🎲 换一个」按钮；缺省时跟随 random。
+   *  亮将弹窗底部已有可用的换将按钮，故弹窗内传 false 避免重复且失效的卡内按钮。 */
+  cardReroll?: boolean;
   /** 学分解锁的扩展包角色：展示解锁来源与条件进度 */
   expanded: boolean;
 }
@@ -42,7 +45,7 @@ export function charCardHtml(c: Character, opts: CharCardOpts): string {
     <div class="rcp-skills">${skills}</div>
     <div class="rcp-lord">👑 主公技 <b>${escapeHtml(f.lordSkill.name)}</b>：${escapeHtml(f.lordSkill.desc)}</div>
     ${src}
-    ${opts.random ? '<button class="btn btn-sm rcp-reroll" onclick="rerollRandomChar()">🎲 换一个</button>' : ''}
+    ${(opts.cardReroll ?? opts.random) ? '<button class="btn btn-sm rcp-reroll" onclick="rerollRandomChar()">🎲 换一个</button>' : ''}
   </div>`;
 }
 
@@ -78,7 +81,7 @@ function renderReveal(): void {
   if (!body || !revealChar) return;
   body.innerHTML =
     `<div class="rv-tip">本局你将使用以下武将，确认后开局（也可先换一个）</div>` +
-    charCardHtml(revealChar, { label: '🎲 随机派发', random: true, expanded: revealChar.id.startsWith('ex_') }) +
+    charCardHtml(revealChar, { label: '🎲 随机派发', random: true, cardReroll: false, expanded: revealChar.id.startsWith('ex_') }) +
     `<div class="rv-actions">
       <button class="btn btn-accent" onclick="revealConfirm()">🎮 开始对局</button>
       <button class="btn" onclick="revealReroll()">🎲 换一个</button>
