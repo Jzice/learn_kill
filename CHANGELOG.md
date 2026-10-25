@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-25
+
+### 修复
+- **亮将确认弹窗（随机选将模式开局前）武将卡内部「🎲 换一个」按钮失效**：该按钮复用设置界面的 `rerollRandomChar()`，只会重渲染弹窗背后的设置界面（`renderFactionPicker` / `renderCharPicker`），不会刷新当前弹窗的武将卡，点击后画面不变、表现为无效。已将卡内按钮移除（`charCardHtml` 增加独立开关 `cardReroll`），保留弹窗底部「开始对局」后面的可用「换一个」（`revealReroll`，会 `renderReveal()` 正确刷新弹窗），设置界面角色预览框内的「换一个」保持不变
+
+### 验证
+- `tsc --noEmit` 0 错误；`npm run build` 双模式成功
+
 ## [3.2.0] - 2026-10-25
 
 ### 新增
