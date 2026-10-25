@@ -4,6 +4,7 @@
  */
 import type { Question } from '../core/types';
 import { escapeHtml } from '../core/dom';
+import { fmtFormula } from '../core/formula';
 import { Sound } from '../core/sound';
 import { QUESTION_BANK, loadGrade, sortedGrades } from '../data/bankLoader';
 import { SUBJECT_ICON } from '../data/factions';
@@ -28,9 +29,9 @@ function showScreen(id: string): void {
 
 function bankItemHtml(q: Question, i: number): string {
   const opts = q.o
-    .map((o, j) => `<div class="bo ${j === q.a ? 'ans' : ''}">${'ABCD'[j]}. ${escapeHtml(o)}${j === q.a ? ' ✓' : ''}</div>`)
+    .map((o, j) => `<div class="bo ${j === q.a ? 'ans' : ''}">${'ABCD'[j]}. ${fmtFormula(o)}${j === q.a ? ' ✓' : ''}</div>`)
     .join('');
-  return `<div class="bank-item"><div>${i + 1}. ${escapeHtml(q.q)}</div>${opts}` +
+  return `<div class="bank-item"><div>${i + 1}. ${fmtFormula(q.q)}</div>${opts}` +
     `<div class="bkp">${escapeHtml(q.u || '综合')} · ${escapeHtml(q.kp || '')}</div></div>`;
 }
 

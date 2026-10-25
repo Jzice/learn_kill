@@ -5,6 +5,7 @@
  */
 import type { Question, QuizRec, QuizScope } from '../core/types';
 import { escapeHtml } from '../core/dom';
+import { fmtFormula } from '../core/formula';
 import { GRADE_ORDER, gradeSortKey } from '../data/grades';
 import { loadGrade, QUESTION_BANK } from '../data/bankLoader';
 import { PROFILE, saveProfile } from './profile';
@@ -341,7 +342,7 @@ export function renderWrongBook(): void {
       ({ rec }) => `<div class="wb-item">
         <div class="wb-top">${escapeHtml(rec.g || '综合')} · ${escapeHtml(rec.s)} · ${escapeHtml(rec.kp)}
           <span class="wb-tag">错 ${rec.w} 次</span></div>
-        <div class="wb-q">${escapeHtml(rec.text)}</div>
+        <div class="wb-q">${fmtFormula(rec.text)}</div>
         <div class="wb-bar">${'●'.repeat(rec.c)}${'○'.repeat(Math.max(0, MASTER_STREAK - rec.c))}<span>掌握 ${rec.c}/${MASTER_STREAK}</span></div>
       </div>`,
     )

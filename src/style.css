@@ -62,7 +62,7 @@ body[data-theme="blue"]{--gold:#4aa8ff;--gold-dim:#2a6aa8;--accent-strong:#b2d8f
 .theme-style .sw{width:11px;height:11px;border-radius:50%;background:var(--sw);display:inline-block;flex-shrink:0;box-shadow:0 0 4px rgba(0,0,0,.55)}
 
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:radial-gradient(ellipse at 50% 0%,var(--bg1),var(--bg2) 45%,var(--bg3));background-attachment:fixed;color:var(--text);font-family:"PingFang SC","Microsoft YaHei",serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:var(--tb-h,52px) 8px 8px;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 0%,var(--bg1),var(--bg2) 45%,var(--bg3));background-attachment:fixed;color:var(--text);font-family:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC","Hiragino Sans GB","WenQuanYi Micro Hei","Noto Sans Symbols","Noto Sans Symbols 2","Segoe UI Symbol","Cambria Math",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:var(--tb-h,52px) 8px 8px;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px);pointer-events:none;z-index:0}
 h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba(245,197,66,.5),0 2px 0 #000;margin-bottom:2px;position:relative;z-index:1}
 .subtitle{font-size:10px;color:var(--gold-dim);letter-spacing:3px;margin-bottom:8px;position:relative;z-index:1}
@@ -570,6 +570,16 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .quiz-option.wrong{background:rgba(231,76,60,.35);border-color:#c0392b}
 .quiz-option .tag{display:inline-block;width:19px;height:19px;line-height:19px;text-align:center;border-radius:50%;background:var(--gold-dim);color:var(--parch);font-size:10px;margin-right:6px;font-weight:700}
 #quizFeedback{font-size:12px;margin-top:6px;min-height:18px;font-weight:700;text-align:center}
+
+/* ---- 化学式 / 数学公式排版（标签由 core/formula.ts 生成） ----
+ * sub/sup 替代 Unicode 上下标字符（移动端字体多缺 U+2070–209F 字形 → 豆腐块）；
+ * line-height:0 + 相对定位，避免撑高行距 */
+sub,sup{font-size:.72em;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.45em}
+sub{bottom:-.16em}
+/* 根号：√ 字符本身不含覆盖被开方数的上横线（vinculum），用 border-top 补出 */
+.fx-sqrt{white-space:nowrap}
+.fx-sqrt>.fx-body{border-top:1px solid currentColor;padding:1px .12em 0 .12em;margin-left:-.06em}
 
 .mark-box{width:100%;max-width:320px;background:var(--surface);border:2px solid var(--gold-dim);border-radius:10px;padding:16px;color:var(--text);animation:cardIn .25s ease-out}
 .mark-title{font-size:13px;color:var(--gold);text-align:center;margin-bottom:12px;letter-spacing:1px}

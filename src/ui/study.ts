@@ -7,6 +7,7 @@
  */
 import type { Question, QuizRec } from '../core/types';
 import { escapeHtml } from '../core/dom';
+import { fmtFormula } from '../core/formula';
 import { addCredits, CREDIT_RULE } from '../profile/credits';
 import { bumpMission } from '../profile/missions';
 import { addPassExp } from '../profile/pass';
@@ -101,7 +102,7 @@ function wrongItemHtml(key: string, rec: QuizRec, done: boolean): string {
       <span class="wb-tag">错 ${rec.w} 次</span>
       <span class="wb-tag ${done ? 'ok' : ''}">${done ? '已攻克' : `掌握 ${rec.c}/${MASTER_STREAK}`}</span>
       <span class="si-arrow">${open ? '▴' : '▾'}</span></div>
-    <div class="wb-q">${escapeHtml(rec.text)}</div>`;
+    <div class="wb-q">${fmtFormula(rec.text)}</div>`;
   let body = '';
   if (open) {
     const q = detail.get(key);
@@ -115,7 +116,7 @@ function wrongItemHtml(key: string, rec: QuizRec, done: boolean): string {
       const opts = order
         .map((oi, i) => {
           const ok = i === correctPos;
-          return `<div class="si-opt ${ok ? 'ok' : ''}">${String.fromCharCode(65 + i)}. ${escapeHtml(q.o[oi])}${ok ? ' ✅' : ''}</div>`;
+          return `<div class="si-opt ${ok ? 'ok' : ''}">${String.fromCharCode(65 + i)}. ${fmtFormula(q.o[oi])}${ok ? ' ✅' : ''}</div>`;
         })
         .join('');
       body = `<div class="si-detail">${opts}
@@ -297,10 +298,10 @@ function renderReviewQuestion(): void {
   document.getElementById('reviewSubject')!.textContent = `${q.s} · 知识点复习`;
   document.getElementById('reviewProgress')!.textContent = `第 ${reviewIdx + 1} / ${total} 题 · 知识点 ${q.kp || '综合'}`;
   document.getElementById('reviewKP')!.textContent = '知识点：' + (q.kp || '综合');
-  document.getElementById('reviewQuestion')!.textContent = q.q;
+  document.getElementById('reviewQuestion')!.innerHTML = fmtFormula(q.q);
   const opts = document.getElementById('reviewOptions')!;
   opts.innerHTML = item.order
-    .map((oi, i) => `<button class="quiz-option" data-i="${i}" onclick="answerReview(${i})"><span class="tag">${String.fromCharCode(65 + i)}</span>${escapeHtml(q.o[oi])}</button>`)
+    .map((oi, i) => `<button class="quiz-option" data-i="${i}" onclick="answerReview(${i})"><span class="tag">${String.fromCharCode(65 + i)}</span>${fmtFormula(q.o[oi])}</button>`)
     .join('');
   document.getElementById('reviewFeedback')!.textContent = '';
 }

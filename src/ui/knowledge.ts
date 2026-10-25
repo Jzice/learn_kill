@@ -10,6 +10,7 @@
  */
 import type { KnowledgeNote, KpRelation, KpRelationType } from '../core/types';
 import { escapeHtml } from '../core/dom';
+import { fmtFormula } from '../core/formula';
 import { Sound } from '../core/sound';
 import {
   getNotes,
@@ -123,7 +124,7 @@ function relTextHtml(rels: KpRelation[], kp: string): string {
     if (arr?.length) {
       parts.push(
         `<span class="kp-rel" style="color:${TYPE_COLOR[t]}">${TYPE_LABEL[t]}：${arr
-          .map(escapeHtml)
+          .map((v) => fmtFormula(v))
           .join('、')}</span>`,
       );
     }
@@ -140,10 +141,10 @@ function push(m: Map<KpRelationType, string[]>, t: KpRelationType, v: string): v
 /** 讲解正文（概要 + 要点 + 易错） */
 function noteBodyHtml(n: KnowledgeNote): string {
   const points = n.points?.length
-    ? `<ul class="kp-points">${n.points.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul>`
+    ? `<ul class="kp-points">${n.points.map((p) => `<li>${fmtFormula(p)}</li>`).join('')}</ul>`
     : '';
-  const pit = n.pitfall ? `<div class="kp-pit">⚠ 易错：${escapeHtml(n.pitfall)}</div>` : '';
-  return `<div class="kp-sum">${escapeHtml(n.summary || '')}</div>${points}${pit}`;
+  const pit = n.pitfall ? `<div class="kp-pit">⚠ 易错：${fmtFormula(n.pitfall)}</div>` : '';
+  return `<div class="kp-sum">${fmtFormula(n.summary || '')}</div>${points}${pit}`;
 }
 
 /* ==================== 视图一：知识点讲解 ==================== */

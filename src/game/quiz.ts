@@ -1,6 +1,6 @@
 /* ==================== 答题 & 学习奖励 ==================== */
 import type { Player, Question, QuizScope } from '../core/types';
-import { escapeHtml } from '../core/dom';
+import { fmtFormula } from '../core/formula';
 import { Sound } from '../core/sound';
 import { comboFx } from '../core/fx';
 import { FACTIONS, SUBJECT_ICON } from '../data/factions';
@@ -113,13 +113,14 @@ export function displayQuiz(q: Question, player: Player, isSkill: boolean): Prom
     document.getElementById('quizSubject')!.textContent = q.s + (isSkill ? ' · 技能挑战' : ' · 知识挑战');
     document.getElementById('quizProgress')!.textContent = `${G.grade} · 已答 ${quizStats.total} 题 · 正确 ${quizStats.correct} 题`;
     document.getElementById('quizKP')!.textContent = '知识点：' + (q.kp || '综合');
-    document.getElementById('quizQuestion')!.textContent = q.q;
+    // 题干走 formulaHtml：化学式 / 公式的 Unicode 上下标转成 sub/sup、根号补横线
+    document.getElementById('quizQuestion')!.innerHTML = fmtFormula(q.q);
     const opts = document.getElementById('quizOptions')!;
     // 随机打乱选项：每次出题顺序不同，但判定始终以原始正确下标 q.a 为准
     const order = shuffledIndices(q.o.length); // 显示位置 i -> 原始下标
     const correctPos = order.indexOf(q.a); // 正确项在当前显示顺序中的位置
     opts.innerHTML = order
-      .map((oi, i) => `<button class="quiz-option" data-i="${i}"><span class="tag">${String.fromCharCode(65 + i)}</span>${escapeHtml(q.o[oi])}</button>`)
+      .map((oi, i) => `<button class="quiz-option" data-i="${i}"><span class="tag">${String.fromCharCode(65 + i)}</span>${fmtFormula(q.o[oi])}</button>`)
       .join('');
     document.getElementById('quizFeedback')!.textContent = '';
     // 回合限时：答题同样单独计时，超时按答错处理（AI 不计时）

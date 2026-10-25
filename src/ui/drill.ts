@@ -5,7 +5,7 @@
  * 结构镜像首页复习弹窗（复用 .quiz-* 样式），但队列来自题库而非错题本。
  */
 import type { Question } from '../core/types';
-import { escapeHtml } from '../core/dom';
+import { fmtFormula } from '../core/formula';
 import { Sound } from '../core/sound';
 import { shuffledIndices } from '../core/shuffle';
 import { SUBJECT_ICON } from '../data/factions';
@@ -58,6 +58,12 @@ function setText(id: string, v: string): void {
   if (el) el.textContent = v;
 }
 
+/** 题干含化学式 / 公式时需要 innerHTML（fmtFormula 内部已完成转义） */
+function setHtml(id: string, v: string): void {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = v;
+}
+
 /** 开始一组刷题（按题库浏览当前的学期 / 科目筛选抽题） */
 export async function startDrill(): Promise<void> {
   const ctx = bankDrillContext();
@@ -92,13 +98,13 @@ function renderDrillQuestion(): void {
   setText('drillSubject', `${q.s} · ${grade}${subject ? ' · ' + subject : ''} 刷题`);
   setText('drillProgress', `第 ${idx + 1} / ${queue.length} 题 · 答对 ${correct} · 连对 ${combo}`);
   setText('drillKP', '知识点：' + (q.kp || '综合'));
-  setText('drillQuestion', q.q);
+  setHtml('drillQuestion', fmtFormula(q.q));
   const opts = document.getElementById('drillOptions');
   if (opts) {
     opts.innerHTML = item.order
       .map(
         (oi, i) =>
-          `<button class="quiz-option" data-i="${i}" onclick="answerDrill(${i})"><span class="tag">${String.fromCharCode(65 + i)}</span>${escapeHtml(q.o[oi])}</button>`,
+          `<button class="quiz-option" data-i="${i}" onclick="answerDrill(${i})"><span class="tag">${String.fromCharCode(65 + i)}</span>${fmtFormula(q.o[oi])}</button>`,
       )
       .join('');
   }
