@@ -46,7 +46,7 @@ export async function dealDamage(
  */
 /**
  * @returns 是否实际造成了体力损失（被护盾 / 学识完全吸收时返回 false，
- *          供【投石问路】等「造成伤害后」类武器技能判定是否触发）
+ *          供【麒麟弓】等「造成伤害后」类武器技能判定是否触发）
  */
 async function applyDamage(
   tgtIdx: number,
@@ -79,10 +79,10 @@ async function applyDamage(
       dmg += 1;
       addLog(`【藤甲】${tgt.name} 受到火焰伤害 +1`, 'dmg');
     }
-    // 【明光护甲】（明光铠）：每次受到的伤害 -1（最低 1 点）
+    // 【明光铠】：每次受到的伤害 -1（最低 1 点）
     if (armor === 'mingguang' && dmg > 1) {
       dmg = Math.max(1, dmg - 1);
-      addLog(`【明光护甲】${tgt.name} 受到的伤害 -1`, 'heal');
+      addLog(`【明光铠】${tgt.name} 受到的伤害 -1`, 'heal');
     }
   } else if (armor) {
     addLog(`【青釭剑】无视 ${tgt.name} 的防具（${armor}）`, 'hl');

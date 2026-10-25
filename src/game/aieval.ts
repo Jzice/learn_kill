@@ -219,7 +219,7 @@ export function evSha(i: number, t: number, dmg = 1, elemental = false): number 
   const tp = G.players[t];
   if (!tp || !tp.alive) return -99;
   const pHit = 1 - dodgeProb(i, t, elemental);
-  // 【明光护甲】减伤 1（最低 1 点）；【白银狮子】每次受伤最多 1 点
+  // 【明光铠】减伤 1（最低 1 点）；【白银狮子】每次受伤最多 1 点
   let eff = dmg;
   const armor = tp.equip.armor?.skill;
   if (armor === 'mingguang') eff = Math.max(1, dmg - 1);

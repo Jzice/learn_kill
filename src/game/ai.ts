@@ -49,7 +49,7 @@ export function aiQuiz(rate = 0.6): boolean {
  * AI 使用**扩展包锦囊**（卡牌扩展包启用后才可能出现）。
  * 原则：新卡必须有显式决策，且一律保守——
  *   - 收益给自己的（远交近攻 / 以逸待劳）优先给同阵营；
- *   - 群体牌（联军盛宴 / 班长敕令）按存活敌我比例决定；
+ *   - 群体牌（联军盛宴 / 敕令）按存活敌我比例决定；
  *   - 无合法目标时保留手牌，绝不强行打出，也绝不卡住回合。
  */
 async function aiPlayExtraTricks(idx: number): Promise<void> {
@@ -72,7 +72,7 @@ async function aiPlayExtraTricks(idx: number): Promise<void> {
     await useTrick(idx, c, tgt);
     await sleep(300);
   };
-  // 作业未交（兵粮寸断）：给敌方主力断补给（【太平讲义】免疫延时锦囊，须排除）
+  // 兵粮寸断：给敌方主力断补给（【太平要术】免疫延时锦囊，须排除）
   if (p.hand.some((c) => c.sub === 'bingliang')) {
     await play('bingliang', pickEnemy((q) => q.equip.armor?.skill !== 'taiping'));
   }
@@ -80,11 +80,11 @@ async function aiPlayExtraTricks(idx: number): Promise<void> {
   if (p.hand.some((c) => c.sub === 'caomu')) {
     await play('caomu', pickEnemy((q) => q.hand.length >= 2));
   }
-  // 摸底测验：敌方有手牌才看
+  // 知己知彼：敌方有手牌才看
   if (p.hand.some((c) => c.sub === 'zhiji')) {
     await play('zhiji', pickEnemy((q) => q.hand.length >= 1));
   }
-  // 水漫考场 / 调虎离山：优先拆敌方装备
+  // 水淹七军 / 调虎离山：优先拆敌方装备
   if (p.hand.some((c) => c.sub === 'shuishui')) {
     await play('shuishui', pickEnemy((q) => filledEquipSlots(q).length > 0));
   }
@@ -117,7 +117,7 @@ async function aiPlayExtraTricks(idx: number): Promise<void> {
       }
     }
   }
-  // 班长敕令（全员各弃 1）：敌方 ≥ 己方时才开
+  // 敕令（全员各弃 1）：敌方 ≥ 己方时才开
   if (p.hand.some((c) => c.sub === 'chiling')) {
     const ok = enemies().length >= allies().length;
     if (ok) {

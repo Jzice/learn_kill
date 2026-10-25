@@ -35,7 +35,7 @@ function knowledgeTrickHtml(): string {
   return `<div class="rule-section"><h4>📚 知识点锦囊</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">由学科知识点与校园生活凝练的锦囊；📝 需答题触发，🎯 直接生效；均可被【无懈可击】抵消。</div>${groups}</div>`;
 }
 /**
- * 牌库扩展包规则书分区：按卡包分组渲染全部扩展卡，并展示「学堂名 → 原版名」对照。
+ * 牌库扩展包规则书分区：按卡包分组渲染全部扩展卡（卡名即《三国杀》原版名）。
  * 与知识点锦囊同构——纯数据驱动，新增卡牌只加 CARD_CATALOG 一条记录即自动出现。
  */
 function cardPackHtml(): string {
@@ -46,14 +46,14 @@ function cardPackHtml(): string {
       const lis = items
         .map(
           (d) =>
-            `<li><b>【${d.name}】</b><span style="font-size:10px;color:var(--muted)">（原版：${d.origin}）×${d.count}</span> ${d.desc}</li>`,
+            `<li><b>【${d.name}】</b><span style="font-size:10px;color:var(--muted)">×${d.count}</span> ${d.desc}</li>`,
         )
         .join('');
       return `<div style="padding:6px 8px;background:rgba(0,0,0,.18);border-radius:6px;border-left:3px solid #b57fff;margin-bottom:6px"><div style="font-size:12px;font-weight:700;color:#b57fff">${p.icon} ${p.name} · ${p.origin}</div><div style="font-size:10px;color:var(--muted);margin:2px 0">${p.desc}</div><ul style="margin-top:2px">${lis}</ul></div>`;
     })
     .join('');
   if (!groups) return '';
-  return `<div class="rule-section"><h4>🂠 牌库扩展包（需在「牌库扩展包」中勾选启用）</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">以下卡牌在基础 125 张之上追加；括号内为对应的原版卡名，规则内核与原版一致。</div>${groups}</div>`;
+  return `<div class="rule-section"><h4>🂠 牌库扩展包（需在「牌库扩展包」中勾选启用）</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">以下卡牌在基础 125 张之上追加，卡名与规则内核均与《三国杀》原版一致。</div>${groups}</div>`;
 }
 
 /** 各 tab 内容自然高度的最大值（与视口无关，缓存以免重复测量） */

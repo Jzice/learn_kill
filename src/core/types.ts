@@ -513,7 +513,7 @@ export interface Equips {
   armor: Card | null;
   horsePlus: Card | null;
   horseMinus: Card | null;
-  /** 宝物槽（【补给书包】等）：可选字段，保证旧存档 / 旧客户端可正常解包 */
+  /** 宝物槽（【木牛流马】等）：可选字段，保证旧存档 / 旧客户端可正常解包 */
   treasure?: Card | null;
 }
 
@@ -541,9 +541,9 @@ export interface PlayerFlags {
   trickCount?: number;
   /** 本回合使用的最后一张牌类型（朱自清·荷塘月色判据） */
   lastCardType?: CardType | null;
-  /** 【作业未交】生效：跳过本回合的摸牌阶段（回合初随 skipPlay 一并清零） */
+  /** 【兵粮寸断】生效：跳过本回合的摸牌阶段（回合初随 skipPlay 一并清零） */
   skipDraw?: boolean;
-  /** 【借月清辉】封锁花色：本角色不能使用或打出该花色的手牌，直到其下个回合开始 */
+  /** 【银月枪】封锁花色：本角色不能使用或打出该花色的手牌，直到其下个回合开始 */
   blockSuit?: string | null;
 }
 

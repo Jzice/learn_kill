@@ -76,10 +76,10 @@ function tailPick(p: Player, n: number): Card[] {
 
 /**
  * 【杀】命中并造成体力损失后的武器追加效果（均需武器未被墨子【非攻】失效）：
- *   qilin  【投石问路】弃置目标一张坐骑牌
- *   yinyue 【借月清辉】封锁目标该【杀】花色，直到其下个回合开始
- *   qixing 【北斗量天】令目标弃置一张手牌
- *   wuliu  【六艺剑】可弃置一张手牌，追加 1 点伤害
+ *   qilin  【麒麟弓】弃置目标一张坐骑牌
+ *   yinyue 【银月枪】封锁目标该【杀】花色，直到其下个回合开始
+ *   qixing 【七星刀】令目标弃置一张手牌
+ *   wuliu  【吴六剑】可弃置一张手牌，追加 1 点伤害
  */
 async function afterShaHit(
   a: Player,
@@ -99,7 +99,7 @@ async function afterShaHit(
     if (!a.isAI) {
       use =
         (await waitChoice(attackerIdx, [
-          { label: `🏹 投石问路：弃置 ${t.name} 的一张坐骑牌`, value: 'yes' },
+          { label: `🏹 麒麟弓：弃置 ${t.name} 的一张坐骑牌`, value: 'yes' },
           { label: '不发动', value: 'no' },
         ], 'list')) === 'yes';
     }
@@ -115,14 +115,14 @@ async function afterShaHit(
     }
     await takeEquipFrom(targetIdx, slot);
   } else if (skill === 'yinyue') {
-    addLog(`【借月清辉】${t.name} 不能使用或打出 ${suit} 花色的手牌，直到其下个回合开始`, 'hl');
+    addLog(`【银月枪】${t.name} 不能使用或打出 ${suit} 花色的手牌，直到其下个回合开始`, 'hl');
     t.flags.blockSuit = suit;
     render();
   } else if (skill === 'qixing') {
     if (!t.hand.length) return;
     const dropped = await chooseSelfDiscard(t, 1, { aiPick: tailPick });
     for (const c of dropped) discardCard(t, c);
-    addLog(`【北斗量天】${t.name} 弃置一张手牌`, 'dmg');
+    addLog(`【七星刀】${t.name} 弃置一张手牌`, 'dmg');
     render();
   } else if (skill === 'wuliu') {
     if (a.hand.length < 1) return;
@@ -130,7 +130,7 @@ async function afterShaHit(
     if (!a.isAI) {
       use =
         (await waitChoice(attackerIdx, [
-          { label: '🗡️ 六艺剑：弃置一张手牌，追加 1 点伤害', value: 'yes' },
+          { label: '🗡️ 吴六剑：弃置一张手牌，追加 1 点伤害', value: 'yes' },
           { label: '不发动', value: 'no' },
         ], 'list')) === 'yes';
     }
@@ -138,7 +138,7 @@ async function afterShaHit(
     const mine = await chooseSelfDiscard(a, 1, { aiPick: tailPick, cancelable: true });
     if (!mine.length) return;
     discardCard(a, mine[0]);
-    addLog(`【六艺剑】${a.name} 弃置一张手牌，追加 1 点伤害`, 'hl');
+    addLog(`【吴六剑】${a.name} 弃置一张手牌，追加 1 点伤害`, 'hl');
     await dealDamage(attackerIdx, targetIdx, 1, dmgType);
     render();
   }
@@ -149,7 +149,7 @@ function redirectScore(from: Player, to: Player): number {
   return (sameFaction(from, to) ? 0 : 2) + Math.min(to.hand.length, 5) * 0.2;
 }
 
-/** 装备槽中文名（【水漫考场】/【调虎离山】弃置装备时的选项文案） */
+/** 装备槽中文名（【水淹七军】/【调虎离山】弃置装备时的选项文案） */
 export const EQUIP_SLOT_LABEL: Record<string, string> = {
   weapon: '武器',
   armor: '防具',
@@ -158,7 +158,7 @@ export const EQUIP_SLOT_LABEL: Record<string, string> = {
   treasure: '宝物',
 };
 
-/** 【太平讲义】（太平要术）：锁定技，不能成为延时锦囊的目标 */
+/** 【太平要术】：锁定技，不能成为延时锦囊的目标 */
 function delayImmune(t: Player): boolean {
   return t.equip.armor?.skill === 'taiping';
 }
@@ -509,7 +509,7 @@ export async function useTrick(
   // 墨子【兼爱】：单体锦囊结算前，目标可将其转移给另一名角色
   const SINGLE_TARGET_TRICKS = [
     'guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo',
-    // 扩展包单体锦囊 + 延时类（【作业未交】）
+    // 扩展包单体锦囊 + 延时类（【兵粮寸断】）
     ...ONE_TARGET_TRICKS,
     ...DELAY_TRICK_SUBS,
   ];
@@ -619,9 +619,9 @@ export async function useTrick(
     }
     case 'lebu': {
       if (targetIdx != null && canBeTarget(targetIdx, 'trick', '乐不思蜀', card.suit)) {
-        // 【太平讲义】锁定技：不能成为延时锦囊的目标
+        // 【太平要术】锁定技：不能成为延时锦囊的目标
         if (delayImmune(G.players[targetIdx])) {
-          addLog(`${G.players[targetIdx].name} 的【太平讲义】免疫延时锦囊`, 'hl');
+          addLog(`${G.players[targetIdx].name} 的【太平要术】免疫延时锦囊`, 'hl');
           break;
         }
         G.players[targetIdx].judge.push({ ...card, judgeType: 'lebu' });
@@ -635,9 +635,9 @@ export async function useTrick(
         addLog(`${a.name} 免疫【闪电】，无法置于判定区`, 'hl');
         break;
       }
-      // 【太平讲义】锁定技：不能成为延时锦囊的目标
+      // 【太平要术】锁定技：不能成为延时锦囊的目标
       if (delayImmune(a)) {
-        addLog(`${a.name} 的【太平讲义】免疫延时锦囊`, 'hl');
+        addLog(`${a.name} 的【太平要术】免疫延时锦囊`, 'hl');
         break;
       }
       a.judge.push({ ...card, judgeType: 'shandian' });
@@ -784,33 +784,33 @@ export async function useTrick(
     }
     /* ---------------- 扩展包锦囊（卡牌扩展包启用后才可能出现） ---------------- */
     case 'bingliang': {
-      // 【作业未交】（兵粮寸断）：延时锦囊，置入目标判定区
+      // 【兵粮寸断】：延时锦囊，置入目标判定区
       if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
-        // 【太平讲义】锁定技：不能成为延时锦囊的目标
+        // 【太平要术】锁定技：不能成为延时锦囊的目标
         if (delayImmune(G.players[targetIdx])) {
-          addLog(`${G.players[targetIdx].name} 的【太平讲义】免疫延时锦囊`, 'hl');
+          addLog(`${G.players[targetIdx].name} 的【太平要术】免疫延时锦囊`, 'hl');
           break;
         }
         G.players[targetIdx].judge.push({ ...card, judgeType: 'bingliang' });
-        addLog(`【作业未交】置于 ${G.players[targetIdx].name} 判定区`);
+        addLog(`【兵粮寸断】置于 ${G.players[targetIdx].name} 判定区`);
       }
       break;
     }
     case 'zhiji': {
-      // 【摸底测验】（知己知彼）：观看目标手牌，然后自己摸 1 张
+      // 【知己知彼】：观看目标手牌，然后自己摸 1 张
       if (targetIdx != null) {
         const t = G.players[targetIdx];
         if (t.hand.length) {
           const names = t.hand.map((c) => `【${c.name}】${c.suit}${c.num}`).join('、');
-          addLog(`【摸底测验】${t.name} 的手牌：${names}`, 'hl');
-        } else addLog(`【摸底测验】${t.name} 没有手牌`, 'hl');
+          addLog(`【知己知彼】${t.name} 的手牌：${names}`, 'hl');
+        } else addLog(`【知己知彼】${t.name} 没有手牌`, 'hl');
       }
       drawCards(a, 1);
       addLog(`${a.name} 摸 1 张牌`);
       break;
     }
     case 'shuishui': {
-      // 【水漫考场】（水淹七军）：目标弃置一张装备牌，否则受到 1 点伤害
+      // 【水淹七军】：目标弃置一张装备牌，否则受到 1 点伤害
       if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
         const t = G.players[targetIdx];
         const slots = filledEquipSlots(t);
@@ -923,18 +923,18 @@ export async function useTrick(
       break;
     }
     case 'chiling': {
-      // 【班长敕令】：所有其他存活角色各弃置一张手牌
+      // 【敕令】：所有其他存活角色各弃置一张手牌
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
         const dropped = await chooseSelfDiscard(G.players[i], 1, { aiPick: tailPick });
         for (const c of dropped) discardCard(G.players[i], c);
-        if (dropped.length) addLog(`【班长敕令】${G.players[i].name} 弃置 1 张手牌`, 'dmg');
+        if (dropped.length) addLog(`【敕令】${G.players[i].name} 弃置 1 张手牌`, 'dmg');
       }
       break;
     }
     case 'wuxieguo': {
-      // 【全班免检】为响应牌，不应被主动使用；主动打出时哑火并记录
-      addLog('【全班免检】只能在他人使用锦囊时响应', 'dmg');
+      // 【无懈可击·国】为响应牌，不应被主动使用；主动打出时哑火并记录
+      addLog('【无懈可击·国】只能在他人使用锦囊时响应', 'dmg');
       break;
     }
     default: {
@@ -1006,7 +1006,7 @@ async function counterChain(
     const pid = queue.shift()!;
     if (responded.has(pid)) continue;
     const p = G.players[pid];
-    // 【全班免检】（无懈可击·国）优先：抵消后不可被再次无懈，直接终结响应链
+    // 【无懈可击·国】优先：抵消后不可被再次无懈，直接终结响应链
     const wuxieCard =
       p.hand.find((c) => c.sub === 'wuxieguo') || p.hand.find((c) => c.sub === 'wuxie');
     if (!wuxieCard) continue;
@@ -1019,7 +1019,7 @@ async function counterChain(
         pid,
         [
           {
-            label: `🚫 ${isGuo ? '全班免检' : '无懈可击'}（抵消【${trickLabel(sub)}】）`,
+            label: `🚫 ${isGuo ? '无懈可击·国' : '无懈可击'}（抵消【${trickLabel(sub)}】）`,
             value: 'use',
           },
           { label: '不响应', value: 'skip' },
@@ -1051,10 +1051,10 @@ function trickLabel(sub: string): string {
     wuzhong: '无中生有', guohe: '过河拆桥', shunshou: '顺手牵羊', juedou: '决斗',
     nanman: '南蛮入侵', wanjian: '万箭齐发', taoyuan: '桃园结义',
     jiedao: '借刀杀人', wugu: '五谷丰登', tiesuo: '铁索连环', huogong: '火攻',
-    // 扩展包锦囊（学堂名）
-    bingliang: '作业未交', zhiji: '摸底测验', shuishui: '水漫考场', caomu: '草木皆兵',
+    // 扩展包锦囊
+    bingliang: '兵粮寸断', zhiji: '知己知彼', shuishui: '水淹七军', caomu: '草木皆兵',
     yuanjiao: '远交近攻', yiyi: '以逸待劳', huoshao: '火烧连营',
-    diaohu: '调虎离山', lianjun: '联军盛宴', chiling: '班长敕令', wuxieguo: '全班免检',
+    diaohu: '调虎离山', lianjun: '联军盛宴', chiling: '敕令', wuxieguo: '无懈可击·国',
   };
   return m[sub] || '锦囊';
 }
@@ -1146,7 +1146,7 @@ async function requestOneShan(
   const t = G.players[targetIdx];
   const onDodged = async (): Promise<boolean> => true;
   const outside = G.current !== targetIdx;
-  // 【借月清辉】花色封锁：被封锁花色的手牌不能打出
+  // 【银月枪】花色封锁：被封锁花色的手牌不能打出
   const shans = t.hand.filter((c) => canUseCard(t, c) && (c.sub === 'shan' || canConvertAs(t, c, 'shan', outside)));
   const noShan = shans.length === 0;
 

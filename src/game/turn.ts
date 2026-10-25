@@ -86,9 +86,9 @@ export async function runTurn(idx: number): Promise<void> {
   p.flags.skipPlay = false;
   p.flags.extraDamage = 0;
   p.flags.jiuUsed = false;
-  // 【作业未交】（兵粮寸断）只跳过「当前」回合的摸牌阶段，必须在此清零
+  // 【兵粮寸断】只跳过「当前」回合的摸牌阶段，必须在此清零
   p.flags.skipDraw = false;
-  // 【借月清辉】（银月枪）花色封锁在其自己回合开始时解除
+  // 【银月枪】花色封锁在其自己回合开始时解除
   p.flags.blockSuit = null;
   // 声明式技能：清空每回合使用计数 / 花色收集 / 出牌统计
   resetTurnState(p);
@@ -105,12 +105,12 @@ export async function runTurn(idx: number): Promise<void> {
   await fire('onTurnStart', { idx });
   await judgePhase(p);
   // 摸牌阶段：突袭（孙子·兵法）可替代常规摸牌
-  // 【作业未交】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【补给书包】宝物额外摸 1 张
+  // 【兵粮寸断】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【木牛流马】宝物额外摸 1 张
   const bonusDraw = extraDrawOf(p) + (treasureSkillOf(p) === 'muyu' ? 1 : 0);
   const raid = await tryReplaceDraw(idx);
   const baseDraw = p.flags.skipDraw ? 0 : 2;
   const drawN = raid ? bonusDraw : baseDraw + bonusDraw;
-  if (p.flags.skipDraw && !raid) addLog(`📝【作业未交】${p.name} 跳过摸牌阶段`, 'dmg');
+  if (p.flags.skipDraw && !raid) addLog(`📝【兵粮寸断】${p.name} 跳过摸牌阶段`, 'dmg');
   drawCards(p, drawN);
   addLog(`${p.name} 摸 ${drawN} 张牌`);
   if (!raid) await fire('onDraw', { idx });
@@ -171,11 +171,11 @@ export async function judgePhase(p: (typeof G.players)[number]): Promise<void> {
       } else addLog('乐不思蜀失效');
       G.discard.push(card);
     } else if (j.judgeType === 'bingliang') {
-      // 【作业未交】（兵粮寸断）：判定不为♣梅花则生效，跳过摸牌阶段
+      // 【兵粮寸断】：判定不为♣梅花则生效，跳过摸牌阶段
       if (card.suit !== '♣') {
         p.flags.skipDraw = true;
-        addLog('【作业未交】生效，跳过摸牌阶段', 'dmg');
-      } else addLog('作业未交失效');
+        addLog('【兵粮寸断】生效，跳过摸牌阶段', 'dmg');
+      } else addLog('兵粮寸断失效');
       G.discard.push(card);
     } else if (j.judgeType === 'shandian') {
       if (card.suit === '♠' && Number(card.num) >= 2 && Number(card.num) <= 9) {
@@ -250,7 +250,7 @@ export async function playPhase(idx: number): Promise<void> {
     const shaCap = p.equip.weapon?.skill === 'liannu' ? Infinity : shaLimitOf(p);
     const canSha = !p.flags.noSha && (p.flags.shaUsed || 0) < shaCap;
     const opts: ChoiceOption[] = [];
-    // 【借月清辉】花色封锁：被封锁花色的手牌不能使用或打出（弃置不受影响）
+    // 【银月枪】花色封锁：被封锁花色的手牌不能使用或打出（弃置不受影响）
     for (const c of p.hand) {
       if (!canUseCard(p, c)) continue;
       if (SHA_SUBS.includes(c.sub) && canSha) opts.push({ label: `【${c.name}】${c.suit}${c.num}`, value: 'sha_' + c.id });
@@ -411,7 +411,7 @@ export async function playPhase(idx: number): Promise<void> {
       const picked = await pickShaTargets(idx, cand, maxTargets);
       if (!picked.length) continue;
       let dmgType: DamageType = card.damageType || 'normal';
-      // 【助燃羽扇】（朱雀羽扇）：可将一张普通【杀】当【火杀】使用
+      // 【朱雀羽扇】：可将一张普通【杀】当【火杀】使用
       if (p.equip.weapon?.skill === 'zhuque' && dmgType === 'normal') {
         const asFire = p.isAI
           ? // AI：目标横置（连环传导）或装备【藤甲】时转火杀，否则保留普通杀
@@ -419,14 +419,14 @@ export async function playPhase(idx: number): Promise<void> {
           : (await waitChoice(
               idx,
               [
-                { label: '🔥 助燃羽扇：将这张【杀】当作【火杀】使用', value: 'yes' },
+                { label: '🔥 朱雀羽扇：将这张【杀】当作【火杀】使用', value: 'yes' },
                 { label: '作为普通【杀】', value: 'no' },
               ],
               'list',
             )) === 'yes';
         if (asFire) {
           dmgType = 'fire';
-          addLog(`【助燃羽扇】${p.name} 将此【杀】当作【火杀】使用`, 'hl');
+          addLog(`【朱雀羽扇】${p.name} 将此【杀】当作【火杀】使用`, 'hl');
         }
       }
       // 咆哮：第二张及之后的【杀】需先弃置手牌

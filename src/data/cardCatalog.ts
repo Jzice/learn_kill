@@ -6,9 +6,9 @@
  *      装备写入哪个槽由 sub 决定（见 game/turn.ts 与 game/ai.ts 的装备分支）；
  *      具体是哪一件装备由 `extra.skill` 区分。锦囊 / 基本牌的 `sub` 沿用原版英文 key。
  *      由此 `Card` 结构不变 → `state_sync` 序列化结构不变，旧版客户端可正常解包。
- *   2. `name` 为学堂化显示名，`origin` 为原版卡名（规则书对照展示）。
- *   3. 「规则内核」严格沿用原版；原版规则细节存在分歧的卡已在 desc 中标注
- *      「简化版」，详见 docs/卡牌扩展包对照表.md。
+ *   2. `name` **直接使用《三国杀》原版卡名**（不做学堂化改名），规则书、出牌选项与战斗日志同源。
+ *   3. 规则内核严格沿用原版；存在分歧或需要额外交互的少数卡牌已在 desc 中标注「简化实现」，
+ *      详见 docs/卡牌扩展包清单.md。
  *   4. 本模块为纯数据，**无顶层副作用**（保持 ui ↔ game ↔ net 的模块循环安全）。
  *
  * 结算方式 resolve：
@@ -23,10 +23,8 @@ import type { CardPackId } from './cardPacks';
 export interface CardDef {
   /** 卡牌内部 key（沿用原版英文，联机结构兼容的关键） */
   sub: string;
-  /** 学堂化显示名 */
+  /** 卡名，与《三国杀》原版一致 */
   name: string;
-  /** 原版卡名（规则书对照展示） */
-  origin: string;
   type: CardType;
   /** 归属扩展包 */
   pack: CardPackId;
@@ -48,8 +46,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   /* ---------------- 军争篇 ---------------- */
   bingliang: {
     sub: 'bingliang',
-    name: '作业未交',
-    origin: '兵粮寸断',
+    name: '兵粮寸断',
     type: 'trick',
     pack: 'junzheng',
     count: 2,
@@ -59,8 +56,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   qilin: {
     sub: 'weapon',
-    name: '投石问路',
-    origin: '麒麟弓',
+    name: '麒麟弓',
     type: 'equip',
     pack: 'junzheng',
     count: 1,
@@ -70,8 +66,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   zhuque: {
     sub: 'weapon',
-    name: '助燃羽扇',
-    origin: '朱雀羽扇',
+    name: '朱雀羽扇',
     type: 'equip',
     pack: 'junzheng',
     count: 1,
@@ -83,8 +78,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   /* ---------------- 神话再临（风火林山） ---------------- */
   yinyue: {
     sub: 'weapon',
-    name: '借月清辉',
-    origin: '银月枪',
+    name: '银月枪',
     type: 'equip',
     pack: 'shenhua',
     count: 1,
@@ -94,8 +88,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   qixing: {
     sub: 'weapon',
-    name: '北斗量天',
-    origin: '七星刀',
+    name: '七星刀',
     type: 'equip',
     pack: 'shenhua',
     count: 1,
@@ -105,19 +98,17 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   taiping: {
     sub: 'armor',
-    name: '太平讲义',
-    origin: '太平要术',
+    name: '太平要术',
     type: 'equip',
     pack: 'shenhua',
     count: 1,
     extra: { skill: 'taiping' },
     resolve: 'equip',
-    desc: '防具·锁定技：你不能成为【乐不思蜀】【作业未交】等延时锦囊的目标',
+    desc: '防具·锁定技：你不能成为【乐不思蜀】【兵粮寸断】等延时锦囊的目标',
   },
   mingguang: {
     sub: 'armor',
-    name: '明光护甲',
-    origin: '明光铠',
+    name: '明光铠',
     type: 'equip',
     pack: 'shenhua',
     count: 1,
@@ -129,8 +120,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   /* ---------------- SP · 一将成名 ---------------- */
   wuliu: {
     sub: 'weapon',
-    name: '六艺剑',
-    origin: '吴六剑',
+    name: '吴六剑',
     type: 'equip',
     pack: 'sp',
     count: 1,
@@ -140,20 +130,18 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   muyu: {
     sub: 'treasure',
-    name: '补给书包',
-    origin: '木牛流马',
+    name: '木牛流马',
     type: 'equip',
     pack: 'sp',
     count: 1,
     extra: { skill: 'muyu' },
     resolve: 'equip',
-    desc: '宝物：摸牌阶段额外摸 1 张牌（原版「存粮 / 取粮」的简化实现）',
+    desc: '宝物：摸牌阶段额外摸 1 张牌（简化实现：省略原版「存粮 / 取粮」的额外交互）',
   },
-  // 具名坐骑：原版标准包 / SP 复刻马，规则内核与 ±1 马一致（仅改名）
+  // 具名坐骑：原版标准包 / SP 复刻马，规则内核与 ±1 马一致
   chitu: {
     sub: 'horse-',
-    name: '竞速单车',
-    origin: '赤兔',
+    name: '赤兔',
     type: 'equip',
     pack: 'sp',
     count: 1,
@@ -163,8 +151,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   zixin: {
     sub: 'horse-',
-    name: '顺风车',
-    origin: '紫骍',
+    name: '紫骍',
     type: 'equip',
     pack: 'sp',
     count: 1,
@@ -174,8 +161,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   zhaohuang: {
     sub: 'horse-',
-    name: '电光一闪',
-    origin: '爪黄飞电',
+    name: '爪黄飞电',
     type: 'equip',
     pack: 'sp',
     count: 1,
@@ -185,8 +171,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   dilu: {
     sub: 'horse+',
-    name: '抄近道',
-    origin: '的卢',
+    name: '的卢',
     type: 'equip',
     pack: 'sp',
     count: 1,
@@ -196,8 +181,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   dayuan: {
     sub: 'horse+',
-    name: '校园班车',
-    origin: '大宛',
+    name: '大宛',
     type: 'equip',
     pack: 'sp',
     count: 1,
@@ -207,8 +191,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   jueying: {
     sub: 'horse+',
-    name: '疾风步',
-    origin: '绝影',
+    name: '绝影',
     type: 'equip',
     pack: 'sp',
     count: 1,
@@ -220,8 +203,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   /* ---------------- 应变篇 ---------------- */
   zhiji: {
     sub: 'zhiji',
-    name: '摸底测验',
-    origin: '知己知彼',
+    name: '知己知彼',
     type: 'trick',
     pack: 'yingbian',
     count: 2,
@@ -230,8 +212,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   shuishui: {
     sub: 'shuishui',
-    name: '水漫考场',
-    origin: '水淹七军',
+    name: '水淹七军',
     type: 'trick',
     pack: 'yingbian',
     count: 2,
@@ -241,17 +222,15 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   caomu: {
     sub: 'caomu',
     name: '草木皆兵',
-    origin: '草木皆兵',
     type: 'trick',
     pack: 'yingbian',
     count: 2,
     resolve: 'switch',
-    desc: '令一名其他角色弃置两张手牌（原版「限制出牌花色」的简化实现）',
+    desc: '令一名其他角色弃置两张手牌（简化实现：原版为「限制其使用/打出某花色手牌」）',
   },
   yuanjiao: {
     sub: 'yuanjiao',
     name: '远交近攻',
-    origin: '远交近攻',
     type: 'trick',
     pack: 'yingbian',
     count: 1,
@@ -261,7 +240,6 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   yiyi: {
     sub: 'yiyi',
     name: '以逸待劳',
-    origin: '以逸待劳',
     type: 'trick',
     pack: 'yingbian',
     count: 1,
@@ -271,7 +249,6 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   huoshao: {
     sub: 'huoshao',
     name: '火烧连营',
-    origin: '火烧连营',
     type: 'trick',
     pack: 'yingbian',
     count: 1,
@@ -283,8 +260,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   /* ---------------- 国战篇（仅卡牌，不含模式规则） ---------------- */
   wuxieguo: {
     sub: 'wuxieguo',
-    name: '全班免检',
-    origin: '无懈可击·国',
+    name: '无懈可击·国',
     type: 'trick',
     pack: 'guozhan',
     count: 2,
@@ -294,7 +270,6 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   diaohu: {
     sub: 'diaohu',
     name: '调虎离山',
-    origin: '调虎离山',
     type: 'trick',
     pack: 'guozhan',
     count: 2,
@@ -304,7 +279,6 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   lianjun: {
     sub: 'lianjun',
     name: '联军盛宴',
-    origin: '联军盛宴',
     type: 'trick',
     pack: 'guozhan',
     count: 1,
@@ -313,8 +287,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   },
   chiling: {
     sub: 'chiling',
-    name: '班长敕令',
-    origin: '敕令',
+    name: '敕令',
     type: 'trick',
     pack: 'guozhan',
     count: 1,

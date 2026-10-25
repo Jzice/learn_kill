@@ -112,11 +112,11 @@ check('零回归·未启用时牌堆不含任何扩展卡', noExtra);
 /* ---------- 2. 各卡包勾选后卡牌入池 ---------- */
 // 各卡包勾选后，牌堆中对应子类应增加的张数（基础值见 BASE）
 const EXPECT = {
-  // 作业未交 ×2 + 麒麟弓 + 朱雀羽扇（武器 10 → 12）
+  // 兵粮寸断 ×2 + 麒麟弓 + 朱雀羽扇（武器 10 → 12）
   junzheng: { bingliang: 2, weapon: 12 },
-  // 借月清辉 + 北斗量天（武器 12）+ 太平讲义 + 明光护甲（防具 8）
+  // 银月枪 + 七星刀（武器 12）+ 太平要术 + 明光铠（防具 8）
   shenhua: { weapon: 12, armor: 8 },
-  // 六艺剑（武器 11）+ 补给书包（宝物 1）+ 三匹 +1 马 + 三匹 -1 马
+  // 吴六剑（武器 11）+ 木牛流马（宝物 1）+ 三匹 +1 马 + 三匹 -1 马
   sp: { weapon: 11, treasure: 1, 'horse+': 6, 'horse-': 6 },
   yingbian: { zhiji: 2, shuishui: 2, caomu: 2, yuanjiao: 1, yiyi: 1, huoshao: 1 },
   guozhan: { wuxieguo: 2, diaohu: 2, lianjun: 1, chiling: 1 },
@@ -148,7 +148,7 @@ check('面板提示反映当前牌库', cpHint.includes('军争篇') && cpHint.i
 const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('xuetangsha_setup_v1') || '{}').cardPacks || []);
 check('勾选结果持久化到 localStorage', saved.includes('junzheng') && saved.includes('guozhan'), saved.join(','));
 
-/* ---------- 4. 规则书「卡牌说明」含扩展卡与学堂名 ---------- */
+/* ---------- 4. 规则书「卡牌说明」含扩展卡 ---------- */
 await page.evaluate(() => window.openRules());
 await page.waitForSelector('#rulesModal.show', { timeout: 3000 });
 await page.click('.rule-tab[data-tab="cards"]');
@@ -156,8 +156,8 @@ await page.waitForTimeout(150);
 const cardsTxt = (await page.textContent('#rulesContent')) || '';
 check('规则书含「牌库扩展包」分区', cardsTxt.includes('牌库扩展包'));
 check(
-  '规则书展示学堂名与原版名对照',
-  cardsTxt.includes('作业未交') && cardsTxt.includes('兵粮寸断') && cardsTxt.includes('全班免检'),
+  '规则书使用三国杀原版卡名',
+  cardsTxt.includes('兵粮寸断') && cardsTxt.includes('无懈可击·国') && cardsTxt.includes('木牛流马'),
 );
 await page.click('#rulesModal .rules-close');
 await page.waitForTimeout(150);
