@@ -30,7 +30,6 @@ export function powerOf(j: number): number {
   if (p.equip.armor) eq++;
   if (p.equip.horsePlus) eq++;
   if (p.equip.horseMinus) eq++;
-  if (p.equip.treasure) eq++;
   const active = p.skills.some((s) => s.type === 'active' && !p.flags.skillUsed);
   return (
     p.hp +

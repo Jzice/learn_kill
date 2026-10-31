@@ -14,7 +14,6 @@ import {
   distBetween,
   inRange,
   handLimit,
-  treasureSkillOf,
 } from './rules';
 import { Sound } from '../core/sound';
 import { equipFx } from '../core/fx';
@@ -105,8 +104,8 @@ export async function runTurn(idx: number): Promise<void> {
   await fire('onTurnStart', { idx });
   await judgePhase(p);
   // 摸牌阶段：突袭（孙子·兵法）可替代常规摸牌
-  // 【兵粮寸断】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【木牛流马】宝物额外摸 1 张
-  const bonusDraw = extraDrawOf(p) + (treasureSkillOf(p) === 'muyu' ? 1 : 0);
+  // 【兵粮寸断】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【木牛流马】防具额外摸 1 张
+  const bonusDraw = extraDrawOf(p) + (p.equip.armor?.skill === 'muyu' ? 1 : 0);
   const raid = await tryReplaceDraw(idx);
   const baseDraw = p.flags.skipDraw ? 0 : 2;
   const drawN = raid ? bonusDraw : baseDraw + bonusDraw;
@@ -561,10 +560,6 @@ export async function playPhase(idx: number): Promise<void> {
         replaced = p.equip.horseMinus;
         if (p.equip.horseMinus) G.discard.push(p.equip.horseMinus);
         p.equip.horseMinus = card;
-      } else if (card.sub === 'treasure') {
-        replaced = p.equip.treasure || null;
-        if (p.equip.treasure) G.discard.push(p.equip.treasure);
-        p.equip.treasure = card;
       }
       await noteCardPlayed(idx, card);
       addLog(`${p.name} 装备【${card.name}】`);

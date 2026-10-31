@@ -2,7 +2,7 @@
  * 定位：在基础牌堆（core，现有 125 张）之上补齐原版三国杀缺失的卡牌。
  *
  * 设计约定：
- *   1. 装备牌的 `sub` **必须是槽位名**（weapon / armor / horse+ / horse- / treasure），
+ *   1. 装备牌的 `sub` **必须是槽位名**（weapon / armor / horse+ / horse-），
  *      装备写入哪个槽由 sub 决定（见 game/turn.ts 与 game/ai.ts 的装备分支）；
  *      具体是哪一件装备由 `extra.skill` 区分。锦囊 / 基本牌的 `sub` 沿用原版英文 key。
  *      由此 `Card` 结构不变 → `state_sync` 序列化结构不变，旧版客户端可正常解包。
@@ -129,14 +129,14 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     desc: '攻击范围 2；你使用【杀】造成伤害后，可弃置一张手牌，对其追加 1 点伤害',
   },
   muyu: {
-    sub: 'treasure',
+    sub: 'armor',
     name: '木牛流马',
     type: 'equip',
     pack: 'sp',
     count: 1,
     extra: { skill: 'muyu' },
     resolve: 'equip',
-    desc: '宝物：摸牌阶段额外摸 1 张牌（简化实现：省略原版「存粮 / 取粮」的额外交互）',
+    desc: '防具：摸牌阶段额外摸 1 张牌（简化实现：省略原版「存粮 / 取粮」的额外交互）',
   },
   // 具名坐骑：原版标准包 / SP 复刻马，规则内核与 ±1 马一致
   chitu: {

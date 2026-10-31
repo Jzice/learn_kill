@@ -49,7 +49,6 @@ function selfView(idx: number): string {
   if (p.equip.armor) eq.push('防具:' + p.equip.armor.name);
   if (p.equip.horsePlus) eq.push('+1马:' + p.equip.horsePlus.name);
   if (p.equip.horseMinus) eq.push('-1马:' + p.equip.horseMinus.name);
-  if (p.equip.treasure) eq.push('宝物:' + p.equip.treasure.name);
   const skills = p.skills.map((s) => s.name).join('、') || '无';
   const roleTxt =
     p.roleRevealed || true // 玩家始终知道自己的身份
@@ -86,7 +85,6 @@ function othersView(idx: number): string {
     if (p.equip.armor) eq.push('防具');
     if (p.equip.horsePlus) eq.push('+1马');
     if (p.equip.horseMinus) eq.push('-1马');
-    if (p.equip.treasure) eq.push('宝物');
     const role = p.roleRevealed ? `身份:${ROLES[p.role].name}` : '身份:隐藏';
     const dOut = distBetween(idx, i);
     const dIn = distBetween(i, idx);
@@ -248,7 +246,7 @@ function cardById(id: number): Card | undefined {
   for (const p of G.players) {
     const inHand = p.hand.find((c) => c.id === id);
     if (inHand) return inHand;
-    for (const eq of [p.equip.weapon, p.equip.armor, p.equip.horsePlus, p.equip.horseMinus, p.equip.treasure]) {
+    for (const eq of [p.equip.weapon, p.equip.armor, p.equip.horsePlus, p.equip.horseMinus]) {
       if (eq && eq.id === id) return eq;
     }
   }

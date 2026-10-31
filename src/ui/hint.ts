@@ -60,7 +60,7 @@ export const EQUIP_DESC: Record<string, string> = {
   taiping: '锁定技：你不能成为【乐不思蜀】【兵粮寸断】等延时锦囊的目标',
   mingguang: '你每次受到的伤害 -1（最低 1 点）',
   wuliu: '【杀】造成伤害后，可弃置一张手牌，对其追加 1 点伤害',
-  muyu: '宝物：摸牌阶段额外摸 1 张牌',
+  muyu: '防具：摸牌阶段额外摸 1 张牌',
 };
 
 let hintTimer: ReturnType<typeof setTimeout> | undefined;

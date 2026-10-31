@@ -219,9 +219,6 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       } else if (c.sub === 'horse-') {
         if (p.equip.horseMinus) G.discard.push(p.equip.horseMinus);
         p.equip.horseMinus = c;
-      } else if (c.sub === 'treasure') {
-        if (p.equip.treasure) G.discard.push(p.equip.treasure);
-        p.equip.treasure = c;
       }
       addLog(`${p.name} 装备【${c.name}】`);
       Sound.play('equip');

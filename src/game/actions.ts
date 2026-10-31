@@ -155,7 +155,6 @@ export const EQUIP_SLOT_LABEL: Record<string, string> = {
   armor: '防具',
   horsePlus: '+1马',
   horseMinus: '-1马',
-  treasure: '宝物',
 };
 
 /** 【太平要术】：锁定技，不能成为延时锦囊的目标 */
@@ -1071,7 +1070,6 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
     if (t.equip.armor) opts.push({ label: `防具：${t.equip.armor.name}`, value: 'armor' });
     if (t.equip.horsePlus) opts.push({ label: '+1马', value: 'horsePlus' });
     if (t.equip.horseMinus) opts.push({ label: '-1马', value: 'horseMinus' });
-    if (t.equip.treasure) opts.push({ label: `宝物：${t.equip.treasure.name}`, value: 'treasure' });
   }
   if (!opts.length) return;
   const src = G.players[srcIdx];

@@ -83,7 +83,6 @@ function publicVersion(): number {
     if (fromDeck(p.equip.armor)) v++;
     if (fromDeck(p.equip.horsePlus)) v++;
     if (fromDeck(p.equip.horseMinus)) v++;
-    if (fromDeck(p.equip.treasure)) v++;
   }
   return v;
 }
@@ -110,7 +109,6 @@ function publicPool(): { counts: Record<string, number>; total: number } {
     drop(p.equip.armor);
     drop(p.equip.horsePlus);
     drop(p.equip.horseMinus);
-    drop(p.equip.treasure);
   }
   const total = Math.max(0, DECK_SIZE - removed);
   pubVer = v;

@@ -185,7 +185,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       hp: role === 'lord' ? char.hp + 1 : char.hp,
       maxHp: role === 'lord' ? char.hp + 1 : char.hp,
       hand: [],
-      equip: { weapon: null, armor: null, horsePlus: null, horseMinus: null, treasure: null },
+      equip: { weapon: null, armor: null, horsePlus: null, horseMinus: null },
       judge: [],
       knowledge: 0,
       shield: 0,

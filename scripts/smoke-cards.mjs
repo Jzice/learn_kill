@@ -106,7 +106,7 @@ for (const [sub, n] of Object.entries(BASE)) {
 check('零回归·基础牌堆各子类张数与改造前一致', baseOk, diffs.length ? diffs.join('；') : '20 个子类全部匹配');
 const baseTotal = Object.values(baseStats).reduce((s, n) => s + n, 0);
 check('零回归·基础牌堆总量 = 125 + 知识点锦囊', baseTotal >= 125, `共 ${baseTotal} 张`);
-const noExtra = ['bingliang', 'qilin', 'zhuque', 'zhiji', 'wuxieguo', 'treasure'].every((s) => !baseStats[s]);
+const noExtra = ['bingliang', 'qilin', 'zhuque', 'zhiji', 'wuxieguo'].every((s) => !baseStats[s]);
 check('零回归·未启用时牌堆不含任何扩展卡', noExtra);
 
 /* ---------- 2. 各卡包勾选后卡牌入池 ---------- */
@@ -116,8 +116,8 @@ const EXPECT = {
   junzheng: { bingliang: 2, weapon: 12 },
   // 银月枪 + 七星刀（武器 12）+ 太平要术 + 明光铠（防具 8）
   shenhua: { weapon: 12, armor: 8 },
-  // 吴六剑（武器 11）+ 木牛流马（宝物 1）+ 三匹 +1 马 + 三匹 -1 马
-  sp: { weapon: 11, treasure: 1, 'horse+': 6, 'horse-': 6 },
+  // 吴六剑（武器 11）+ 木牛流马（防具 7）+ 三匹 +1 马 + 三匹 -1 马
+  sp: { weapon: 11, armor: 7, 'horse+': 6, 'horse-': 6 },
   yingbian: { zhiji: 2, shuishui: 2, caomu: 2, yuanjiao: 1, yiyi: 1, huoshao: 1 },
   guozhan: { wuxieguo: 2, diaohu: 2, lianjun: 1, chiling: 1 },
 };
@@ -170,7 +170,7 @@ await page.evaluate(() => {
 const allStats = await page.evaluate(() => window.__xtsDeckStats(['junzheng', 'shenhua', 'sp', 'yingbian', 'guozhan']));
 check(
   '全卡包启用后牌堆含全部扩展卡',
-  allStats.bingliang === 2 && allStats.wuxieguo === 2 && allStats.treasure === 1 && allStats.zhiji === 2,
+  allStats.bingliang === 2 && allStats.wuxieguo === 2 && allStats.armor === 9 && allStats.zhiji === 2,
   `共 ${Object.values(allStats).reduce((s, n) => s + n, 0)} 张`,
 );
 await page.click('#startBtn');
@@ -182,9 +182,9 @@ await page.waitForSelector('#screenGame.active', { timeout: 6000 });
 check('全卡包可正常开局', await page.isVisible('#screenGame.active'));
 await page.waitForTimeout(2000);
 
-// 宝物槽渲染（扩展槽：未装备时显示为空槽，不报错）
+// 装备槽渲染（4 槽/人）
 const slots = await page.locator('#seatRing .p-card .equip-slot').count();
-check('座位装备槽含宝物槽（5 槽/人）', slots % 5 === 0 && slots > 0, `${slots} 个槽位`);
+check('座位装备槽为 4 槽/人', slots % 4 === 0 && slots > 0, `${slots} 个槽位`);
 
 if (await page.isVisible('#quizModal.show')) {
   await page.click('.quiz-option').catch(() => {});

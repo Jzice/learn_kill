@@ -30,8 +30,8 @@ export type LogAction =
   | 'sys';
 export type ChatKind = 'ai' | 'self' | 'sys';
 export type NetMode = 'single' | 'host' | 'join';
-/** 装备槽位；'treasure' 为【木牛流马】等宝物槽（可选，旧存档解包为 undefined） */
-export type EquipSlot = 'weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure';
+/** 装备槽位 */
+export type EquipSlot = 'weapon' | 'armor' | 'horsePlus' | 'horseMinus';
 /** 玩家自选性别（仅用于个性化展示，不影响玩法） */
 export type Gender = 'male' | 'female' | 'hidden';
 
@@ -322,7 +322,7 @@ export type SkillEffect =
   /** 转移杀：你成为【杀】目标时，可将其转移给另一名角色（卢瑟福·散射偏转） */
   | { kind: 'shaRedirect' }
   /** 装备失效：其他角色装备区中指定槽位的牌对你无效（墨子·非攻：收缴兵器） */
-  | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure')[] }
+  | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus')[] }
   /** 马政：装备区每有一张马，你计算距离额外 −n（郑和·航海图） */
   | { kind: 'horseDist'; n: number }
   | { kind: 'reduceDamage'; types: DamageType[]; n: number }
@@ -513,8 +513,6 @@ export interface Equips {
   armor: Card | null;
   horsePlus: Card | null;
   horseMinus: Card | null;
-  /** 宝物槽（【木牛流马】等）：可选字段，保证旧存档 / 旧客户端可正常解包 */
-  treasure?: Card | null;
 }
 
 export interface PlayerFlags {

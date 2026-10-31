@@ -18,22 +18,19 @@ const EQUIP_ICON: Record<string, string> = {
   armor: '🛡️',
   horsePlus: '🐎',
   horseMinus: '🐎',
-  treasure: '🎒',
 };
 const EQUIP_LABEL: Record<string, string> = {
   weapon: '武器',
   armor: '防具',
   horsePlus: '+1马',
   horseMinus: '-1马',
-  treasure: '宝物',
 };
-/** 装备槽展示顺序（宝物为扩展槽，旧存档无此字段时渲染为空槽） */
-const EQUIP_SLOTS: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure')[] = [
+/** 装备槽展示顺序 */
+const EQUIP_SLOTS: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus')[] = [
   'weapon',
   'armor',
   'horsePlus',
   'horseMinus',
-  'treasure',
 ];
 const JUDGE_ICON: Record<string, string> = { lebu: '🎋', shandian: '⚡', bingliang: '📝' };
 

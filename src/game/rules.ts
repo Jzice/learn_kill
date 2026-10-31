@@ -77,11 +77,6 @@ export function usableHand(p: Player, pred: (c: Card) => boolean): Card[] {
   return p.hand.filter((c) => pred(c) && canUseCard(p, c));
 }
 
-/** 宝物槽技能（【木牛流马】等）是否生效 */
-export function treasureSkillOf(p: Player): string | undefined {
-  return p.equip.treasure?.skill;
-}
-
 /** 装备区里所有坐骑牌所在的槽位（【麒麟弓】弃置目标坐骑用） */
 export function horseSlotsOf(p: Player): ('horsePlus' | 'horseMinus')[] {
   const out: ('horsePlus' | 'horseMinus')[] = [];
@@ -97,7 +92,6 @@ export function filledEquipSlots(p: Player): EquipSlot[] {
   if (p.equip.armor) out.push('armor');
   if (p.equip.horsePlus) out.push('horsePlus');
   if (p.equip.horseMinus) out.push('horseMinus');
-  if (p.equip.treasure) out.push('treasure');
   return out;
 }
 
